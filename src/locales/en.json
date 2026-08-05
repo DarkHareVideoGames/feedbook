@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "brand": "FeedBook Sessions"
+  },
+  "languages": {
+    "pt-PT": "PT",
+    "en": "EN"
+  },
+  "topbar": {
+    "title": "Book rehearsal rooms without endless back-and-forth.",
+    "notes": ["Downtown rooms", "Instant pricing", "Mock availability"],
+    "languageLabel": "Language"
+  },
+  "hero": {
+    "eyebrow": "For bands, solo artists, and tour prep",
+    "title": "Choose a room, lock a slot, and show up ready to play.",
+    "lede": "This MVP is designed for rehearsal spaces that want a clean booking funnel, upfront pricing, and better pre-session detail from artists.",
+    "metrics": [
+      { "value": "2", "label": "distinct rehearsal rooms" },
+      { "value": "100%", "label": "full payment by MB WAY or on rehearsal day" },
+      { "value": "Pending", "label": "confirmation handled by staff in the backend" }
+    ],
+    "panelTitle": "Tonight's pulse",
+    "panelItems": [
+      "SALA RED is best for full-energy rehearsals and set run-throughs.",
+      "SALA GREY works best for writing and arrangement detail.",
+      "All bookings stay pending until confirmed by staff."
+    ]
+  },
+  "rooms": {
+    "sala-red": {
+      "name": "SALA RED",
+      "vibe": "High-impact room for full-band rehearsals and pressure-tested run-throughs.",
+      "capacity": "Up to 6 players",
+      "gear": ["Full drum kit", "2 guitar amps", "PA with monitors"]
+    },
+    "sala-grey": {
+      "name": "SALA GREY",
+      "vibe": "Balanced room for songwriting, vocals, and detail-focused arrangement work.",
+      "capacity": "Up to 5 players",
+      "gear": ["Compact drum kit", "Bass amp", "PA with vocal FX"]
+    },
+    "selected": "Selected room",
+    "choose": "Choose this room",
+    "rate": "/hr per player"
+  },
+  "booking": {
+    "eyebrow": "Booking flow",
+    "title": "Reserve your session",
+    "roomLabel": "Room",
+    "participantsLabel": "Number of players",
+    "participantsOption": "{{count}} players",
+    "dateLabel": "Date",
+    "durationLabel": "Duration",
+    "calendarPrev": "Previous month",
+    "calendarNext": "Next month",
+    "calendarOccupiedHint": "Occupied days for this room cannot be selected.",
+    "durationOption": "{{count}} hours",
+    "startTimeLabel": "Start time",
+    "paymentMethodLabel": "Payment method",
+    "paymentMbway": "MB WAY (full)",
+    "paymentOnSite": "On rehearsal day",
+    "addonsLabel": "Add-ons",
+    "bandNameLabel": "Band or artist name",
+    "bandNamePlaceholder": "Midnight Broadcast",
+    "contactNameLabel": "Contact name",
+    "contactNamePlaceholder": "Alex",
+    "contactPhoneLabel": "Phone",
+    "contactPhonePlaceholder": "+351 912 345 678",
+    "emailLabel": "Email",
+    "emailPlaceholder": "alex@bandmail.com",
+    "focusLabel": "Session focus",
+    "focusPlaceholder": "Set run-through, vocal balance, camera rehearsal, writing session...",
+    "submit": "Request booking",
+    "defaultFocus": "Full band rehearsal",
+    "confirmationFallback": "Your band",
+    "confirmation": "{{bandName}} is pending confirmation for {{roomName}} on {{date}} at {{time}} for {{duration}} hours. Payment: {{paymentMethod}}. The rehearsal team will confirm it in the backend.",
+    "pendingBadge": "Pending confirmation",
+    "pendingDescription": "Your booking only becomes active after a staff member validates it in the backend.",
+    "submitting": "Submitting booking...",
+    "apiError": "Could not reach the backend. Please try again.",
+    "validationError": "Please fill in all required fields (marked with *).",
+    "bookingIdLabel": "Booking number:",
+    "bookingIdNote": "Save this number for future reference.",
+    "teamTitle": "Team confirmation",
+    "teamRefresh": "Refresh pending list",
+    "teamLoading": "Loading...",
+    "teamEmpty": "No pending bookings right now.",
+    "teamConfirm": "Confirm",
+    "teamReject": "Reject"
+  },
+  "slots": {
+    "open": "Open",
+    "fewLeft": "Few left",
+    "booked": "Booked",
+    "unavailable": "Unavailable"
+  },
+  "extras": {
+    "engineer": "Session engineer",
+    "recording": "Stereo rehearsal capture",
+    "backline": "Extra backline setup"
+  },
+  "summary": {
+    "eyebrow": "Live summary",
+    "date": "Date",
+    "startTime": "Start time",
+    "duration": "Duration",
+    "hours": "{{count}} hours",
+    "participants": "Players",
+    "participantsValue": "{{count}} players",
+    "paymentMethod": "Payment",
+    "availableSlots": "Available slots",
+    "availableSlotsValue": "{{count}} today",
+    "roomTotal": "Room total",
+    "addons": "Add-ons",
+    "estimatedTotal": "Estimated total",
+      "policyTitle": "House policy",
+      "policyItems": [
+        "Free reschedule up to 24 hours before the slot.",
+        "Full payment can be made via MB WAY or on rehearsal day.",
+        "Mock availability in this MVP can be replaced with real inventory later.",
+        "Final approval is handled in the backend by rehearsal staff."
+      ]
+  },
+  "admin": {
+    "title": "Admin panel",
+    "perMemberPerHour": "Price per player per hour (EUR)",
+    "engineerPrice": "Extra: Session engineer (EUR)",
+    "recordingPrice": "Extra: Stereo capture (EUR)",
+    "backlinePrice": "Extra: Backline (EUR)",
+    "save": "Save pricing",
+    "saving": "Saving...",
+    "saved": "Pricing updated successfully.",
+    "saveError": "Could not save pricing.",
+    "invalidValues": "Check values: use valid numbers."
+  }
+}

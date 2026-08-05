@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "brand": "FeedBook Sessions"
+  },
+  "languages": {
+    "pt-PT": "PT",
+    "en": "EN"
+  },
+  "topbar": {
+    "title": "Marca salas de ensaio sem trocas de mensagens interminaveis.",
+    "notes": ["Salas no centro", "Precos imediatos", "Disponibilidade simulada"],
+    "languageLabel": "Idioma"
+  },
+  "hero": {
+    "eyebrow": "Para bandas, artistas a solo e preparacao de tour",
+    "title": "Escolhe a sala, fecha o horario e chega pronto para tocar.",
+    "lede": "Este MVP foi pensado para estudios de ensaio que querem um fluxo de marcacao simples, precos claros e melhor contexto antes da sessao.",
+    "metrics": [
+      { "value": "2", "label": "salas de ensaio distintas" },
+      { "value": "100%", "label": "pagamento total por MB WAY ou no dia" },
+      { "value": "Pendente", "label": "confirmacao feita pela equipa no backend" }
+    ],
+    "panelTitle": "Pulso desta noite",
+    "panelItems": [
+      "A SALA RED e ideal para ensaios com energia e volume.",
+      "A SALA GREY e ideal para escrita e detalhes de arranjo.",
+      "Todas as reservas ficam pendentes ate confirmacao da equipa."
+    ]
+  },
+  "rooms": {
+    "sala-red": {
+      "name": "SALA RED",
+      "vibe": "Sala de impacto forte para ensaios completos e passagens de alinhamento com pressao real.",
+      "capacity": "Ate 6 musicos",
+      "gear": ["Bateria completa", "2 amps de guitarra", "PA com monitores"]
+    },
+    "sala-grey": {
+      "name": "SALA GREY",
+      "vibe": "Sala equilibrada para composicao, vozes e trabalho de detalhe com mais controlo dinamico.",
+      "capacity": "Ate 5 musicos",
+      "gear": ["Bateria compacta", "Amp de baixo", "PA com efeitos de voz"]
+    },
+    "selected": "Sala selecionada",
+    "choose": "Escolher esta sala",
+    "rate": "/hora por elemento"
+  },
+  "booking": {
+    "eyebrow": "Fluxo de marcacao",
+    "title": "Reserva a tua sessao",
+    "roomLabel": "Sala",
+    "participantsLabel": "Numero de elementos",
+    "participantsOption": "{{count}} elementos",
+    "dateLabel": "Data",
+    "durationLabel": "Duracao",
+    "calendarPrev": "Mes anterior",
+    "calendarNext": "Proximo mes",
+    "calendarOccupiedHint": "Dias ocupados para esta sala nao podem ser selecionados.",
+    "durationOption": "{{count}} horas",
+    "startTimeLabel": "Hora de inicio",
+    "paymentMethodLabel": "Metodo de pagamento",
+    "paymentMbway": "MB WAY (total)",
+    "paymentOnSite": "No dia do ensaio",
+    "addonsLabel": "Extras",
+    "bandNameLabel": "Nome da banda ou artista",
+    "bandNamePlaceholder": "Midnight Broadcast",
+    "contactNameLabel": "Nome do contacto",
+    "contactNamePlaceholder": "Alex",
+    "contactPhoneLabel": "Telemovel",
+    "contactPhonePlaceholder": "+351 912 345 678",
+    "emailLabel": "Email",
+    "emailPlaceholder": "alex@bandmail.com",
+    "focusLabel": "Foco da sessao",
+    "focusPlaceholder": "Passagem do alinhamento, equilibrio de voz, ensaio com camara, escrita...",
+    "submit": "Pedir marcacao",
+    "defaultFocus": "Ensaio com banda completa",
+    "confirmationFallback": "A tua banda",
+    "confirmation": "{{bandName}} ficou com reserva pendente na {{roomName}} para {{date}} as {{time}} durante {{duration}} horas. Pagamento: {{paymentMethod}}. A equipa de ensaios vai confirmar no backend.",
+    "pendingBadge": "Pendente de confirmacao",
+    "pendingDescription": "A reserva so fica ativa apos validacao por um membro da equipa no backend.",
+    "submitting": "A enviar reserva...",
+    "apiError": "Nao foi possivel comunicar com o backend. Tenta novamente.",
+    "validationError": "Preenche os campos obrigatorios (marcados com *).",
+    "bookingIdLabel": "N.\u00ba da reserva:",
+    "bookingIdNote": "Guarda este numero para futuras referencias.",
+    "teamTitle": "Confirmacao da equipa",
+    "teamRefresh": "Atualizar pendentes",
+    "teamLoading": "A carregar...",
+    "teamEmpty": "Sem reservas pendentes neste momento.",
+    "teamConfirm": "Confirmar",
+    "teamReject": "Rejeitar"
+  },
+  "slots": {
+    "open": "Livre",
+    "fewLeft": "Poucos lugares",
+    "booked": "Esgotado",
+    "unavailable": "Nao disponivel"
+  },
+  "extras": {
+    "engineer": "Tecnico de sessao",
+    "recording": "Captacao stereo do ensaio",
+    "backline": "Preparacao extra de backline"
+  },
+  "summary": {
+    "eyebrow": "Resumo em direto",
+    "date": "Data",
+    "startTime": "Hora de inicio",
+    "duration": "Duracao",
+    "hours": "{{count}} horas",
+    "participants": "Elementos",
+    "participantsValue": "{{count}} elementos",
+    "paymentMethod": "Pagamento",
+    "availableSlots": "Horarios disponiveis",
+    "availableSlotsValue": "{{count}} hoje",
+    "roomTotal": "Total da sala",
+    "addons": "Extras",
+    "estimatedTotal": "Total estimado",
+      "policyTitle": "Politica da casa",
+      "policyItems": [
+        "Remarcacao gratuita ate 24 horas antes do horario.",
+        "Pagamento total por MB WAY ou no dia do ensaio.",
+        "A disponibilidade simulada deste MVP pode ser substituida por inventario real mais tarde.",
+        "A confirmacao final e feita no backend por um elemento da equipa de ensaios."
+      ]
+  },
+  "admin": {
+    "title": "Painel de administracao",
+    "perMemberPerHour": "Preco por elemento por hora (EUR)",
+    "engineerPrice": "Extra: Tecnico de sessao (EUR)",
+    "recordingPrice": "Extra: Captacao stereo (EUR)",
+    "backlinePrice": "Extra: Backline (EUR)",
+    "save": "Guardar precos",
+    "saving": "A guardar...",
+    "saved": "Precos atualizados com sucesso.",
+    "saveError": "Nao foi possivel guardar os precos.",
+    "invalidValues": "Revê os valores: usa numeros validos."
+  }
+}
