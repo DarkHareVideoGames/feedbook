@@ -1,14 +1,22 @@
-// FeedBook — Notificações por email/WhatsApp (Versao Vercel Function)
+// FeedBook — Notificações por email/WhatsApp (Vercel Function)
 //
 // Substitui o server/index.js (Express, processo persistente) para que o
-// deploy no Vercel nao precise de uma aplicacao node em execucao.
-// O comportamento e identico: email via SMTP, WhatsApp via Twilio (simulado),
-// e a marcacao fica registada mesmo se o servidor de email nao estiver a correr.
+// deploy no Vercel não precise de uma aplicação node em execução.
+// O comportamento é idêntico: email via SMTP, WhatsApp via Twilio (simulado),
+// e a marcação fica registada mesmo se o servidor de email não estiver a correr.
 //
-// Variaveis de ambiente (no Vercel: Project Settings -> Environment Variables):
+// Variáveis de ambiente (no Vercel: Project Settings -> Environment Variables):
 //   SMTP_HOST, SMTP_PORT (587), SMTP_SECURE (false), SMTP_USER, SMTP_PASS,
 //   SMTP_FROM, WHATSAPP_TWILIO_ACCOUNT_SID, WHATSAPP_TWILIO_AUTH_TOKEN,
 //   WHATSAPP_TWILIO_FROM
+//
+// NOTA DE IMPLEMENTAÇÃO: este ficheiro é servido pelo Vercel como uma função
+// Node.js do tipo Web Handler. O método exportado recebe um objeto Request
+// (API Web, com .json()) e devolve um Response (API Web).
+// Não usar o padrão Express handler(req, res) com req.body / res.status().json().
+//
+// Ao contrário do servidor Express, o body JSON do pedido só está disponível
+// com await request.json(). Respostas: return new Response(JSON.stringify({...}), { status, headers }).
 
 import nodemailer from 'nodemailer';
 
@@ -55,7 +63,7 @@ async function sendBookingNotifications(booking, status) {
 
   if (recipientEmail && emailTransport) {
     let subject = '';
-    let bodyHTML = `<h1 style="font-size: 24px;">FeedBook Booking Status</h1>`;
+    let bodyHTML = `<h1 style=\"font-size: 24px;\">FeedBook Booking Status</h1>`;
 
     if (status === 'confirmed') {
       subject = '✅ Reserva Confirmada! Seu ensaio está agendado.';
@@ -85,21 +93,37 @@ async function sendBookingNotifications(booking, status) {
 }
 
 // Vercel Function handler — responde a POST /api/notify
-// (mesmo payload que o src/api.ts envia: { booking, status })
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+// O payload é o mesmo que o src/api.ts envia: { booking, status }
+export async function POST(request) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (error) {
+    return new Response(JSON.stringify({ message: 'Booking payload is required.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
-  const { booking, status } = req.body || {};
+  const { booking, status } = body || {};
+
   if (!booking || typeof booking !== 'object') {
-    return res.status(400).json({ message: 'Booking payload is required.' });
+    return new Response(JSON.stringify({ message: 'Booking payload is required.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   if (!['pending', 'confirmed', 'rejected', 'cancelled'].includes(String(status || '').trim())) {
-    return res.status(400).json({ message: 'Invalid notification status.' });
+    return new Response(JSON.stringify({ message: 'Invalid notification status.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   await sendBookingNotifications(booking, String(status).trim());
-  return res.json({ message: 'Notification queued.' });
+  return new Response(JSON.stringify({ message: 'Notification queued.' }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
