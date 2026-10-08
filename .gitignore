@@ -1,8 +1,14 @@
 node_modules/
 dist/
+.env
+.env.*
+!.env.example
 .DS_Store
 *.local
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# dados de execução do servidor (mantém o state.json do repositório)
+server/data/state.json.bak
