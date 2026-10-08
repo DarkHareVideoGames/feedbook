@@ -17,7 +17,7 @@
     "lede": "Este MVP foi pensado para estudios de ensaio que querem um fluxo de marcacao simples, precos claros e melhor contexto antes da sessao.",
     "metrics": [
       { "value": "2", "label": "salas de ensaio distintas" },
-      { "value": "100%", "label": "pagamento total por MB WAY ou no dia" },
+      { "value": "100%", "label": "pagamento total no dia" },
       { "value": "Pendente", "label": "confirmacao feita pela equipa no backend" }
     ],
     "panelTitle": "Pulso desta noite",
@@ -58,7 +58,6 @@
     "durationOption": "{{count}} horas",
     "startTimeLabel": "Hora de inicio",
     "paymentMethodLabel": "Metodo de pagamento",
-    "paymentMbway": "MB WAY (total)",
     "paymentOnSite": "No dia do ensaio",
     "addonsLabel": "Extras",
     "bandNameLabel": "Nome da banda ou artista",
@@ -117,7 +116,7 @@
       "policyTitle": "Politica da casa",
       "policyItems": [
         "Remarcacao gratuita ate 24 horas antes do horario.",
-        "Pagamento total por MB WAY ou no dia do ensaio.",
+        "Pagamento total no dia do ensaio.",
         "A disponibilidade simulada deste MVP pode ser substituida por inventario real mais tarde.",
         "A confirmacao final e feita no backend por um elemento da equipa de ensaios."
       ]

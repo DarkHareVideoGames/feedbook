@@ -17,7 +17,7 @@
     "lede": "This MVP is designed for rehearsal spaces that want a clean booking funnel, upfront pricing, and better pre-session detail from artists.",
     "metrics": [
       { "value": "2", "label": "distinct rehearsal rooms" },
-      { "value": "100%", "label": "full payment by MB WAY or on rehearsal day" },
+      { "value": "100%", "label": "full payment on rehearsal day" },
       { "value": "Pending", "label": "confirmation handled by staff in the backend" }
     ],
     "panelTitle": "Tonight's pulse",
@@ -58,7 +58,6 @@
     "durationOption": "{{count}} hours",
     "startTimeLabel": "Start time",
     "paymentMethodLabel": "Payment method",
-    "paymentMbway": "MB WAY (full)",
     "paymentOnSite": "On rehearsal day",
     "addonsLabel": "Add-ons",
     "bandNameLabel": "Band or artist name",
@@ -117,7 +116,7 @@
       "policyTitle": "House policy",
       "policyItems": [
         "Free reschedule up to 24 hours before the slot.",
-        "Full payment can be made via MB WAY or on rehearsal day.",
+        "Full payment is made on rehearsal day.",
         "Mock availability in this MVP can be replaced with real inventory later.",
         "Final approval is handled in the backend by rehearsal staff."
       ]

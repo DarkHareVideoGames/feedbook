@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import * as api from './api';
 import { Locale, useI18n } from './i18n';
 
 type RoomDefinition = {
@@ -19,7 +20,7 @@ type PricingConfig = {
   extras: Record<ExtraId, number>;
 };
 
-type PaymentMethod = 'mbway' | 'on-site';
+type PaymentMethod = 'on-site';
 
 type BookingForm = {
   bandName: string;
@@ -29,7 +30,7 @@ type BookingForm = {
   focus: string;
 };
 
-type BookingStatus = 'pending' | 'confirmed' | 'rejected';
+type BookingStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
 
 type TeamBooking = {
   id: string;
@@ -161,7 +162,7 @@ function formatDateForDisplay(locale: Locale, date: string): string {
 }
 
 function App() {
-  const { locale, setLocale, translations } = useI18n();
+  const { locale, translations } = useI18n();
   const [logoVisible, setLogoVisible] = useState(true);
   const [selectedRoomId, setSelectedRoomId] = useState(rooms[0].id);
   const [selectedSlot, setSelectedSlot] = useState('18:00');
@@ -169,16 +170,9 @@ function App() {
   const [visibleMonth, setVisibleMonth] = useState(startOfMonth(new Date()));
   const [duration, setDuration] = useState(3);
   const [participants, setParticipants] = useState(4);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mbway');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('on-site');
   const [pricing, setPricing] = useState<PricingConfig>(defaultPricing);
   const [selectedExtras, setSelectedExtras] = useState<ExtraId[]>(['engineer']);
-  const [form, setForm] = useState<BookingForm>({
-    bandName: '',
-    contactName: '',
-    contactPhone: '',
-    email: '',
-    focus: '',
-  });
   const [confirmation, setConfirmation] = useState<string>('');
   const [confirmationId, setConfirmationId] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -219,7 +213,12 @@ function App() {
     () =>
       new Set(
         teamBookings
-          .filter((booking) => booking.roomId === selectedRoomId && booking.status !== 'rejected')
+          .filter((booking) => {
+            if (booking.roomId !== selectedRoomId) return false;
+            if (booking.status === 'rejected' || booking.status === 'cancelled') return false;
+            if (String(booking.paymentStatus || '').toLowerCase() === 'refunded') return false;
+            return true;
+          })
           .map((booking) => booking.date),
       ),
     [teamBookings, selectedRoomId],
@@ -234,10 +233,7 @@ function App() {
     [locale, visibleMonth],
   );
   const calendarDays = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth]);
-  const paymentMethodLabel =
-    paymentMethod === 'mbway'
-      ? translations.booking.paymentMbway
-      : translations.booking.paymentOnSite;
+  const paymentMethodLabel = translations.booking.paymentOnSite;
   const displayDate = formatDateForDisplay(locale, selectedDate);
   const todayIso = getToday();
 
@@ -285,13 +281,8 @@ function App() {
 
   async function loadTeamBookings() {
     try {
-      const response = await fetch('/api/bookings');
-      if (!response.ok) {
-        throw new Error('Failed to load bookings.');
-      }
-
-      const payload = (await response.json()) as { bookings: TeamBooking[] };
-      setTeamBookings(payload.bookings);
+      const payload = await api.listBookings();
+      setTeamBookings(payload.bookings as unknown as TeamBooking[]);
       setBackendOffline(false);
     } catch (_error) {
       setBackendOffline(true);
@@ -300,12 +291,7 @@ function App() {
 
   async function loadPricing() {
     try {
-      const response = await fetch('/api/pricing');
-      if (!response.ok) {
-        throw new Error('Failed to load pricing.');
-      }
-
-      const payload = (await response.json()) as { pricing: PricingConfig };
+      const payload = await api.pricing();
       if (payload.pricing) {
         setPricing(payload.pricing);
         setBackendOffline(false);
@@ -318,11 +304,20 @@ function App() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const rawData = new FormData(event.currentTarget);
+    const draftForm: BookingForm = {
+      bandName: String(rawData.get('bandName') || ''),
+      contactName: String(rawData.get('name') || ''),
+      contactPhone: String(rawData.get('tel') || ''),
+      email: String(rawData.get('email') || ''),
+      focus: String(rawData.get('focus') || ''),
+    };
+
     // Client-side validation before hitting the network
     const missing: string[] = [];
-    if (!form.contactName.trim()) missing.push('contactName');
-    if (!form.email.trim()) missing.push('email');
-    if (!form.contactPhone.trim()) missing.push('contactPhone');
+    if (!draftForm.contactName.trim()) missing.push('contactName');
+    if (!draftForm.email.trim()) missing.push('email');
+    if (!draftForm.contactPhone.trim()) missing.push('contactPhone');
 
     if (missing.length > 0) {
       setErrorMessage(translations.booking.validationError ?? 'Preenche os campos obrigatorios.');
@@ -334,38 +329,27 @@ function App() {
 
     setIsSubmitting(true);
     setErrorMessage('');
+    setBackendOffline(false);
 
     try {
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          roomId: selectedRoom.id,
-          date: selectedDate,
-          time: selectedSlot,
-          duration,
-          extras: selectedExtras,
-          bandName: form.bandName,
-          contactName: form.contactName,
-            contactPhone: form.contactPhone,
-          email: form.email,
-          focus: form.focus,
-          locale,
-          participants,
-          paymentMethod,
-        }),
+      const payload = await api.createBooking({
+        roomId: selectedRoom.id,
+        date: selectedDate,
+        time: selectedSlot,
+        duration,
+        extras: selectedExtras,
+        bandName: draftForm.bandName,
+        contactName: draftForm.contactName,
+        contactPhone: draftForm.contactPhone,
+        email: draftForm.email,
+        focus: draftForm.focus,
+        locale,
+        participants,
+        paymentMethod,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to create booking.');
-      }
-
-      const payload = (await response.json()) as { booking: TeamBooking };
-
       const message = formatTemplate(translations.booking.confirmation, {
-        bandName: form.bandName || translations.booking.confirmationFallback,
+        bandName: draftForm.bandName || translations.booking.confirmationFallback,
         roomName: selectedRoom.name,
         date: displayDate,
         time: selectedSlot,
@@ -375,9 +359,20 @@ function App() {
 
       setConfirmation(message);
       setConfirmationId(payload.booking.id);
+      setBackendOffline(false);
+
       await loadTeamBookings();
-    } catch (_error) {
-      setBackendOffline(true);
+    } catch (error) {
+      if (error instanceof TypeError) {
+        setBackendOffline(true);
+        setErrorMessage('Servico temporariamente indisponivel.');
+      } else if (error instanceof Error) {
+        setBackendOffline(false);
+        setErrorMessage(error.message);
+      } else {
+        setBackendOffline(false);
+        setErrorMessage('Nao foi possivel concluir a marcacao.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -398,62 +393,10 @@ function App() {
               onError={() => setLogoVisible(false)}
             />
           ) : null}
-          <p className="eyebrow">{translations.meta.brand}</p>
-          <h1>{translations.topbar.title}</h1>
-        </div>
-
-        <div className="topbar-tools">
-          <div className="topbar-note">
-            {translations.topbar.notes.map((note) => (
-              <span key={note}>{note}</span>
-            ))}
-          </div>
-
-          <div className="language-switcher" aria-label={translations.topbar.languageLabel}>
-            <span>{translations.topbar.languageLabel}</span>
-            <div className="language-switcher-buttons">
-              {(['pt-PT', 'en'] as Locale[]).map((language) => (
-                <button
-                  key={language}
-                  type="button"
-                  className={`language-button ${locale === language ? 'language-button-active' : ''}`}
-                  onClick={() => setLocale(language)}
-                >
-                  {translations.languages[language]}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </header>
 
       <main className="layout">
-        <section className="hero card">
-          <div className="hero-copy">
-            <p className="eyebrow">{translations.hero.eyebrow}</p>
-            <h2>{translations.hero.title}</h2>
-            <p className="lede">{translations.hero.lede}</p>
-
-            <div className="hero-metrics">
-              {translations.hero.metrics.map((metric) => (
-                <article key={metric.label}>
-                  <strong>{metric.value}</strong>
-                  <span>{metric.label}</span>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <aside className="hero-panel">
-            <p>{translations.hero.panelTitle}</p>
-            <ul>
-              {translations.hero.panelItems.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </aside>
-        </section>
-
         <section className="rooms-grid">
           {localizedRooms.map((room) => {
             const isSelected = room.id === selectedRoom.id;
@@ -493,7 +436,7 @@ function App() {
         </section>
 
         <section className="booking-grid">
-          <form className="card booking-form" onSubmit={handleSubmit}>
+          <form className="card booking-form" onSubmit={handleSubmit} autoComplete="on">
             <div className="section-heading">
               <p className="eyebrow">{translations.booking.eyebrow}</p>
               <h2>{translations.booking.title}</h2>
@@ -519,7 +462,6 @@ function App() {
                 value={paymentMethod}
                 onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
               >
-                <option value="mbway">{translations.booking.paymentMbway}</option>
                 <option value="on-site">{translations.booking.paymentOnSite}</option>
               </select>
             </label>
@@ -664,10 +606,11 @@ function App() {
             <label>
               {translations.booking.bandNameLabel}
               <input
+                id="field-bandName"
+                name="bandName"
                 type="text"
+                autoComplete="organization"
                 placeholder={translations.booking.bandNamePlaceholder}
-                value={form.bandName}
-                onChange={(event) => setForm({ ...form, bandName: event.target.value })}
               />
             </label>
 
@@ -676,12 +619,12 @@ function App() {
                 {translations.booking.contactNameLabel} <span className="required-star">*</span>
                 <input
                   id="field-contactName"
+                  name="name"
                   type="text"
                   required
                   aria-required="true"
+                  autoComplete="name"
                   placeholder={translations.booking.contactNamePlaceholder}
-                  value={form.contactName}
-                  onChange={(event) => setForm({ ...form, contactName: event.target.value })}
                 />
               </label>
 
@@ -689,12 +632,13 @@ function App() {
                 {translations.booking.contactPhoneLabel} <span className="required-star">*</span>
                 <input
                   id="field-contactPhone"
+                  name="tel"
                   type="tel"
                   required
                   aria-required="true"
+                  autoComplete="tel"
+                  inputMode="tel"
                   placeholder={translations.booking.contactPhonePlaceholder}
-                  value={form.contactPhone}
-                  onChange={(event) => setForm({ ...form, contactPhone: event.target.value })}
                 />
               </label>
 
@@ -702,12 +646,14 @@ function App() {
                 {translations.booking.emailLabel} <span className="required-star">*</span>
                 <input
                   id="field-email"
+                  name="email"
                   type="email"
                   required
                   aria-required="true"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   placeholder={translations.booking.emailPlaceholder}
-                  value={form.email}
-                  onChange={(event) => setForm({ ...form, email: event.target.value })}
                 />
               </label>
             </div>
@@ -715,10 +661,11 @@ function App() {
             <label>
               {translations.booking.focusLabel}
               <textarea
+                id="field-focus"
+                name="focus"
                 rows={4}
+                autoComplete="off"
                 placeholder={translations.booking.focusPlaceholder}
-                value={form.focus}
-                onChange={(event) => setForm({ ...form, focus: event.target.value })}
               />
             </label>
 
@@ -747,7 +694,7 @@ function App() {
               <div className="confirmation-box">
                 <p className="confirmation">{confirmation}</p>
                 <div className="confirmation-id-row">
-                  <span>{translations.booking.bookingIdLabel ?? 'N.\u00ba da reserva:'}</span>
+                  <span>{translations.booking.bookingIdLabel ?? 'N.º da reserva:'}</span>
                   <strong className="confirmation-id-value">{confirmationId}</strong>
                 </div>
                 <p className="confirmation-id-note">
