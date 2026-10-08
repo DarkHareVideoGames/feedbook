@@ -1,319 +1,14 @@
 {
-  "bookings": [
-    {
-      "id": "FB-97980-0G",
-      "status": "confirmed",
-      "roomId": "sala-red",
-      "roomName": "SALA RED",
-      "date": "2026-08-07",
-      "time": "20:00",
-      "duration": 3,
-      "extras": [],
-      "bandName": "Inferorvm",
-      "contactName": "Gonçalo Pelica",
-      "contactPhone": "000000000",
-      "email": "inferorvmband@protomail.com",
-      "focus": "",
-      "locale": "pt-PT",
-      "participants": 4,
-      "paymentMethod": "on-site",
-      "paymentStatus": "pay-on-site",
-      "roomTotal": 42,
-      "extrasTotal": 0,
-      "total": 42,
-      "requestedAt": "2026-08-05T22:08:42.768Z",
-      "confirmedBy": {
-        "id": "USR-ADMIN-1",
-        "name": "FeedBook Admin",
-        "role": "admin",
-        "at": "2026-08-05T22:09:23.769Z"
-      },
-      "assignedCollaborator": {
-        "id": "USR-msfpbrep-PKN",
-        "name": "Defunctum Noctis"
-      }
-    },
-    {
-      "id": "FB-39911-HD",
-      "status": "confirmed",
-      "roomId": "sala-red",
-      "roomName": "SALA RED",
-      "date": "2026-08-30",
-      "time": "18:00",
-      "duration": 2,
-      "extras": [],
-      "bandName": "Teste API",
-      "contactName": "Tester",
-      "contactPhone": "+351900000000",
-      "email": "tester@feedbook.local",
-      "focus": "",
-      "locale": "pt-PT",
-      "participants": 2,
-      "paymentMethod": "mbway",
-      "paymentStatus": "pending-mbway",
-      "roomTotal": 14,
-      "extrasTotal": 0,
-      "total": 14,
-      "requestedAt": "2026-08-05T06:36:39.293Z",
-      "confirmedBy": {
-        "id": "USR-msfprvmp-C9O",
-        "name": "Tech Check",
-        "role": "technician",
-        "at": "2026-08-05T06:36:39.323Z"
-      },
-      "assignedCollaborator": {
-        "id": "USR-msfprvmp-C9O",
-        "name": "Tech Check"
-      }
-    },
-    {
-      "id": "FB-13746-CN",
-      "status": "confirmed",
-      "roomId": "sala-red",
-      "roomName": "SALA RED",
-      "date": "2026-08-30",
-      "time": "10:00",
-      "duration": 3,
-      "extras": [],
-      "bandName": "bestas",
-      "contactName": "bestinha",
-      "contactPhone": "0000000",
-      "email": "besta@band.pt",
-      "focus": "",
-      "locale": "pt-PT",
-      "participants": 4,
-      "paymentMethod": "mbway",
-      "paymentStatus": "pending-mbway",
-      "roomTotal": 42,
-      "extrasTotal": 0,
-      "total": 42,
-      "requestedAt": "2026-08-05T06:30:38.406Z",
-      "confirmedBy": {
-        "id": "USR-msfn8o60-2DF",
-        "name": "AntiCristo",
-        "role": "collaborator",
-        "at": "2026-08-05T06:31:25.872Z"
-      },
-      "assignedCollaborator": {
-        "id": "USR-msfn8o60-2DF",
-        "name": "AntiCristo"
-      }
-    },
-    {
-      "id": "FB-msfotz2c-NMDV",
-      "status": "confirmed",
-      "roomId": "sala-red",
-      "roomName": "SALA RED",
-      "date": "2026-08-28",
-      "time": "22:00",
-      "duration": 3,
-      "extras": [
-        "engineer",
-        "recording"
-      ],
-      "bandName": "Pedro Veiga",
-      "contactName": "Pedro Veiga",
-      "contactPhone": "+351912321079",
-      "email": "pedroveiga.box@gmail.com",
-      "focus": "",
-      "locale": "pt-PT",
-      "participants": 4,
-      "paymentMethod": "mbway",
-      "paymentStatus": "pending-mbway",
-      "roomTotal": 42,
-      "extrasTotal": 42,
-      "total": 84,
-      "requestedAt": "2026-08-05T06:10:17.412Z",
-      "confirmedBy": {
-        "id": "USR-msfpbrep-PKN",
-        "name": "Defunctum Noctis",
-        "role": "technician",
-        "at": "2026-08-05T06:28:32.914Z"
-      },
-      "assignedCollaborator": {
-        "id": "USR-msfpbrep-PKN",
-        "name": "Defunctum Noctis"
-      }
-    },
-    {
-      "id": "FB-msfop6xy-CBJS",
-      "status": "rejected",
-      "roomId": "sala-grey",
-      "roomName": "SALA GREY",
-      "date": "2026-08-19",
-      "time": "10:00",
-      "duration": 3,
-      "extras": [
-        "engineer",
-        "recording",
-        "backline"
-      ],
-      "bandName": "Pedro Veiga",
-      "contactName": "Pedro Veiga",
-      "contactPhone": "+351912321079",
-      "email": "pedroveiga.box@gmail.com",
-      "focus": "",
-      "locale": "pt-PT",
-      "participants": 4,
-      "paymentMethod": "mbway",
-      "paymentStatus": "pending-mbway",
-      "roomTotal": 42,
-      "extrasTotal": 54,
-      "total": 96,
-      "requestedAt": "2026-08-05T06:06:34.342Z",
-      "rejectedBy": {
-        "id": "USR-msfpbrep-PKN",
-        "name": "Defunctum Noctis",
-        "role": "technician",
-        "at": "2026-08-05T06:28:35.586Z"
-      }
-    },
-    {
-      "id": "FB-msfoh173-I8UA",
-      "status": "confirmed",
-      "roomId": "sala-red",
-      "roomName": "SALA RED",
-      "date": "2026-08-05",
-      "time": "18:00",
-      "duration": 3,
-      "extras": [
-        "engineer"
-      ],
-      "bandName": "Pedro Veiga",
-      "contactName": "Pedro Veiga",
-      "contactPhone": "+351912321079",
-      "email": "pedroveiga.box@gmail.com",
-      "focus": "",
-      "locale": "pt-PT",
-      "participants": 4,
-      "paymentMethod": "mbway",
-      "paymentStatus": "pending-mbway",
-      "roomTotal": 42,
-      "extrasTotal": 24,
-      "total": 66,
-      "requestedAt": "2026-08-05T06:00:13.647Z",
-      "confirmedBy": {
-        "id": "USR-msfpbrep-PKN",
-        "name": "Defunctum Noctis",
-        "role": "technician",
-        "at": "2026-08-05T06:28:37.445Z"
-      },
-      "assignedCollaborator": {
-        "id": "USR-msfpbrep-PKN",
-        "name": "Defunctum Noctis"
-      }
-    },
-    {
-      "id": "FB-msfni4rg-UWIK",
-      "status": "confirmed",
-      "roomId": "sala-red",
-      "roomName": "SALA RED",
-      "date": "2026-08-25",
-      "time": "18:00",
-      "duration": 2,
-      "extras": [
-        "engineer"
-      ],
-      "bandName": "Notificacao Teste",
-      "contactName": "Cliente",
-      "contactPhone": "+351912345678",
-      "email": "cliente2@teste.pt",
-      "focus": "ensaio",
-      "locale": "pt-PT",
-      "participants": 3,
-      "paymentMethod": "mbway",
-      "paymentStatus": "pending-mbway",
-      "roomTotal": 18,
-      "extrasTotal": 24,
-      "total": 42,
-      "requestedAt": "2026-08-05T05:33:05.308Z",
-      "confirmedBy": {
-        "id": "USR-ADMIN-1",
-        "name": "FeedBook Admin",
-        "role": "admin",
-        "at": "2026-08-05T05:33:14.486Z"
-      }
-    },
-    {
-      "id": "FB-msfnbn09-OEOB",
-      "status": "confirmed",
-      "roomId": "sala-red",
-      "roomName": "SALA RED",
-      "date": "2026-08-06",
-      "time": "10:00",
-      "duration": 3,
-      "extras": [
-        "engineer",
-        "recording",
-        "backline"
-      ],
-      "bandName": "inferorum",
-      "contactName": "pedro",
-      "email": "inferorum@band.pt",
-      "focus": "",
-      "locale": "pt-PT",
-      "participants": 4,
-      "paymentMethod": "mbway",
-      "paymentStatus": "pending-mbway",
-      "roomTotal": 36,
-      "extrasTotal": 54,
-      "total": 90,
-      "requestedAt": "2026-08-05T05:28:02.361Z",
-      "confirmedBy": {
-        "id": "USR-ADMIN-1",
-        "name": "FeedBook Admin",
-        "role": "admin",
-        "at": "2026-08-05T05:41:47.619Z"
-      },
-      "assignedCollaborator": {
-        "id": "USR-msfn8o60-2DF",
-        "name": "AntiCristo"
-      }
-    },
-    {
-      "id": "FB-msfn5l5t-TYD4",
-      "status": "confirmed",
-      "roomId": "sala-grey",
-      "roomName": "SALA GREY",
-      "date": "2026-08-20",
-      "time": "19:00",
-      "duration": 2,
-      "extras": [
-        "recording"
-      ],
-      "bandName": "Pagamento Teste",
-      "contactName": "Cliente",
-      "email": "cliente@teste.pt",
-      "focus": "ensaio",
-      "locale": "pt-PT",
-      "participants": 3,
-      "paymentMethod": "on-site",
-      "paymentStatus": "pay-on-site",
-      "roomTotal": 18,
-      "extrasTotal": 18,
-      "total": 36,
-      "requestedAt": "2026-08-05T05:23:20.033Z",
-      "confirmedBy": {
-        "id": "USR-ADMIN-1",
-        "name": "FeedBook Admin",
-        "role": "admin",
-        "at": "2026-08-05T05:25:51.848Z"
-      },
-      "assignedCollaborator": {
-        "id": "USR-msfn8o60-2DF",
-        "name": "AntiCristo"
-      }
-    }
-  ],
+  "bookings": [],
   "users": [
     {
       "id": "USR-msfpbrep-PKN",
-      "name": "Defunctum Noctis",
+      "name": "Pedro Veiga",
       "email": "pedroveiga.box@gmail.com",
-      "role": "technician",
+      "role": "admin",
       "createdAt": "2026-08-05T06:24:07.297Z",
-      "passwordHash": "0b06ac61836ac4e0ddd9c2aad04e45db7f925f7908ecf24d2ceed0692545984b200536d1da4f8e1b0470a08dc968a92702c4fef1c04fd29a793e53b4f02619ed",
-      "passwordSalt": "333ed72ee153ed8c10c6c79fa3fa0c54"
+      "passwordHash": "6dfdbf3af824dc72142019bdff7a714cce199c8b1f9e284407983c8a7e0d997135af790b95100c4e403a7dd1474279a334437a7e08acc96ddc809321f9251a0c",
+      "passwordSalt": "4282e4ce0ed6432c6d42414eb696a527"
     },
     {
       "id": "USR-ADMIN-1",
@@ -321,8 +16,8 @@
       "email": "admin@feedbook.local",
       "role": "admin",
       "createdAt": "2026-08-05T05:16:09.757Z",
-      "passwordHash": "ee6eed4973f8b71dcd2e60188867676d0ae04414da3cce5975637ecec9a335572b073921ae00bb022a803920b820d4ae09b9ae4baf23899572a63f85b268f80a",
-      "passwordSalt": "70dd9c3732821dabfb11a335da64db2c"
+      "passwordHash": "610254e78ebd0ad0f5cb0f4dbbfb0a783115586d7a9d06834272ee6cc513a1bd5b0580208e12faa1d339cddad3d36f001c674b14f7bdc1120041a024092c1d7f",
+      "passwordSalt": "d1bca19da9ad56eaf6f586e26d8721d4"
     }
   ],
   "pricing": {
@@ -333,291 +28,8 @@
       "backline": 12
     }
   },
-  "notifications": [
-    {
-      "id": "NTF-msgn3e4b-SJX1",
-      "bookingId": "FB-97980-0G",
-      "eventType": "confirmed",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "000000000",
-      "createdAt": "2026-08-05T22:09:23.771Z"
-    },
-    {
-      "id": "NTF-msgn3e4b-DDJ8",
-      "bookingId": "FB-97980-0G",
-      "eventType": "confirmed",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "inferorvmband@protomail.com",
-      "createdAt": "2026-08-05T22:09:23.771Z"
-    },
-    {
-      "id": "NTF-msgn2ihe-A1XE",
-      "bookingId": "FB-97980-0G",
-      "eventType": "created",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "000000000",
-      "createdAt": "2026-08-05T22:08:42.770Z"
-    },
-    {
-      "id": "NTF-msgn2ihe-SCMO",
-      "bookingId": "FB-97980-0G",
-      "eventType": "created",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "inferorvmband@protomail.com",
-      "createdAt": "2026-08-05T22:08:42.770Z"
-    },
-    {
-      "id": "NTF-msfprvoc-X0MU",
-      "bookingId": "FB-39911-HD",
-      "eventType": "confirmed",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "+351900000000",
-      "createdAt": "2026-08-05T06:36:39.324Z"
-    },
-    {
-      "id": "NTF-msfprvoc-M992",
-      "bookingId": "FB-39911-HD",
-      "eventType": "confirmed",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "tester@feedbook.local",
-      "createdAt": "2026-08-05T06:36:39.324Z"
-    },
-    {
-      "id": "NTF-msfprvni-ZY4E",
-      "bookingId": "FB-39911-HD",
-      "eventType": "created",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "+351900000000",
-      "createdAt": "2026-08-05T06:36:39.294Z"
-    },
-    {
-      "id": "NTF-msfprvnh-4J72",
-      "bookingId": "FB-39911-HD",
-      "eventType": "created",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "tester@feedbook.local",
-      "createdAt": "2026-08-05T06:36:39.293Z"
-    },
-    {
-      "id": "NTF-msfpl5te-FNVA",
-      "bookingId": "FB-13746-CN",
-      "eventType": "confirmed",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "0000000",
-      "createdAt": "2026-08-05T06:31:25.874Z"
-    },
-    {
-      "id": "NTF-msfpl5te-OWIJ",
-      "bookingId": "FB-13746-CN",
-      "eventType": "confirmed",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "besta@band.pt",
-      "createdAt": "2026-08-05T06:31:25.874Z"
-    },
-    {
-      "id": "NTF-msfpk56v-RNDU",
-      "bookingId": "FB-13746-CN",
-      "eventType": "created",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "0000000",
-      "createdAt": "2026-08-05T06:30:38.407Z"
-    },
-    {
-      "id": "NTF-msfpk56v-GJSO",
-      "bookingId": "FB-13746-CN",
-      "eventType": "created",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "besta@band.pt",
-      "createdAt": "2026-08-05T06:30:38.407Z"
-    },
-    {
-      "id": "NTF-msfphjuu-SCAQ",
-      "bookingId": "FB-msfoh173-I8UA",
-      "eventType": "confirmed",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "+351912321079",
-      "createdAt": "2026-08-05T06:28:37.446Z"
-    },
-    {
-      "id": "NTF-msfphjuu-UXDQ",
-      "bookingId": "FB-msfoh173-I8UA",
-      "eventType": "confirmed",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "pedroveiga.box@gmail.com",
-      "createdAt": "2026-08-05T06:28:37.446Z"
-    },
-    {
-      "id": "NTF-msfphgd0-MS59",
-      "bookingId": "FB-msfotz2c-NMDV",
-      "eventType": "confirmed",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "+351912321079",
-      "createdAt": "2026-08-05T06:28:32.916Z"
-    },
-    {
-      "id": "NTF-msfphgcz-AG9I",
-      "bookingId": "FB-msfotz2c-NMDV",
-      "eventType": "confirmed",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "pedroveiga.box@gmail.com",
-      "createdAt": "2026-08-05T06:28:32.915Z"
-    },
-    {
-      "id": "NTF-msfotz2d-446G",
-      "bookingId": "FB-msfotz2c-NMDV",
-      "eventType": "created",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "+351912321079",
-      "createdAt": "2026-08-05T06:10:17.413Z"
-    },
-    {
-      "id": "NTF-msfotz2d-QRVI",
-      "bookingId": "FB-msfotz2c-NMDV",
-      "eventType": "created",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "pedroveiga.box@gmail.com",
-      "createdAt": "2026-08-05T06:10:17.413Z"
-    },
-    {
-      "id": "NTF-msfop6xz-6SYV",
-      "bookingId": "FB-msfop6xy-CBJS",
-      "eventType": "created",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "+351912321079",
-      "createdAt": "2026-08-05T06:06:34.343Z"
-    },
-    {
-      "id": "NTF-msfop6xz-GEA2",
-      "bookingId": "FB-msfop6xy-CBJS",
-      "eventType": "created",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "pedroveiga.box@gmail.com",
-      "createdAt": "2026-08-05T06:06:34.343Z"
-    },
-    {
-      "id": "NTF-msfoh175-9YVR",
-      "bookingId": "FB-msfoh173-I8UA",
-      "eventType": "created",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "+351912321079",
-      "createdAt": "2026-08-05T06:00:13.649Z"
-    },
-    {
-      "id": "NTF-msfoh174-SLPY",
-      "bookingId": "FB-msfoh173-I8UA",
-      "eventType": "created",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "pedroveiga.box@gmail.com",
-      "createdAt": "2026-08-05T06:00:13.648Z"
-    },
-    {
-      "id": "NTF-msfntbs5-LMCN",
-      "bookingId": "FB-msfnbn09-OEOB",
-      "eventType": "confirmed",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "inferorum@band.pt",
-      "createdAt": "2026-08-05T05:41:47.621Z"
-    },
-    {
-      "id": "NTF-msfnibuf-QSQ3",
-      "bookingId": "FB-msfni4rg-UWIK",
-      "eventType": "confirmed",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "+351912345678",
-      "createdAt": "2026-08-05T05:33:14.487Z"
-    },
-    {
-      "id": "NTF-msfnibue-GW25",
-      "bookingId": "FB-msfni4rg-UWIK",
-      "eventType": "confirmed",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "cliente2@teste.pt",
-      "createdAt": "2026-08-05T05:33:14.486Z"
-    },
-    {
-      "id": "NTF-msfni4rj-ST0U",
-      "bookingId": "FB-msfni4rg-UWIK",
-      "eventType": "created",
-      "channel": "whatsapp",
-      "status": "skipped",
-      "reason": "WhatsApp not configured or phone missing",
-      "to": "+351912345678",
-      "createdAt": "2026-08-05T05:33:05.311Z"
-    },
-    {
-      "id": "NTF-msfni4rj-BAPK",
-      "bookingId": "FB-msfni4rg-UWIK",
-      "eventType": "created",
-      "channel": "email",
-      "status": "skipped",
-      "reason": "SMTP not configured",
-      "to": "cliente2@teste.pt",
-      "createdAt": "2026-08-05T05:33:05.311Z"
-    }
-  ],
+  "notifications": [],
   "auditLogs": [
-    {
-      "id": "AUD-msgn3e4a-JHTZ",
-      "action": "booking-confirmed",
-      "actor": {
-        "id": "USR-ADMIN-1",
-        "name": "FeedBook Admin",
-        "role": "admin"
-      },
-      "target": "FB-97980-0G",
-      "details": "{\"banda\":\"Inferorvm\",\"contacto\":\"Gonçalo Pelica\",\"sala\":\"SALA RED\",\"data\":\"2026-08-07\",\"confirmadoPor\":\"FeedBook Admin\",\"designado\":\"Defunctum Noctis\"}",
-      "createdAt": "2026-08-05T22:09:23.770Z"
-    },
     {
       "id": "AUD-msgmt5pb-82JA",
       "action": "user-deleted",
@@ -679,18 +91,6 @@
       "createdAt": "2026-08-05T22:01:14.313Z"
     },
     {
-      "id": "AUD-msfprvob-V32F",
-      "action": "booking-confirmed",
-      "actor": {
-        "id": "USR-msfprvmp-C9O",
-        "name": "Tech Check",
-        "role": "technician"
-      },
-      "target": "FB-39911-HD",
-      "details": "{\"banda\":\"Teste API\",\"contacto\":\"Tester\",\"sala\":\"SALA RED\",\"data\":\"2026-08-30\",\"confirmadoPor\":\"Tech Check\",\"designado\":\"Tech Check\"}",
-      "createdAt": "2026-08-05T06:36:39.323Z"
-    },
-    {
       "id": "AUD-msfprvnf-CTDE",
       "action": "user-created",
       "actor": {
@@ -727,54 +127,6 @@
       "createdAt": "2026-08-05T06:34:03.499Z"
     },
     {
-      "id": "AUD-msfpl5td-X0OS",
-      "action": "booking-confirmed",
-      "actor": {
-        "id": "USR-msfn8o60-2DF",
-        "name": "AntiCristo",
-        "role": "collaborator"
-      },
-      "target": "FB-13746-CN",
-      "details": "{\"banda\":\"bestas\",\"contacto\":\"bestinha\",\"sala\":\"SALA RED\",\"data\":\"2026-08-30\",\"confirmadoPor\":\"AntiCristo\",\"designado\":\"AntiCristo\"}",
-      "createdAt": "2026-08-05T06:31:25.873Z"
-    },
-    {
-      "id": "AUD-msfphjut-3Q4A",
-      "action": "booking-confirmed",
-      "actor": {
-        "id": "USR-msfpbrep-PKN",
-        "name": "Defunctum Noctis",
-        "role": "technician"
-      },
-      "target": "FB-msfoh173-I8UA",
-      "details": "{\"banda\":\"Pedro Veiga\",\"contacto\":\"Pedro Veiga\",\"sala\":\"SALA RED\",\"data\":\"2026-08-05\",\"confirmadoPor\":\"Defunctum Noctis\",\"designado\":\"Defunctum Noctis\"}",
-      "createdAt": "2026-08-05T06:28:37.445Z"
-    },
-    {
-      "id": "AUD-msfphif6-YDCN",
-      "action": "booking-rejected",
-      "actor": {
-        "id": "USR-msfpbrep-PKN",
-        "name": "Defunctum Noctis",
-        "role": "technician"
-      },
-      "target": "FB-msfop6xy-CBJS",
-      "details": "{\"banda\":\"Pedro Veiga\",\"contacto\":\"Pedro Veiga\",\"sala\":\"SALA GREY\",\"data\":\"2026-08-19\",\"rejeitadoPor\":\"Defunctum Noctis\"}",
-      "createdAt": "2026-08-05T06:28:35.586Z"
-    },
-    {
-      "id": "AUD-msfphgcy-9ESI",
-      "action": "booking-confirmed",
-      "actor": {
-        "id": "USR-msfpbrep-PKN",
-        "name": "Defunctum Noctis",
-        "role": "technician"
-      },
-      "target": "FB-msfotz2c-NMDV",
-      "details": "{\"banda\":\"Pedro Veiga\",\"contacto\":\"Pedro Veiga\",\"sala\":\"SALA RED\",\"data\":\"2026-08-28\",\"confirmadoPor\":\"Defunctum Noctis\",\"designado\":\"Defunctum Noctis\"}",
-      "createdAt": "2026-08-05T06:28:32.914Z"
-    },
-    {
       "id": "AUD-msfpbrfe-A0Y9",
       "action": "user-created",
       "actor": {
@@ -787,16 +139,260 @@
       "createdAt": "2026-08-05T06:24:07.322Z"
     },
     {
-      "id": "AUD-msfntbs4-TFP6",
-      "action": "booking-confirmed",
+      "id": "AUDIT-89D47C4D0B9F",
+      "createdAt": "2026-10-08T01:47:42.279Z",
+      "action": "user-updated",
       "actor": {
         "id": "USR-ADMIN-1",
         "name": "FeedBook Admin",
-        "role": "admin"
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "86731a9dc78384ca618ac8855319a278be7d4cf14c79226177c0a5e3112fee16bc111fccb363bd82d568c35e51e4243eacd3bf8890cd0adfd08b1ed42b35a8c7",
+        "passwordSalt": "385d9504e69a75520e75ca350813eddf"
       },
-      "target": "FB-msfnbn09-OEOB",
-      "details": "assigned=USR-msfn8o60-2DF",
-      "createdAt": "2026-08-05T05:41:47.620Z"
+      "target": "USR-msfpbrep-PKN",
+      "details": "{\"name\":\"Pedro Veiga\",\"role\":\"technician\"}"
+    },
+    {
+      "id": "AUDIT-AF2EABF25E22",
+      "createdAt": "2026-10-08T01:47:55.4Z",
+      "action": "user-updated",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "86731a9dc78384ca618ac8855319a278be7d4cf14c79226177c0a5e3112fee16bc111fccb363bd82d568c35e51e4243eacd3bf8890cd0adfd08b1ed42b35a8c7",
+        "passwordSalt": "385d9504e69a75520e75ca350813eddf"
+      },
+      "target": "USR-msfpbrep-PKN",
+      "details": "{\"name\":\"Pedro Veiga\",\"role\":\"technician\"}"
+    },
+    {
+      "id": "AUDIT-6268273F8DFF",
+      "createdAt": "2026-10-08T01:48:06.576Z",
+      "action": "user-updated",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "86731a9dc78384ca618ac8855319a278be7d4cf14c79226177c0a5e3112fee16bc111fccb363bd82d568c35e51e4243eacd3bf8890cd0adfd08b1ed42b35a8c7",
+        "passwordSalt": "385d9504e69a75520e75ca350813eddf"
+      },
+      "target": "USR-msfpbrep-PKN",
+      "details": "{\"name\":\"Pedro Veiga\",\"role\":\"admin\"}"
+    },
+    {
+      "id": "AUDIT-09E7B85E9C28",
+      "createdAt": "2026-10-08T01:50:05.928Z",
+      "action": "user-created",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "86731a9dc78384ca618ac8855319a278be7d4cf14c79226177c0a5e3112fee16bc111fccb363bd82d568c35e51e4243eacd3bf8890cd0adfd08b1ed42b35a8c7",
+        "passwordSalt": "385d9504e69a75520e75ca350813eddf"
+      },
+      "target": "USR-46094D9D",
+      "details": "{\"name\":\"Tmp User\",\"email\":\"tmp.user.6292@feedbook.local\"}"
+    },
+    {
+      "id": "AUDIT-61B58F947479",
+      "createdAt": "2026-10-08T01:50:07.439Z",
+      "action": "user-updated",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "86731a9dc78384ca618ac8855319a278be7d4cf14c79226177c0a5e3112fee16bc111fccb363bd82d568c35e51e4243eacd3bf8890cd0adfd08b1ed42b35a8c7",
+        "passwordSalt": "385d9504e69a75520e75ca350813eddf"
+      },
+      "target": "USR-ADMIN-1",
+      "details": "{\"name\":\"FeedBook Admin\",\"role\":\"admin\"}"
+    },
+    {
+      "id": "AUDIT-D011ED9FB599",
+      "createdAt": "2026-10-08T01:50:07.473Z",
+      "action": "user-updated",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "86731a9dc78384ca618ac8855319a278be7d4cf14c79226177c0a5e3112fee16bc111fccb363bd82d568c35e51e4243eacd3bf8890cd0adfd08b1ed42b35a8c7",
+        "passwordSalt": "385d9504e69a75520e75ca350813eddf"
+      },
+      "target": "USR-ADMIN-1",
+      "details": "{\"name\":\"FeedBook Admin\",\"role\":\"admin\"}"
+    },
+    {
+      "id": "AUDIT-6B820D38F998",
+      "createdAt": "2026-10-08T01:50:17.514Z",
+      "action": "user-created",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "86731a9dc78384ca618ac8855319a278be7d4cf14c79226177c0a5e3112fee16bc111fccb363bd82d568c35e51e4243eacd3bf8890cd0adfd08b1ed42b35a8c7",
+        "passwordSalt": "385d9504e69a75520e75ca350813eddf"
+      },
+      "target": "USR-8DBD9629",
+      "details": "{\"name\":\"QA User\",\"email\":\"qa.user.6252@feedbook.local\"}"
+    },
+    {
+      "id": "AUDIT-F8DDC179A29E",
+      "createdAt": "2026-10-08T01:50:17.516Z",
+      "action": "user-updated",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "86731a9dc78384ca618ac8855319a278be7d4cf14c79226177c0a5e3112fee16bc111fccb363bd82d568c35e51e4243eacd3bf8890cd0adfd08b1ed42b35a8c7",
+        "passwordSalt": "385d9504e69a75520e75ca350813eddf"
+      },
+      "target": "USR-8DBD9629",
+      "details": "{\"name\":\"QA User\",\"role\":\"collaborator\"}"
+    },
+    {
+      "id": "AUDIT-04A112015790",
+      "createdAt": "2026-10-08T01:50:25.245Z",
+      "action": "user-created",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "86731a9dc78384ca618ac8855319a278be7d4cf14c79226177c0a5e3112fee16bc111fccb363bd82d568c35e51e4243eacd3bf8890cd0adfd08b1ed42b35a8c7",
+        "passwordSalt": "385d9504e69a75520e75ca350813eddf"
+      },
+      "target": "USR-0F879972",
+      "details": "{\"name\":\"QA User\",\"email\":\"qa.user.4264@feedbook.local\"}"
+    },
+    {
+      "id": "AUDIT-C96A7D368FDA",
+      "createdAt": "2026-10-08T01:50:25.248Z",
+      "action": "user-updated",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "86731a9dc78384ca618ac8855319a278be7d4cf14c79226177c0a5e3112fee16bc111fccb363bd82d568c35e51e4243eacd3bf8890cd0adfd08b1ed42b35a8c7",
+        "passwordSalt": "385d9504e69a75520e75ca350813eddf"
+      },
+      "target": "USR-0F879972",
+      "details": "{\"name\":\"QA User\",\"role\":\"collaborator\"}"
+    },
+    {
+      "id": "AUDIT-86D652384275",
+      "createdAt": "2026-10-08T01:53:40.324Z",
+      "action": "user-updated",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "610254e78ebd0ad0f5cb0f4dbbfb0a783115586d7a9d06834272ee6cc513a1bd5b0580208e12faa1d339cddad3d36f001c674b14f7bdc1120041a024092c1d7f",
+        "passwordSalt": "d1bca19da9ad56eaf6f586e26d8721d4"
+      },
+      "target": "USR-msfpbrep-PKN",
+      "details": "{\"name\":\"Pedro Veiga\",\"role\":\"admin\"}"
+    },
+    {
+      "id": "AUDIT-7DFEF1F109A8",
+      "createdAt": "2026-10-08T01:53:40.326Z",
+      "action": "user-updated",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "610254e78ebd0ad0f5cb0f4dbbfb0a783115586d7a9d06834272ee6cc513a1bd5b0580208e12faa1d339cddad3d36f001c674b14f7bdc1120041a024092c1d7f",
+        "passwordSalt": "d1bca19da9ad56eaf6f586e26d8721d4"
+      },
+      "target": "USR-ADMIN-1",
+      "details": "{\"name\":\"FeedBook Admin\",\"role\":\"admin\"}"
+    },
+    {
+      "id": "AUDIT-9BCF69656228",
+      "createdAt": "2026-10-08T01:54:50.166Z",
+      "action": "user-deleted",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "610254e78ebd0ad0f5cb0f4dbbfb0a783115586d7a9d06834272ee6cc513a1bd5b0580208e12faa1d339cddad3d36f001c674b14f7bdc1120041a024092c1d7f",
+        "passwordSalt": "d1bca19da9ad56eaf6f586e26d8721d4"
+      },
+      "target": "USR-46094D9D",
+      "details": "{\"email\":\"tmp.user.6292@feedbook.local\"}"
+    },
+    {
+      "id": "AUDIT-CF45053AFA12",
+      "createdAt": "2026-10-08T01:54:52.03Z",
+      "action": "user-deleted",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "610254e78ebd0ad0f5cb0f4dbbfb0a783115586d7a9d06834272ee6cc513a1bd5b0580208e12faa1d339cddad3d36f001c674b14f7bdc1120041a024092c1d7f",
+        "passwordSalt": "d1bca19da9ad56eaf6f586e26d8721d4"
+      },
+      "target": "USR-8DBD9629",
+      "details": "{\"email\":\"qa.user.6252@feedbook.local\"}"
+    },
+    {
+      "id": "AUDIT-104EEFFC4D97",
+      "createdAt": "2026-10-08T01:54:54.154Z",
+      "action": "user-deleted",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "610254e78ebd0ad0f5cb0f4dbbfb0a783115586d7a9d06834272ee6cc513a1bd5b0580208e12faa1d339cddad3d36f001c674b14f7bdc1120041a024092c1d7f",
+        "passwordSalt": "d1bca19da9ad56eaf6f586e26d8721d4"
+      },
+      "target": "USR-0F879972",
+      "details": "{\"email\":\"qa.user.4264@feedbook.local\"}"
+    },
+    {
+      "id": "AUDIT-C882600BB8AC",
+      "createdAt": "2026-10-08T01:55:06.017Z",
+      "action": "user-updated",
+      "actor": {
+        "id": "USR-ADMIN-1",
+        "name": "FeedBook Admin",
+        "email": "admin@feedbook.local",
+        "role": "admin",
+        "createdAt": "2026-08-05T05:16:09.757Z",
+        "passwordHash": "610254e78ebd0ad0f5cb0f4dbbfb0a783115586d7a9d06834272ee6cc513a1bd5b0580208e12faa1d339cddad3d36f001c674b14f7bdc1120041a024092c1d7f",
+        "passwordSalt": "d1bca19da9ad56eaf6f586e26d8721d4"
+      },
+      "target": "USR-msfpbrep-PKN",
+      "details": "{\"name\":\"Pedro Veiga\",\"role\":\"admin\"}"
     }
   ]
 }
