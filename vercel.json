@@ -1,0 +1,26 @@
+{
+  "version": 2,
+
+  // ---- Frontend (Vite) ----
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "outputDirectory": "dist",
+
+  // React SPA: tudo que não for /api vai para index.html
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+
+  // Notificação por email/WhatsApp: funçao serverless (não um processo
+  // persistente como o server/index.js). O path /api/notify é o mesmo
+  // que o src/api.ts está a utilizar.
+  "functions": {
+    "/api/notify": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
