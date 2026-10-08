@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js';
-import { supabase } from './supabaseClient';
+import { isSupabaseConfigured, supabase } from './supabaseClient';
 
 // ============================================================
 // Camada de dados do FeedBook sobre o Supabase.
@@ -267,6 +267,9 @@ export async function logout(): Promise<void> {
 // --- Bookings (público) -------------------------------------
 
 export async function listBookings(): Promise<{ bookings: ApiBooking[] }> {
+  if (!isSupabaseConfigured) {
+    throw new ApiError('Supabase não configurado: define VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.', 500);
+  }
   const { data, error } = await supabase
     .from('bookings')
     .select('*')
@@ -299,6 +302,9 @@ export type CreateBookingDraft = {
 
 export async function createBooking(draft: CreateBookingDraft): Promise<{ booking: ApiBooking }> {
   try {
+    if (!isSupabaseConfigured) {
+      throw new ApiError('Supabase não configurado: define VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.', 500);
+    }
     const roomId = String(draft?.roomId || '').trim() || null;
     const roomName =
       String(draft?.roomName || '').trim() || (roomId ? roomsById[roomId] || '' : '');
@@ -733,6 +739,9 @@ export async function adminFinance(token: string): Promise<{
 // --- Preçário -----------------------------------------------
 
 export async function pricing(): Promise<{ pricing: PricingConfig }> {
+  if (!isSupabaseConfigured) {
+    throw new ApiError('Supabase não configurado: define VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.', 500);
+  }
   const { data, error } = await supabase.from('pricing').select('*').eq('id', 1).maybeSingle();
   if (error) {
     throw toError(error.message, 'Could not load pricing');
