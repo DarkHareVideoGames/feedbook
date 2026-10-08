@@ -11,8 +11,6 @@
     }
   ],
   "functions": {
-    "api/notify": {
-      "runtime": "nodejs20.x"
-    }
+    "api/notify": {}
   }
 }
