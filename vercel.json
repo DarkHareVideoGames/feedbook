@@ -11,6 +11,8 @@
     }
   ],
   "functions": {
-    "api/notify": {}
+    "api/notify": {
+      "maxDuration": 10
+    }
   }
 }
