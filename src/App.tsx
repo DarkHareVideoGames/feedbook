@@ -2,22 +2,17 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
 
-type RoomDefinition = {
-  id: 'sala-red' | 'sala-grey';
-  maxMembers: number;
-  accent: string;
-};
-
-type ExtraId = 'engineer' | 'recording' | 'backline';
+type RoomDefinition = api.ApiRoom;
 
 type Extra = {
-  id: ExtraId;
+  id: string;
   price: number;
+  label: string;
 };
 
 type PricingConfig = {
   perMemberPerHour: number;
-  extras: Record<ExtraId, number>;
+  extras: Record<string, number>;
 };
 
 type PaymentMethod = 'on-site';
@@ -48,9 +43,31 @@ type TeamBooking = {
   paymentStatus?: string;
 };
 
-const rooms: RoomDefinition[] = [
-  { id: 'sala-red', maxMembers: 6, accent: 'var(--room-red)' },
-  { id: 'sala-grey', maxMembers: 5, accent: 'var(--room-grey)' },
+const fallbackRooms: RoomDefinition[] = [
+  {
+    id: 'sala-red',
+    name: 'SALA RED',
+    description: '',
+    descriptionEn: '',
+    maxMembers: 6,
+    pricePerMemberHour: null,
+    gear: [],
+    gearEn: [],
+    accent: 'var(--room-red)',
+    active: true,
+  },
+  {
+    id: 'sala-grey',
+    name: 'SALA GREY',
+    description: '',
+    descriptionEn: '',
+    maxMembers: 5,
+    pricePerMemberHour: null,
+    gear: [],
+    gearEn: [],
+    accent: 'var(--room-grey)',
+    active: true,
+  },
 ];
 
 const lastStartHour = 23;
@@ -164,7 +181,9 @@ function formatDateForDisplay(locale: Locale, date: string): string {
 function App() {
   const { locale, translations } = useI18n();
   const [logoVisible, setLogoVisible] = useState(true);
-  const [selectedRoomId, setSelectedRoomId] = useState(rooms[0].id);
+  const [rooms, setRooms] = useState<RoomDefinition[]>(fallbackRooms);
+  const [serviceCatalog, setServiceCatalog] = useState<api.ApiService[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState(fallbackRooms[0].id);
   const [selectedSlot, setSelectedSlot] = useState('18:00');
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [visibleMonth, setVisibleMonth] = useState(startOfMonth(new Date()));
@@ -172,7 +191,7 @@ function App() {
   const [participants, setParticipants] = useState(4);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('on-site');
   const [pricing, setPricing] = useState<PricingConfig>(defaultPricing);
-  const [selectedExtras, setSelectedExtras] = useState<ExtraId[]>(['engineer']);
+  const [selectedExtras, setSelectedExtras] = useState<string[]>(['engineer']);
   const [confirmation, setConfirmation] = useState<string>('');
   const [confirmationId, setConfirmationId] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -190,21 +209,35 @@ function App() {
     [locale],
   );
 
-  const localizedRooms = rooms.map((room) => ({
-    ...room,
-    ...translations.rooms[room.id],
-  }));
+  const localizedRooms = rooms.map((room) => {
+    const legacy = (translations.rooms as Record<string, { name?: string; vibe?: string; capacity?: string; gear?: string[] }>)[room.id];
+    const isPt = locale.startsWith('pt');
+    return {
+      ...room,
+      name: room.name || legacy?.name || room.id,
+      vibe: (isPt ? room.description : room.descriptionEn) || room.description || legacy?.vibe || '',
+      capacity:
+        room.maxMembers > 0
+          ? isPt
+            ? `Ate ${room.maxMembers} musicos`
+            : `Up to ${room.maxMembers} players`
+          : legacy?.capacity || '',
+      gear: ((isPt ? room.gear : room.gearEn).length > 0 ? (isPt ? room.gear : room.gearEn) : room.gear.length > 0 ? room.gear : legacy?.gear) || [],
+    };
+  });
   const selectedRoom = localizedRooms.find((room) => room.id === selectedRoomId) ?? localizedRooms[0];
-  const maxMembersForSelectedRoom = selectedRoom.maxMembers;
+  const maxMembersForSelectedRoom = selectedRoom?.maxMembers ?? 4;
   const participantsOptions = Array.from({ length: maxMembersForSelectedRoom }, (_, index) => index + 1);
   const selectedStartHour = hourLabelToNumber(selectedSlot);
   const extras = useMemo<Extra[]>(
-    () => [
-      { id: 'engineer', price: pricing.extras.engineer },
-      { id: 'recording', price: pricing.extras.recording },
-      { id: 'backline', price: pricing.extras.backline },
-    ],
-    [pricing],
+    () =>
+      Object.entries(pricing.extras ?? {}).map(([id, price]) => {
+        const catalog = serviceCatalog.find((service) => service.id === id);
+        const legacyLabel = (translations.extras as Record<string, string>)[id];
+        const label = catalog ? (locale.startsWith('pt') ? catalog.name : catalog.nameEn || catalog.name) : legacyLabel || id;
+        return { id, price: Number(price || 0), label };
+      }),
+    [pricing, serviceCatalog, locale, translations],
   );
   const availableDurationsForSelectedStart = durations.filter((hours) =>
     canSessionFit(selectedStartHour, hours),
@@ -236,6 +269,16 @@ function App() {
   const paymentMethodLabel = translations.booking.paymentOnSite;
   const displayDate = formatDateForDisplay(locale, selectedDate);
   const todayIso = getToday();
+
+  useEffect(() => {
+    if (rooms.length > 0 && !rooms.some((room) => room.id === selectedRoomId)) {
+      setSelectedRoomId(rooms[0].id);
+    }
+  }, [rooms, selectedRoomId]);
+
+  useEffect(() => {
+    setSelectedExtras((current) => current.filter((id) => id in (pricing.extras ?? {})));
+  }, [pricing]);
 
   useEffect(() => {
     void Promise.all([loadTeamBookings(), loadPricing()]);
@@ -271,7 +314,7 @@ function App() {
     }
   }, [maxMembersForSelectedRoom, participants]);
 
-  function toggleExtra(extraId: ExtraId) {
+  function toggleExtra(extraId: string) {
     setSelectedExtras((current) =>
       current.includes(extraId)
         ? current.filter((id) => id !== extraId)
@@ -291,10 +334,20 @@ function App() {
 
   async function loadPricing() {
     try {
-      const payload = await api.pricing();
-      if (payload.pricing) {
-        setPricing(payload.pricing);
+      const [pricingPayload, roomsPayload, servicesPayload] = await Promise.all([
+        api.pricing(),
+        api.listRooms(),
+        api.listServices(),
+      ]);
+      if (pricingPayload.pricing) {
+        setPricing(pricingPayload.pricing);
         setBackendOffline(false);
+      }
+      if (roomsPayload.rooms.length > 0) {
+        setRooms(roomsPayload.rooms);
+      }
+      if (servicesPayload.services.length > 0) {
+        setServiceCatalog(servicesPayload.services);
       }
     } catch (_error) {
       setBackendOffline(true);
@@ -413,7 +466,7 @@ function App() {
                     <h3>{room.name}</h3>
                   </div>
                   <strong>
-                    {currency.format(pricing.perMemberPerHour)}
+                    {currency.format(room.pricePerMemberHour === null || room.pricePerMemberHour === undefined ? pricing.perMemberPerHour : Number(room.pricePerMemberHour))}
                     {translations.rooms.rate}
                   </strong>
                 </div>
@@ -446,7 +499,7 @@ function App() {
               {translations.booking.roomLabel}
               <select
                 value={selectedRoomId}
-                onChange={(event) => setSelectedRoomId(event.target.value as RoomDefinition['id'])}
+                onChange={(event) => setSelectedRoomId(event.target.value)}
               >
                 {localizedRooms.map((room) => (
                   <option key={room.id} value={room.id}>
@@ -596,7 +649,7 @@ function App() {
                       checked={selectedExtras.includes(extra.id)}
                       onChange={() => toggleExtra(extra.id)}
                     />
-                    <span>{translations.extras[extra.id]}</span>
+                    <span>{extra.label}</span>
                     <strong>{currency.format(extra.price)}</strong>
                   </label>
                 ))}

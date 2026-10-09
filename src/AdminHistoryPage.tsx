@@ -3,6 +3,12 @@ import * as api from './api';
 
 type Role = 'admin' | 'collaborator' | 'technician';
 
+const roleLabel: Record<Role, string> = {
+  admin: 'Admin',
+  collaborator: 'Colab',
+  technician: 'Tech',
+};
+
 type AuthUser = {
   id: string;
   name: string;
@@ -16,7 +22,7 @@ type BookingStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
 type PastBooking = {
   id: string;
   roomName: string;
-  roomId?: 'sala-red' | 'sala-grey';
+  roomId?: string;
   status: BookingStatus;
   date: string;
   time: string;
@@ -73,6 +79,79 @@ const statusLabel: Record<BookingStatus, string> = {
 };
 
 type HistoryFilter = 'all' | 'pending' | 'confirmed' | 'past' | 'cancelled' | 'refunded' | 'rejected';
+
+type AdminPanel = 'unified' | 'rooms' | 'services' | 'pricing';
+
+type RoomFormDraft = {
+  id: string;
+  name: string;
+  description: string;
+  descriptionEn: string;
+  maxMembers: string;
+  pricePerMemberHour: string;
+  gear: string;
+  gearEn: string;
+  accent: string;
+  active: boolean;
+};
+
+type ServiceFormDraft = {
+  id: string;
+  name: string;
+  nameEn: string;
+  description: string;
+  price: string;
+  active: boolean;
+};
+
+const emptyRoomForm: RoomFormDraft = {
+  id: '',
+  name: '',
+  description: '',
+  descriptionEn: '',
+  maxMembers: '4',
+  pricePerMemberHour: '',
+  gear: '',
+  gearEn: '',
+  accent: 'var(--room-red)',
+  active: true,
+};
+
+const emptyServiceForm: ServiceFormDraft = {
+  id: '',
+  name: '',
+  nameEn: '',
+  description: '',
+  price: '',
+  active: true,
+};
+
+function roomToForm(room: api.ApiRoom): RoomFormDraft {
+  return {
+    id: room.id,
+    name: room.name,
+    description: room.description,
+    descriptionEn: room.descriptionEn,
+    maxMembers: String(room.maxMembers),
+    pricePerMemberHour:
+      room.pricePerMemberHour === null || room.pricePerMemberHour === undefined ? '' : String(room.pricePerMemberHour),
+    gear: (room.gear ?? []).join('\n'),
+    gearEn: (room.gearEn ?? []).join('\n'),
+    accent: room.accent || 'var(--room-red)',
+    active: room.active !== false,
+  };
+}
+
+function serviceToForm(service: api.ApiService): ServiceFormDraft {
+  return {
+    id: service.id,
+    name: service.name,
+    nameEn: service.nameEn,
+    description: service.description,
+    price: String(service.price),
+    active: service.active !== false,
+  };
+}
 
 type RescheduleDraft = {
   bookingId: string;
@@ -337,6 +416,19 @@ function AdminHistoryPage() {
   const [financeExtrasCatalog, setFinanceExtrasCatalog] = useState<Record<string, number>>({});
   const [selectedFinanceMonths, setSelectedFinanceMonths] = useState<string[]>([]);
   const [showFinance, setShowFinance] = useState(false);
+  const [activePanel, setActivePanel] = useState<AdminPanel>('unified');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [rooms, setRooms] = useState<api.ApiRoom[]>([]);
+  const [services, setServices] = useState<api.ApiService[]>([]);
+  const [globalRate, setGlobalRate] = useState('');
+  const [pricingDraft, setPricingDraft] = useState<Record<string, string>>({});
+  const [roomForm, setRoomForm] = useState<RoomFormDraft>(emptyRoomForm);
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
+  const [serviceForm, setServiceForm] = useState<ServiceFormDraft>(emptyServiceForm);
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogNotice, setCatalogNotice] = useState('');
+  const isAdmin = currentUser?.role === 'admin';
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-PT', {
@@ -448,6 +540,31 @@ function AdminHistoryPage() {
     }
   };
 
+  const loadCatalogs = async () => {
+    setCatalogLoading(true);
+    try {
+      const [roomsPayload, servicesPayload, pricingPayload] = await Promise.all([
+        api.listRooms({ includeInactive: true }),
+        api.listServices({ includeInactive: true }),
+        api.pricing().catch(() => null),
+      ]);
+      setRooms(roomsPayload.rooms);
+      setServices(servicesPayload.services);
+      if (pricingPayload?.pricing) {
+        setGlobalRate(String(pricingPayload.pricing.perMemberPerHour));
+        const draft: Record<string, string> = {};
+        for (const [key, value] of Object.entries(pricingPayload.pricing.extras ?? {})) {
+          draft[key] = String(value);
+        }
+        setPricingDraft(draft);
+      }
+    } catch {
+      setError('Nao foi possivel carregar salas e servicos. Confirma que correste o supabase_rooms_services.sql.');
+    } finally {
+      setCatalogLoading(false);
+    }
+  };
+
   const restoreSession = async (sessionToken: string) => {
     try {
       const payload = await api.me(sessionToken);
@@ -455,7 +572,7 @@ function AdminHistoryPage() {
       setAuthError('');
 
       if (payload.user.role === 'admin') {
-        await loadFinance(sessionToken);
+        await Promise.all([loadFinance(sessionToken), loadCatalogs()]);
       }
     } catch (_error) {
       throw new Error('Session expired');
@@ -474,7 +591,7 @@ function AdminHistoryPage() {
       setCurrentUser(payload.user);
       await loadHistory(payload.token);
       if (payload.user.role === 'admin') {
-        await loadFinance(payload.token);
+        await Promise.all([loadFinance(payload.token), loadCatalogs()]);
       }
     } catch (authErr) {
       if (authErr instanceof Error && authErr.message) {
@@ -496,6 +613,176 @@ function AdminHistoryPage() {
     setBookings([]);
     setError('');
     setAuthError('');
+    setActivePanel('unified');
+    setCatalogNotice('');
+  };
+
+  const startEditRoom = (room: api.ApiRoom) => {
+    setEditingRoomId(room.id);
+    setRoomForm(roomToForm(room));
+    setCatalogNotice('');
+    setError('');
+  };
+
+  const cancelEditRoom = () => {
+    setEditingRoomId(null);
+    setRoomForm(emptyRoomForm);
+  };
+
+  const handleSaveRoom = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || !isAdmin) return;
+    const maxMembers = Number(roomForm.maxMembers);
+    const trimmedName = roomForm.name.trim();
+    if (!trimmedName) {
+      setError('A sala precisa de um nome.');
+      return;
+    }
+    if (!Number.isFinite(maxMembers) || maxMembers <= 0) {
+      setError('Capacidade invalida.');
+      return;
+    }
+    const trimmedPrice = roomForm.pricePerMemberHour.trim();
+    const pricePerMemberHour = trimmedPrice === '' ? null : Number(trimmedPrice);
+    if (pricePerMemberHour !== null && (!Number.isFinite(pricePerMemberHour) || pricePerMemberHour < 0)) {
+      setError('Preco da sala invalido.');
+      return;
+    }
+    setCatalogNotice('');
+    setError('');
+    try {
+      const draft: api.RoomDraft = {
+        id: editingRoomId ?? (roomForm.id.trim() || undefined),
+        name: trimmedName,
+        description: roomForm.description,
+        descriptionEn: roomForm.descriptionEn,
+        maxMembers: Math.floor(maxMembers),
+        pricePerMemberHour,
+        gear: roomForm.gear,
+        gearEn: roomForm.gearEn,
+        accent: roomForm.accent,
+        active: roomForm.active,
+      };
+      if (editingRoomId) {
+        await api.updateRoom(sessionToken, editingRoomId, draft);
+        setCatalogNotice('Sala atualizada com sucesso.');
+      } else {
+        await api.createRoom(sessionToken, draft);
+        setCatalogNotice('Sala criada com sucesso.');
+      }
+      cancelEditRoom();
+      await loadCatalogs();
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel guardar a sala.');
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || !isAdmin) return;
+    if (!window.confirm('Apagar esta sala? Se tiver marcacoes, sera arquivada.')) return;
+    setCatalogNotice('');
+    setError('');
+    try {
+      const payload = await api.deleteRoom(sessionToken, roomId);
+      if (editingRoomId === roomId) cancelEditRoom();
+      await loadCatalogs();
+      setCatalogNotice(payload.message || 'Sala removida.');
+    } catch {
+      setError('Nao foi possivel apagar a sala.');
+    }
+  };
+
+  const startEditService = (service: api.ApiService) => {
+    setEditingServiceId(service.id);
+    setServiceForm(serviceToForm(service));
+    setCatalogNotice('');
+    setError('');
+  };
+
+  const cancelEditService = () => {
+    setEditingServiceId(null);
+    setServiceForm(emptyServiceForm);
+  };
+
+  const handleSaveService = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || !isAdmin) return;
+    const trimmedName = serviceForm.name.trim();
+    const price = Number(serviceForm.price);
+    if (!trimmedName) {
+      setError('O servico precisa de um nome.');
+      return;
+    }
+    if (!Number.isFinite(price) || price < 0) {
+      setError('Preco do servico invalido.');
+      return;
+    }
+    setCatalogNotice('');
+    setError('');
+    try {
+      const draft: api.ServiceDraft = {
+        id: editingServiceId ?? (serviceForm.id.trim() || undefined),
+        name: trimmedName,
+        nameEn: serviceForm.nameEn,
+        description: serviceForm.description,
+        price,
+        active: serviceForm.active,
+      };
+      if (editingServiceId) {
+        await api.updateService(sessionToken, editingServiceId, draft);
+        setCatalogNotice('Servico atualizado com sucesso.');
+      } else {
+        await api.createService(sessionToken, draft);
+        setCatalogNotice('Servico criado com sucesso.');
+      }
+      cancelEditService();
+      await loadCatalogs();
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel guardar o servico.');
+    }
+  };
+
+  const handleDeleteService = async (serviceId: string) => {
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || !isAdmin) return;
+    if (!window.confirm('Apagar este servico? Se estiver em uso, sera arquivado.')) return;
+    setCatalogNotice('');
+    setError('');
+    try {
+      const payload = await api.deleteService(sessionToken, serviceId);
+      if (editingServiceId === serviceId) cancelEditService();
+      await loadCatalogs();
+      setCatalogNotice(payload.message || 'Servico removido.');
+    } catch {
+      setError('Nao foi possivel apagar o servico.');
+    }
+  };
+
+  const handleSavePricing = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || !isAdmin) return;
+    const parsedRate = Number(globalRate);
+    const parsedExtras: Record<string, number> = {};
+    for (const [key, raw] of Object.entries(pricingDraft)) {
+      parsedExtras[key] = Number(raw);
+    }
+    if (!Number.isFinite(parsedRate) || parsedRate < 0 || Object.values(parsedExtras).some((value) => !Number.isFinite(value) || value < 0)) {
+      setError('Valores invalidos. Usa numeros validos.');
+      return;
+    }
+    setCatalogNotice('');
+    setError('');
+    try {
+      await api.updatePricing(sessionToken, { perMemberPerHour: parsedRate, extras: parsedExtras });
+      await loadCatalogs();
+      setCatalogNotice('Precos atualizados com sucesso.');
+    } catch {
+      setError('Nao foi possivel guardar os precos.');
+    }
   };
 
   const handleConfirmBooking = async (bookingId: string) => {
@@ -1054,6 +1341,22 @@ function AdminHistoryPage() {
   }, [financeData]);
 
   useEffect(() => {
+    if (!sidebarOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [sidebarOpen]);
+
+  useEffect(() => {
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
     if (!sessionToken) {
       setLoading(false);
@@ -1140,32 +1443,414 @@ function AdminHistoryPage() {
             />
           ) : null}
         </div>
-        <div className="topbar-tools">
-          <div className="admin-top-actions">
-            {currentUser.role === 'admin' ? (
-              <button type="button" className="secondary-button" onClick={() => setShowFinance((value) => !value)}>
-                {showFinance ? 'Esconder contas' : 'Ver contas'}
-              </button>
-            ) : null}
-            <a href="/" className="secondary-button admin-link-home">
-              Site publico
-            </a>
-            <button type="button" className="secondary-button" onClick={handleLogout}>
-              Sair
-            </button>
-          </div>
-        </div>
       </header>
 
-      <main className="layout admin-layout">
-        {error ? <p className="admin-message-error">{error}</p> : null}
-        {loading ? <p className="summary-copy">A carregar...</p> : null}
+      <main className="layout admin-layout admin-shell">
+        {!loading && isAdmin ? (
+          <button
+            type="button"
+            className="admin-sidebar-toggle"
+            aria-label="Abrir menu de gestao"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <span className="admin-pie-burger" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+        ) : null}
 
-        {!loading && !error ? (
+        {sidebarOpen ? (
+          <div className="admin-sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+        ) : null}
+
+        <aside className={`admin-sidebar ${sidebarOpen ? "admin-sidebar-open" : ""}`}>
+          <div className="admin-sidebar-head">
+            <span className="eyebrow">Gestao</span>
+            <button
+              type="button"
+              className="secondary-button admin-modal-close admin-sidebar-close"
+              aria-label="Fechar menu"
+              onClick={() => setSidebarOpen(false)}
+            >
+              X
+            </button>
+          </div>
+          <nav className="admin-sidebar-nav" aria-label="Seccoes de administracao">
+            <button
+              type="button"
+              className={`admin-sidebar-item ${activePanel === "unified" ? "admin-sidebar-item-active" : ""}`}
+              onClick={() => {
+                setActivePanel("unified");
+                setSidebarOpen(false);
+              }}
+            >
+              Ensaios
+            </button>
+            <button
+              type="button"
+              className={`admin-sidebar-item ${activePanel === "rooms" ? "admin-sidebar-item-active" : ""}`}
+              onClick={() => {
+                setActivePanel("rooms");
+                setSidebarOpen(false);
+              }}
+            >
+              Salas
+            </button>
+            <button
+              type="button"
+              className={`admin-sidebar-item ${activePanel === "services" ? "admin-sidebar-item-active" : ""}`}
+              onClick={() => {
+                setActivePanel("services");
+                setSidebarOpen(false);
+              }}
+            >
+              Servicos
+            </button>
+            <button
+              type="button"
+              className={`admin-sidebar-item ${activePanel === "pricing" ? "admin-sidebar-item-active" : ""}`}
+              onClick={() => {
+                setActivePanel("pricing");
+                setSidebarOpen(false);
+              }}
+            >
+              Precos
+            </button>
+
+            <div className="admin-sidebar-footer">
+              <a href="/" className="admin-sidebar-item admin-sidebar-link" onClick={() => setSidebarOpen(false)}>
+                Site publico
+              </a>
+              <button type="button" className="admin-sidebar-item" onClick={handleLogout}>
+                Sair
+              </button>
+            </div>
+          </nav>
+        </aside>
+
+        <div className="admin-content">
+          <div className="admin-content-bar">
+            {currentUser ? (
+              <div className="admin-user-chip" title={currentUser.email}>
+                <span className="admin-user-chip-name">{currentUser.name}</span>
+                <span className={`admin-user-chip-role admin-role-${currentUser.role}`}>{roleLabel[currentUser.role]}</span>
+              </div>
+            ) : null}
+          </div>
+          {error ? <p className="admin-message-error">{error}</p> : null}
+          {catalogNotice ? <p className="confirmation">{catalogNotice}</p> : null}
+          {loading ? <p className="summary-copy">A carregar...</p> : null}
+
+          {activePanel === 'rooms' ? (
           <section className="card admin-section">
             <div className="section-heading">
-              <p className="eyebrow">Painel unico</p>
-              <h2>{filteredBookings.length === 0 ? 'Sem ensaios neste filtro' : historyCountLabel}</h2>
+              <p className="eyebrow">Salas</p>
+              <h2>Gerir salas</h2>
+            </div>
+            <form className="admin-create-user" onSubmit={handleSaveRoom}>
+              {!editingRoomId ? (
+                <label>
+                  ID (opcional, ex: sala-blue)
+                  <input
+                    type="text"
+                    value={roomForm.id}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, id: event.target.value }))}
+                    placeholder="gerado a partir do nome"
+                  />
+                </label>
+              ) : null}
+              <label>
+                Nome *
+                <input
+                  type="text"
+                  required
+                  value={roomForm.name}
+                  onChange={(event) => setRoomForm((current) => ({ ...current, name: event.target.value }))}
+                  placeholder="SALA BLUE"
+                />
+              </label>
+              <div className="field-row">
+                <label>
+                  Capacidade (musicos) *
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    step={1}
+                    value={roomForm.maxMembers}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, maxMembers: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Preco proprio EUR/hora/elemento (vazio = usa preco global)
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.5"
+                    value={roomForm.pricePerMemberHour}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, pricePerMemberHour: event.target.value }))}
+                    placeholder={globalRate}
+                  />
+                </label>
+              </div>
+              <label>
+                Descricao (PT)
+                <textarea
+                  rows={2}
+                  value={roomForm.description}
+                  onChange={(event) => setRoomForm((current) => ({ ...current, description: event.target.value }))}
+                />
+              </label>
+              <label>
+                Descricao (EN)
+                <textarea
+                  rows={2}
+                  value={roomForm.descriptionEn}
+                  onChange={(event) => setRoomForm((current) => ({ ...current, descriptionEn: event.target.value }))}
+                />
+              </label>
+              <div className="field-row">
+                <label>
+                  Equipamento PT (um por linha)
+                  <textarea
+                    rows={3}
+                    value={roomForm.gear}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, gear: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Equipamento EN (um por linha)
+                  <textarea
+                    rows={3}
+                    value={roomForm.gearEn}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, gearEn: event.target.value }))}
+                  />
+                </label>
+              </div>
+              <div className="field-row">
+                <label>
+                  Cor de destaque
+                  <select
+                    value={roomForm.accent}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, accent: event.target.value }))}
+                  >
+                    <option value="var(--room-red)">Vermelho</option>
+                    <option value="var(--room-grey)">Cinzento</option>
+                  </select>
+                </label>
+                <label className="extra-toggle">
+                  <input
+                    type="checkbox"
+                    checked={roomForm.active}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, active: event.target.checked }))}
+                  />
+                  <span>Ativa no site</span>
+                </label>
+              </div>
+              <div className="admin-user-form-actions">
+                <button type="submit" className="primary-button">
+                  {editingRoomId ? 'Guardar sala' : 'Adicionar sala'}
+                </button>
+                {editingRoomId ? (
+                  <button type="button" className="secondary-button" onClick={cancelEditRoom}>
+                    Cancelar edicao
+                  </button>
+                ) : null}
+              </div>
+            </form>
+
+            {catalogLoading ? <p className="summary-copy">A carregar salas...</p> : null}
+            <ul className="admin-user-list">
+              {rooms.map((room) => (
+                <li key={room.id}>
+                  <div className="admin-user-card-head">
+                    <strong>{room.name}</strong>
+                    <span className="booking-id-chip">{room.id}</span>
+                    {!room.active ? <span className="booking-id-chip">inativa</span> : null}
+                  </div>
+                  <span>{room.description || 'Sem descricao'}</span>
+                  <span>
+                    Ate {room.maxMembers} musicos ·{' '}
+                    {room.pricePerMemberHour === null || room.pricePerMemberHour === undefined
+                      ? `Preco global (${globalRate || '?'} EUR/h)`
+                      : `${room.pricePerMemberHour} EUR/h proprio`}
+                  </span>
+                  <div className="team-actions">
+                    <button type="button" className="secondary-button" onClick={() => startEditRoom(room)}>
+                      Editar
+                    </button>
+                    <button type="button" className="secondary-button" onClick={() => void handleDeleteRoom(room.id)}>
+                      Apagar
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {activePanel === 'services' ? (
+          <section className="card admin-section">
+            <div className="section-heading">
+              <p className="eyebrow">Servicos</p>
+              <h2>Gerir servicos / extras</h2>
+            </div>
+            <form className="admin-create-user" onSubmit={handleSaveService}>
+              {!editingServiceId ? (
+                <label>
+                  ID (opcional, ex: mistura)
+                  <input
+                    type="text"
+                    value={serviceForm.id}
+                    onChange={(event) => setServiceForm((current) => ({ ...current, id: event.target.value }))}
+                    placeholder="gerado a partir do nome"
+                  />
+                </label>
+              ) : null}
+              <div className="field-row">
+                <label>
+                  Nome (PT) *
+                  <input
+                    type="text"
+                    required
+                    value={serviceForm.name}
+                    onChange={(event) => setServiceForm((current) => ({ ...current, name: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Nome (EN)
+                  <input
+                    type="text"
+                    value={serviceForm.nameEn}
+                    onChange={(event) => setServiceForm((current) => ({ ...current, nameEn: event.target.value }))}
+                  />
+                </label>
+              </div>
+              <label>
+                Descricao
+                <textarea
+                  rows={2}
+                  value={serviceForm.description}
+                  onChange={(event) => setServiceForm((current) => ({ ...current, description: event.target.value }))}
+                />
+              </label>
+              <div className="field-row">
+                <label>
+                  Preco (EUR) *
+                  <input
+                    type="number"
+                    min={0}
+                    step="1"
+                    value={serviceForm.price}
+                    onChange={(event) => setServiceForm((current) => ({ ...current, price: event.target.value }))}
+                  />
+                </label>
+                <label className="extra-toggle">
+                  <input
+                    type="checkbox"
+                    checked={serviceForm.active}
+                    onChange={(event) => setServiceForm((current) => ({ ...current, active: event.target.checked }))}
+                  />
+                  <span>Ativo no site</span>
+                </label>
+              </div>
+              <div className="admin-user-form-actions">
+                <button type="submit" className="primary-button">
+                  {editingServiceId ? 'Guardar servico' : 'Adicionar servico'}
+                </button>
+                {editingServiceId ? (
+                  <button type="button" className="secondary-button" onClick={cancelEditService}>
+                    Cancelar edicao
+                  </button>
+                ) : null}
+              </div>
+            </form>
+
+            {catalogLoading ? <p className="summary-copy">A carregar servicos...</p> : null}
+            <ul className="admin-user-list">
+              {services.map((service) => (
+                <li key={service.id}>
+                  <div className="admin-user-card-head">
+                    <strong>{service.name}</strong>
+                    <span className="booking-id-chip">{service.id}</span>
+                    {!service.active ? <span className="booking-id-chip">inativo</span> : null}
+                  </div>
+                  <span>{service.nameEn || 'Sem nome EN'}</span>
+                  <span>{service.price} EUR · {service.description || 'Sem descricao'}</span>
+                  <div className="team-actions">
+                    <button type="button" className="secondary-button" onClick={() => startEditService(service)}>
+                      Editar
+                    </button>
+                    <button type="button" className="secondary-button" onClick={() => void handleDeleteService(service.id)}>
+                      Apagar
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {activePanel === 'pricing' ? (
+          <section className="card admin-section">
+            <div className="section-heading">
+              <p className="eyebrow">Precos</p>
+              <h2>Atualizar tabela de precos</h2>
+            </div>
+            <form className="admin-pricing-grid" onSubmit={handleSavePricing}>
+              <label>
+                Preco por elemento/hora (EUR)
+                <input
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  value={globalRate}
+                  onChange={(event) => setGlobalRate(event.target.value)}
+                />
+              </label>
+
+              {Object.entries(pricingDraft).map(([extraId, rawValue]) => {
+                const service = services.find((item) => item.id === extraId);
+                const label = service ? service.name : extraId;
+                return (
+                  <label key={extraId}>
+                    Extra {label} (EUR)
+                    <input
+                      type="number"
+                      min={0}
+                      step="1"
+                      value={rawValue}
+                      onChange={(event) =>
+                        setPricingDraft((current) => ({ ...current, [extraId]: event.target.value }))
+                      }
+                    />
+                  </label>
+                );
+              })}
+
+              <p className="admin-helper-note">Para adicionar ou remover extras, usa o painel Servicos.</p>
+
+              <button type="submit" className="primary-button">
+                Guardar precos
+              </button>
+            </form>
+          </section>
+        ) : null}
+
+        {activePanel === "unified" && !loading && !error ? (
+          <section className="card admin-section">
+            <div className="section-heading section-heading-row">
+              <div>
+                <p className="eyebrow">Ensaios</p>
+                <h2>{filteredBookings.length === 0 ? 'Sem ensaios neste filtro' : historyCountLabel}</h2>
+              </div>
+              {currentUser.role === 'admin' ? (
+                <button type="button" className="secondary-button" onClick={() => setShowFinance((value) => !value)}>
+                  {showFinance ? 'Esconder contas' : 'Ver contas'}
+                </button>
+              ) : null}
             </div>
 
             {currentUser.role === 'admin' && showFinance ? (
@@ -1828,6 +2513,7 @@ function AdminHistoryPage() {
             ) : null}
           </section>
         ) : null}
+        </div>
       </main>
 
       {rescheduleDraft ? (

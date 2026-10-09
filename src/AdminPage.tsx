@@ -24,7 +24,7 @@ type CancelledBy = {
 type TeamBooking = {
   id: string;
   roomName: string;
-  roomId: 'sala-red' | 'sala-grey';
+  roomId: string;
   status: BookingStatus;
   date: string;
   time: string;
@@ -45,18 +45,60 @@ type TeamBooking = {
 
 type PricingConfig = {
   perMemberPerHour: number;
-  extras: {
-    engineer: number;
-    recording: number;
-    backline: number;
-  };
+  extras: Record<string, number>;
 };
 
 type PricingDraft = {
   perMemberPerHour: string;
-  engineer: string;
-  recording: string;
-  backline: string;
+  extras: Record<string, string>;
+};
+
+type AdminRoom = api.ApiRoom;
+
+type AdminService = api.ApiService;
+
+type RoomFormDraft = {
+  id: string;
+  name: string;
+  description: string;
+  descriptionEn: string;
+  maxMembers: string;
+  pricePerMemberHour: string;
+  gear: string;
+  gearEn: string;
+  accent: string;
+  active: boolean;
+};
+
+type ServiceFormDraft = {
+  id: string;
+  name: string;
+  nameEn: string;
+  description: string;
+  price: string;
+  active: boolean;
+};
+
+const emptyRoomForm: RoomFormDraft = {
+  id: '',
+  name: '',
+  description: '',
+  descriptionEn: '',
+  maxMembers: '4',
+  pricePerMemberHour: '',
+  gear: '',
+  gearEn: '',
+  accent: 'var(--room-red)',
+  active: true,
+};
+
+const emptyServiceForm: ServiceFormDraft = {
+  id: '',
+  name: '',
+  nameEn: '',
+  description: '',
+  price: '',
+  active: true,
 };
 
 type NewUserDraft = {
@@ -87,7 +129,7 @@ type AuditLogEntry = {
   };
 };
 
-type AdminPanel = 'bookings' | 'users' | 'pricing' | 'audit';
+type AdminPanel = 'bookings' | 'users' | 'pricing' | 'rooms' | 'services' | 'audit';
 
 const TOKEN_KEY = 'feedbook-admin-token';
 
@@ -107,11 +149,39 @@ const defaultPricing: PricingConfig = {
 };
 
 function buildPricingDraft(config: PricingConfig): PricingDraft {
+  const extras: Record<string, string> = {};
+  for (const [key, value] of Object.entries(config.extras ?? {})) {
+    extras[key] = String(value);
+  }
   return {
     perMemberPerHour: String(config.perMemberPerHour),
-    engineer: String(config.extras.engineer),
-    recording: String(config.extras.recording),
-    backline: String(config.extras.backline),
+    extras,
+  };
+}
+
+function roomToForm(room: AdminRoom): RoomFormDraft {
+  return {
+    id: room.id,
+    name: room.name,
+    description: room.description,
+    descriptionEn: room.descriptionEn,
+    maxMembers: String(room.maxMembers),
+    pricePerMemberHour: room.pricePerMemberHour === null || room.pricePerMemberHour === undefined ? '' : String(room.pricePerMemberHour),
+    gear: (room.gear ?? []).join('\n'),
+    gearEn: (room.gearEn ?? []).join('\n'),
+    accent: room.accent || 'var(--room-red)',
+    active: room.active !== false,
+  };
+}
+
+function serviceToForm(service: AdminService): ServiceFormDraft {
+  return {
+    id: service.id,
+    name: service.name,
+    nameEn: service.nameEn,
+    description: service.description,
+    price: String(service.price),
+    active: service.active !== false,
   };
 }
 
@@ -182,6 +252,13 @@ function AdminPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [pricing, setPricing] = useState<PricingConfig>(defaultPricing);
   const [pricingDraft, setPricingDraft] = useState<PricingDraft>(buildPricingDraft(defaultPricing));
+  const [rooms, setRooms] = useState<AdminRoom[]>([]);
+  const [services, setServices] = useState<AdminService[]>([]);
+  const [roomForm, setRoomForm] = useState<RoomFormDraft>(emptyRoomForm);
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
+  const [serviceForm, setServiceForm] = useState<ServiceFormDraft>(emptyServiceForm);
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
     name: '',
     email: '',
@@ -238,6 +315,7 @@ function AdminPage() {
     void Promise.all([
       loadBookings(token),
       loadPricing(),
+      loadCatalogs(),
       isAdmin ? loadUsers(token) : Promise.resolve(),
       loadAuditLogs(token),
     ]);
@@ -288,6 +366,22 @@ function AdminPage() {
       setPricing(payload.pricing);
     } catch (_error) {
       setError('Nao foi possivel carregar precos.');
+    }
+  }
+
+  async function loadCatalogs() {
+    setCatalogLoading(true);
+    try {
+      const [roomsPayload, servicesPayload] = await Promise.all([
+        api.listRooms({ includeInactive: true }),
+        api.listServices({ includeInactive: true }),
+      ]);
+      setRooms(roomsPayload.rooms);
+      setServices(servicesPayload.services);
+    } catch (_error) {
+      setError('Nao foi possivel carregar salas e servicos. Corre o script supabase_rooms_services.sql no Supabase.');
+    } finally {
+      setCatalogLoading(false);
     }
   }
 
@@ -442,11 +536,12 @@ function AdminPage() {
     }
 
     const parsedPerMemberPerHour = Number(pricingDraft.perMemberPerHour);
-    const parsedEngineer = Number(pricingDraft.engineer);
-    const parsedRecording = Number(pricingDraft.recording);
-    const parsedBackline = Number(pricingDraft.backline);
+    const parsedExtras: Record<string, number> = {};
+    for (const [key, raw] of Object.entries(pricingDraft.extras ?? {})) {
+      parsedExtras[key] = Number(raw);
+    }
 
-    const numericValues = [parsedPerMemberPerHour, parsedEngineer, parsedRecording, parsedBackline];
+    const numericValues = [parsedPerMemberPerHour, ...Object.values(parsedExtras)];
     const hasInvalidNumber = numericValues.some((value) => !Number.isFinite(value) || value < 0);
 
     if (hasInvalidNumber) {
@@ -460,18 +555,154 @@ function AdminPage() {
     try {
       const payload = await api.updatePricing(token, {
         perMemberPerHour: parsedPerMemberPerHour,
-        extras: {
-          engineer: parsedEngineer,
-          recording: parsedRecording,
-          backline: parsedBackline,
-        },
+        extras: parsedExtras,
       });
 
       setPricing(payload.pricing);
-      await loadAuditLogs(token);
+      await Promise.all([loadCatalogs(), loadAuditLogs(token)]);
       setNotice('Precos atualizados com sucesso.');
     } catch (_error) {
       setError('Nao foi possivel guardar os precos.');
+    }
+  }
+
+  function startEditRoom(room: AdminRoom) {
+    setEditingRoomId(room.id);
+    setRoomForm(roomToForm(room));
+    setNotice('');
+    setError('');
+  }
+
+  function cancelEditRoom() {
+    setEditingRoomId(null);
+    setRoomForm(emptyRoomForm);
+  }
+
+  async function handleSaveRoom(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token || !isAdmin) return;
+    const maxMembers = Number(roomForm.maxMembers);
+    const trimmedName = roomForm.name.trim();
+    if (!trimmedName) {
+      setError('A sala precisa de um nome.');
+      return;
+    }
+    if (!Number.isFinite(maxMembers) || maxMembers <= 0) {
+      setError('Capacidade invalida.');
+      return;
+    }
+    const trimmedPrice = roomForm.pricePerMemberHour.trim();
+    const pricePerMemberHour = trimmedPrice === '' ? null : Number(trimmedPrice);
+    if (pricePerMemberHour !== null && (!Number.isFinite(pricePerMemberHour) || pricePerMemberHour < 0)) {
+      setError('Preco da sala invalido.');
+      return;
+    }
+    setNotice('');
+    setError('');
+    try {
+      const draft: api.RoomDraft = {
+        id: editingRoomId ?? (roomForm.id.trim() || undefined),
+        name: trimmedName,
+        description: roomForm.description,
+        descriptionEn: roomForm.descriptionEn,
+        maxMembers: Math.floor(maxMembers),
+        pricePerMemberHour,
+        gear: roomForm.gear,
+        gearEn: roomForm.gearEn,
+        accent: roomForm.accent,
+        active: roomForm.active,
+      };
+      if (editingRoomId) {
+        await api.updateRoom(token, editingRoomId, draft);
+        setNotice('Sala atualizada com sucesso.');
+      } else {
+        await api.createRoom(token, draft);
+        setNotice('Sala criada com sucesso.');
+      }
+      cancelEditRoom();
+      await Promise.all([loadCatalogs(), loadPricing(), loadAuditLogs(token)]);
+    } catch (error) {
+      setError(error instanceof Error && error.message ? error.message : 'Nao foi possivel guardar a sala.');
+    }
+  }
+
+  async function handleDeleteRoom(roomId: string) {
+    if (!token || !isAdmin) return;
+    if (!window.confirm('Apagar esta sala? Se tiver marcacoes, sera arquivada.')) return;
+    setNotice('');
+    setError('');
+    try {
+      const payload = await api.deleteRoom(token, roomId);
+      if (editingRoomId === roomId) cancelEditRoom();
+      await Promise.all([loadCatalogs(), loadAuditLogs(token)]);
+      setNotice(payload.message || 'Sala removida.');
+    } catch (_error) {
+      setError('Nao foi possivel apagar a sala.');
+    }
+  }
+
+  function startEditService(service: AdminService) {
+    setEditingServiceId(service.id);
+    setServiceForm(serviceToForm(service));
+    setNotice('');
+    setError('');
+  }
+
+  function cancelEditService() {
+    setEditingServiceId(null);
+    setServiceForm(emptyServiceForm);
+  }
+
+  async function handleSaveService(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token || !isAdmin) return;
+    const trimmedName = serviceForm.name.trim();
+    const price = Number(serviceForm.price);
+    if (!trimmedName) {
+      setError('O servico precisa de um nome.');
+      return;
+    }
+    if (!Number.isFinite(price) || price < 0) {
+      setError('Preco do servico invalido.');
+      return;
+    }
+    setNotice('');
+    setError('');
+    try {
+      const draft: api.ServiceDraft = {
+        id: editingServiceId ?? (serviceForm.id.trim() || undefined),
+        name: trimmedName,
+        nameEn: serviceForm.nameEn,
+        description: serviceForm.description,
+        price,
+        active: serviceForm.active,
+      };
+      if (editingServiceId) {
+        await api.updateService(token, editingServiceId, draft);
+        setNotice('Servico atualizado com sucesso.');
+      } else {
+        await api.createService(token, draft);
+        setNotice('Servico criado com sucesso.');
+      }
+      cancelEditService();
+      await Promise.all([loadCatalogs(), loadPricing(), loadAuditLogs(token)]);
+    } catch (error) {
+      setError(error instanceof Error && error.message ? error.message : 'Nao foi possivel guardar o servico.');
+    }
+  }
+
+  async function handleDeleteService(serviceId: string) {
+    if (!token || !isAdmin) return;
+    if (!window.confirm('Apagar este servico? Se estiver em uso, sera arquivado.')) return;
+    setNotice('');
+    setError('');
+    try {
+      const payload = await api.deleteService(token, serviceId);
+      if (editingServiceId === serviceId) cancelEditService();
+      await Promise.all([loadCatalogs(), loadPricing(), loadAuditLogs(token)]);
+      setNotice(payload.message || 'Servico removido.');
+    } catch (_error) {
+      setError('Nao foi possivel apagar o servico.');
     }
   }
 
@@ -846,6 +1077,20 @@ function AdminPage() {
               </button>
               <button
                 type="button"
+                className={`admin-pie-item ${activePanel === 'rooms' ? 'admin-pie-item-active' : ''}`}
+                onClick={() => setActivePanel('rooms')}
+              >
+                Salas
+              </button>
+              <button
+                type="button"
+                className={`admin-pie-item ${activePanel === 'services' ? 'admin-pie-item-active' : ''}`}
+                onClick={() => setActivePanel('services')}
+              >
+                Servicos
+              </button>
+              <button
+                type="button"
                 className={`admin-pie-item ${activePanel === 'pricing' ? 'admin-pie-item-active' : ''}`}
                 onClick={() => setActivePanel('pricing')}
               >
@@ -997,49 +1242,288 @@ function AdminPage() {
                 />
               </label>
 
-              <label>
-                Extra tecnico (EUR)
-                <input
-                  type="number"
-                  min={0}
-                  step="1"
-                  value={pricingDraft.engineer}
-                  onChange={(event) =>
-                    setPricingDraft((current) => ({ ...current, engineer: event.target.value }))
-                  }
-                />
-              </label>
+              {Object.entries(pricingDraft.extras ?? {}).map(([extraId, rawValue]) => {
+                const service = services.find((item) => item.id === extraId);
+                const label = service ? service.name : extraId;
+                return (
+                  <label key={extraId}>
+                    Extra {label} (EUR)
+                    <input
+                      type="number"
+                      min={0}
+                      step="1"
+                      value={rawValue}
+                      onChange={(event) =>
+                        setPricingDraft((current) => ({
+                          ...current,
+                          extras: { ...current.extras, [extraId]: event.target.value },
+                        }))
+                      }
+                    />
+                  </label>
+                );
+              })}
 
-              <label>
-                Extra captacao (EUR)
-                <input
-                  type="number"
-                  min={0}
-                  step="1"
-                  value={pricingDraft.recording}
-                  onChange={(event) =>
-                    setPricingDraft((current) => ({ ...current, recording: event.target.value }))
-                  }
-                />
-              </label>
-
-              <label>
-                Extra backline (EUR)
-                <input
-                  type="number"
-                  min={0}
-                  step="1"
-                  value={pricingDraft.backline}
-                  onChange={(event) =>
-                    setPricingDraft((current) => ({ ...current, backline: event.target.value }))
-                  }
-                />
-              </label>
+              <p className="admin-helper-note">Para adicionar ou remover extras, usa o painel Servicos no pie-menu.</p>
 
               <button type="submit" className="primary-button">
                 Guardar precos
               </button>
             </form>
+          </section>
+        ) : null}
+
+        {isAdmin && activePanel === 'rooms' ? (
+          <section className="card admin-section">
+            <div className="section-heading">
+              <p className="eyebrow">Salas</p>
+              <h2>Gerir salas</h2>
+              <p className="summary-copy">Altera precos, descricao, capacidade e equipamento. Salas novas aparecem logo no site.</p>
+            </div>
+
+            <form className="admin-create-user" onSubmit={handleSaveRoom}>
+              {!editingRoomId ? (
+                <label>
+                  ID (opcional, ex: sala-blue)
+                  <input
+                    type="text"
+                    value={roomForm.id}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, id: event.target.value }))}
+                    placeholder="gerado a partir do nome"
+                  />
+                </label>
+              ) : null}
+              <label>
+                Nome *
+                <input
+                  type="text"
+                  required
+                  value={roomForm.name}
+                  onChange={(event) => setRoomForm((current) => ({ ...current, name: event.target.value }))}
+                  placeholder="SALA BLUE"
+                />
+              </label>
+              <div className="field-row">
+                <label>
+                  Capacidade (musicos) *
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    step={1}
+                    value={roomForm.maxMembers}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, maxMembers: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Preco proprio EUR/hora/elemento (vazio = usa preco global)
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.5"
+                    value={roomForm.pricePerMemberHour}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, pricePerMemberHour: event.target.value }))}
+                    placeholder={`${pricing.perMemberPerHour}`}
+                  />
+                </label>
+              </div>
+              <label>
+                Descricao (PT)
+                <textarea
+                  rows={2}
+                  value={roomForm.description}
+                  onChange={(event) => setRoomForm((current) => ({ ...current, description: event.target.value }))}
+                />
+              </label>
+              <label>
+                Descricao (EN)
+                <textarea
+                  rows={2}
+                  value={roomForm.descriptionEn}
+                  onChange={(event) => setRoomForm((current) => ({ ...current, descriptionEn: event.target.value }))}
+                />
+              </label>
+              <div className="field-row">
+                <label>
+                  Equipamento PT (um por linha)
+                  <textarea
+                    rows={3}
+                    value={roomForm.gear}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, gear: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Equipamento EN (um por linha)
+                  <textarea
+                    rows={3}
+                    value={roomForm.gearEn}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, gearEn: event.target.value }))}
+                  />
+                </label>
+              </div>
+              <div className="field-row">
+                <label>
+                  Cor de destaque
+                  <select
+                    value={roomForm.accent}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, accent: event.target.value }))}
+                  >
+                    <option value="var(--room-red)">Vermelho</option>
+                    <option value="var(--room-grey)">Cinzento</option>
+                  </select>
+                </label>
+                <label className="extra-toggle">
+                  <input
+                    type="checkbox"
+                    checked={roomForm.active}
+                    onChange={(event) => setRoomForm((current) => ({ ...current, active: event.target.checked }))}
+                  />
+                  <span>Ativa no site</span>
+                </label>
+              </div>
+              <div className="admin-user-form-actions">
+                <button type="submit" className="primary-button">
+                  {editingRoomId ? 'Guardar sala' : 'Adicionar sala'}
+                </button>
+                {editingRoomId ? (
+                  <button type="button" className="secondary-button" onClick={cancelEditRoom}>
+                    Cancelar edicao
+                  </button>
+                ) : null}
+              </div>
+            </form>
+
+            {catalogLoading ? <p className="summary-copy">A carregar salas...</p> : null}
+            <ul className="admin-user-list">
+              {rooms.map((room) => (
+                <li key={room.id}>
+                  <div className="admin-user-card-head">
+                    <strong>{room.name}</strong>
+                    <span className="booking-id-chip">{room.id}</span>
+                    {!room.active ? <span className="booking-id-chip">inativa</span> : null}
+                  </div>
+                  <span>{room.description || 'Sem descricao'}</span>
+                  <span>
+                    Ate {room.maxMembers} musicos ·{' '}
+                    {room.pricePerMemberHour === null || room.pricePerMemberHour === undefined
+                      ? `Preco global (${pricing.perMemberPerHour} EUR/h)`
+                      : `${room.pricePerMemberHour} EUR/h proprio`}
+                  </span>
+                  <div className="team-actions">
+                    <button type="button" className="secondary-button" onClick={() => startEditRoom(room)}>
+                      Editar
+                    </button>
+                    <button type="button" className="secondary-button" onClick={() => void handleDeleteRoom(room.id)}>
+                      Apagar
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {isAdmin && activePanel === 'services' ? (
+          <section className="card admin-section">
+            <div className="section-heading">
+              <p className="eyebrow">Servicos</p>
+              <h2>Gerir servicos / extras</h2>
+              <p className="summary-copy">Altera nomes, descricoes e precos. Servicos novos aparecem como extras na marcacao.</p>
+            </div>
+
+            <form className="admin-create-user" onSubmit={handleSaveService}>
+              {!editingServiceId ? (
+                <label>
+                  ID (opcional, ex: mistura)
+                  <input
+                    type="text"
+                    value={serviceForm.id}
+                    onChange={(event) => setServiceForm((current) => ({ ...current, id: event.target.value }))}
+                    placeholder="gerado a partir do nome"
+                  />
+                </label>
+              ) : null}
+              <div className="field-row">
+                <label>
+                  Nome (PT) *
+                  <input
+                    type="text"
+                    required
+                    value={serviceForm.name}
+                    onChange={(event) => setServiceForm((current) => ({ ...current, name: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Nome (EN)
+                  <input
+                    type="text"
+                    value={serviceForm.nameEn}
+                    onChange={(event) => setServiceForm((current) => ({ ...current, nameEn: event.target.value }))}
+                  />
+                </label>
+              </div>
+              <label>
+                Descricao
+                <textarea
+                  rows={2}
+                  value={serviceForm.description}
+                  onChange={(event) => setServiceForm((current) => ({ ...current, description: event.target.value }))}
+                />
+              </label>
+              <div className="field-row">
+                <label>
+                  Preco (EUR) *
+                  <input
+                    type="number"
+                    min={0}
+                    step="1"
+                    value={serviceForm.price}
+                    onChange={(event) => setServiceForm((current) => ({ ...current, price: event.target.value }))}
+                  />
+                </label>
+                <label className="extra-toggle">
+                  <input
+                    type="checkbox"
+                    checked={serviceForm.active}
+                    onChange={(event) => setServiceForm((current) => ({ ...current, active: event.target.checked }))}
+                  />
+                  <span>Ativo no site</span>
+                </label>
+              </div>
+              <div className="admin-user-form-actions">
+                <button type="submit" className="primary-button">
+                  {editingServiceId ? 'Guardar servico' : 'Adicionar servico'}
+                </button>
+                {editingServiceId ? (
+                  <button type="button" className="secondary-button" onClick={cancelEditService}>
+                    Cancelar edicao
+                  </button>
+                ) : null}
+              </div>
+            </form>
+
+            {catalogLoading ? <p className="summary-copy">A carregar servicos...</p> : null}
+            <ul className="admin-user-list">
+              {services.map((service) => (
+                <li key={service.id}>
+                  <div className="admin-user-card-head">
+                    <strong>{service.name}</strong>
+                    <span className="booking-id-chip">{service.id}</span>
+                    {!service.active ? <span className="booking-id-chip">inativo</span> : null}
+                  </div>
+                  <span>{service.nameEn || 'Sem nome EN'}</span>
+                  <span>{service.price} EUR · {service.description || 'Sem descricao'}</span>
+                  <div className="team-actions">
+                    <button type="button" className="secondary-button" onClick={() => startEditService(service)}>
+                      Editar
+                    </button>
+                    <button type="button" className="secondary-button" onClick={() => void handleDeleteService(service.id)}>
+                      Apagar
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </section>
         ) : null}
 
@@ -1074,6 +1558,14 @@ function AdminPage() {
                     'booking-refunded': 'Devolvido',
                     'user-created': 'Utilizador criado',
                     'pricing-updated': 'Precos atualizados',
+                    'room-created': 'Sala criada',
+                    'room-updated': 'Sala atualizada',
+                    'room-archived': 'Sala arquivada',
+                    'room-deleted': 'Sala apagada',
+                    'service-created': 'Servico criado',
+                    'service-updated': 'Servico atualizado',
+                    'service-archived': 'Servico arquivado',
+                    'service-deleted': 'Servico apagado',
                   };
 
                   const ts = new Date(entry.createdAt);

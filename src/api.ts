@@ -50,7 +50,55 @@ export type ApiBooking = {
 
 export type PricingConfig = {
   perMemberPerHour: number;
-  extras: { engineer: number; recording: number; backline: number };
+  extras: Record<string, number>;
+};
+
+// --- Salas + Serviços (pie-menu, tabelas rooms/services) -----
+
+export type ApiRoom = {
+  id: string;
+  name: string;
+  description: string;
+  descriptionEn: string;
+  maxMembers: number;
+  pricePerMemberHour: number | null;
+  gear: string[];
+  gearEn: string[];
+  accent: string;
+  active: boolean;
+};
+
+export type ApiService = {
+  id: string;
+  name: string;
+  nameEn: string;
+  description: string;
+  price: number;
+  active: boolean;
+  sortOrder: number;
+};
+
+export type RoomDraft = {
+  id?: string;
+  name: string;
+  description?: string;
+  descriptionEn?: string;
+  maxMembers: number;
+  pricePerMemberHour?: number | null;
+  gear?: string;
+  gearEn?: string;
+  accent?: string;
+  active?: boolean;
+};
+
+export type ServiceDraft = {
+  id?: string;
+  name: string;
+  nameEn?: string;
+  description?: string;
+  price: number;
+  active?: boolean;
+  sortOrder?: number;
 };
 
 export type ApiAuditEntry = {
@@ -84,6 +132,39 @@ export type FinanceMonthSummary = {
 };
 
 const allowedRoles: Role[] = ['admin', 'collaborator', 'technician'];
+
+const fallbackRooms: ApiRoom[] = [
+  {
+    id: 'sala-red',
+    name: 'SALA RED',
+    description: 'Sala de impacto forte para ensaios completos e passagens de alinhamento com pressao real.',
+    descriptionEn: 'High-impact room for full-band rehearsals and pressure-tested run-throughs.',
+    maxMembers: 6,
+    pricePerMemberHour: null,
+    gear: ['Bateria completa', '2 amps de guitarra', 'PA com monitores'],
+    gearEn: ['Full drum kit', '2 guitar amps', 'PA with monitors'],
+    accent: 'var(--room-red)',
+    active: true,
+  },
+  {
+    id: 'sala-grey',
+    name: 'SALA GREY',
+    description: 'Sala equilibrada para composicao, vozes e trabalho de detalhe com mais controlo dinamico.',
+    descriptionEn: 'Balanced room for songwriting, vocals, and detail-focused arrangement work.',
+    maxMembers: 5,
+    pricePerMemberHour: null,
+    gear: ['Bateria compacta', 'Amp de baixo', 'PA com efeitos de voz'],
+    gearEn: ['Compact drum kit', 'Bass amp', 'PA with vocal FX'],
+    accent: 'var(--room-grey)',
+    active: true,
+  },
+];
+
+const fallbackServices: ApiService[] = [
+  { id: 'engineer', name: 'Tecnico de sessao', nameEn: 'Session engineer', description: '', price: 24, active: true, sortOrder: 0 },
+  { id: 'recording', name: 'Captacao stereo do ensaio', nameEn: 'Stereo rehearsal capture', description: '', price: 18, active: true, sortOrder: 1 },
+  { id: 'backline', name: 'Preparacao extra de backline', nameEn: 'Extra backline setup', description: '', price: 12, active: true, sortOrder: 2 },
+];
 
 const roomsById: Record<string, string> = {
   'sala-red': 'SALA RED',
@@ -158,10 +239,35 @@ export function estimateBookingAmount(
   const basePrice = duration * Number(pricingConfig?.perMemberPerHour || 0) * baseMembers;
   const extras = Array.isArray(booking?.extras) ? booking.extras : [];
   const extraValue = extras.reduce((sum, extraName) => {
-    return sum + Number(pricingConfig?.extras?.[extraName as keyof PricingConfig['extras']] ?? 0);
+    return sum + Number(pricingConfig?.extras?.[extraName] ?? 0);
   }, 0);
 
   return Number((basePrice + extraValue).toFixed(2));
+}
+
+async function loadPricingConfig(): Promise<PricingConfig> {
+  const [{ data: pricingData }, servicesResult] = await Promise.all([
+    supabase.from('pricing').select('*').eq('id', 1).maybeSingle(),
+    supabase.from('services').select('*').eq('active', true).order('sortOrder', { ascending: true }),
+  ]);
+  const extras: Record<string, number> = {};
+  if (servicesResult.data && !isMissingTableError(servicesResult.error)) {
+    for (const row of servicesResult.data ?? []) {
+      const service = mapServiceRow(row as Record<string, unknown>);
+      if (service.active) extras[service.id] = Number(service.price || 0);
+    }
+  }
+  if (Object.keys(extras).length === 0) {
+    const legacy = ((pricingData?.extras ?? {}) as Record<string, unknown>);
+    for (const fallback of fallbackServices) {
+      const legacyValue = legacy[fallback.id];
+      extras[fallback.id] = Number.isFinite(Number(legacyValue)) ? Number(legacyValue) : fallback.price;
+    }
+  }
+  return {
+    perMemberPerHour: Number(pricingData?.perMemberPerHour ?? defaultPricing.perMemberPerHour),
+    extras,
+  };
 }
 
 function mapBookingRow(row: Record<string, unknown>): ApiBooking {
@@ -306,31 +412,21 @@ export async function createBooking(draft: CreateBookingDraft): Promise<{ bookin
       throw new ApiError('Supabase não configurado: define VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.', 500);
     }
     const roomId = String(draft?.roomId || '').trim() || null;
-    const roomName =
-      String(draft?.roomName || '').trim() || (roomId ? roomsById[roomId] || '' : '');
+    let roomName = String(draft?.roomName || '').trim();
+    if (!roomName && roomId) {
+      try {
+        const { rooms } = await listRooms({ includeInactive: true });
+        roomName = rooms.find((room) => room.id === roomId)?.name || roomsById[roomId] || '';
+      } catch {
+        roomName = roomsById[roomId] || '';
+      }
+    }
 
     if (!roomName || !draft?.date || !draft?.time || !draft?.duration || !draft?.contactName || !draft?.email) {
       throw new ApiError('Missing required booking fields.', 400);
     }
 
-    const { data: pricingData, error: pricingError } = await supabase
-      .from('pricing')
-      .select('*')
-      .eq('id', 1)
-      .maybeSingle();
-    if (pricingError) {
-      throw toError(pricingError.message, 'Failed to load pricing.');
-    }
-    const pricing: PricingConfig = pricingData
-      ? {
-          perMemberPerHour: Number(pricingData.perMemberPerHour ?? defaultPricing.perMemberPerHour),
-          extras: {
-            engineer: Number(pricingData.extras?.engineer ?? defaultPricing.extras.engineer),
-            recording: Number(pricingData.extras?.recording ?? defaultPricing.extras.recording),
-            backline: Number(pricingData.extras?.backline ?? defaultPricing.extras.backline),
-          },
-        }
-      : defaultPricing;
+    const pricing = await loadPricingConfig();
 
     const extras = Array.isArray(draft.extras) ? draft.extras.filter(Boolean) : [];
     const duration = Number(draft.duration);
@@ -402,26 +498,16 @@ export async function adminBookings(
 ): Promise<{ bookings: ApiBooking[] }> {
   const actor = await requireActor(token, ['admin']);
 
-  const [{ data: rows, error }, profilesResult, pricingResult] = await Promise.all([
+  const [{ data: rows, error }, profilesResult] = await Promise.all([
     supabase.from('bookings').select('*').order('date', { ascending: true }),
     supabase.from('profiles').select('id, name'),
-    supabase.from('pricing').select('*').eq('id', 1).maybeSingle(),
   ]);
 
   if (error) {
     throw toError(error.message, 'Could not load bookings', 400);
   }
 
-  const pricing: PricingConfig = pricingResult.data
-    ? {
-        perMemberPerHour: Number(pricingResult.data.perMemberPerHour ?? defaultPricing.perMemberPerHour),
-        extras: {
-          engineer: Number(pricingResult.data.extras?.engineer ?? defaultPricing.extras.engineer),
-          recording: Number(pricingResult.data.extras?.recording ?? defaultPricing.extras.recording),
-          backline: Number(pricingResult.data.extras?.backline ?? defaultPricing.extras.backline),
-        },
-      }
-    : defaultPricing;
+  const pricing = await loadPricingConfig();
 
   let bookings = (rows ?? []).map((row) => mapBookingRow(row as Record<string, unknown>));
 
@@ -587,17 +673,7 @@ export async function bookingAction(
       throw new ApiError('Payment was already received for this booking.', 400);
     }
 
-    const { data: pricingData } = await supabase.from('pricing').select('*').eq('id', 1).maybeSingle();
-    const pricing: PricingConfig = pricingData
-      ? {
-          perMemberPerHour: Number(pricingData.perMemberPerHour ?? defaultPricing.perMemberPerHour),
-          extras: {
-            engineer: Number(pricingData.extras?.engineer ?? defaultPricing.extras.engineer),
-            recording: Number(pricingData.extras?.recording ?? defaultPricing.extras.recording),
-            backline: Number(pricingData.extras?.backline ?? defaultPricing.extras.backline),
-          },
-        }
-      : defaultPricing;
+    const pricing = await loadPricingConfig();
 
     patch.paymentStatus = 'received';
     patch.paymentConfirmedBy = actorStamp;
@@ -651,20 +727,15 @@ export async function adminFinance(token: string): Promise<{
 }> {
   await requireActor(token, ['admin']);
 
-  const [{ data: rows, error }, pricingResult] = await Promise.all([
+  const [{ data: rows, error }] = await Promise.all([
     supabase.from('bookings').select('*'),
-    supabase.from('pricing').select('*').eq('id', 1).maybeSingle(),
   ]);
 
   if (error) {
     throw toError(error.message, 'Could not load finance', 400);
   }
 
-  const extrasCatalog: Record<string, number> = {
-    engineer: Number(pricingResult.data?.extras?.engineer ?? defaultPricing.extras.engineer),
-    recording: Number(pricingResult.data?.extras?.recording ?? defaultPricing.extras.recording),
-    backline: Number(pricingResult.data?.extras?.backline ?? defaultPricing.extras.backline),
-  };
+  const extrasCatalog = (await loadPricingConfig()).extras;
 
   const monthlyMap = new Map<string, FinanceMonthSummary>();
 
@@ -738,53 +809,340 @@ export async function adminFinance(token: string): Promise<{
 
 // --- Preçário -----------------------------------------------
 
+function isMissingTableError(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  const code = String(error.code || '');
+  const message = String(error.message || '').toLowerCase();
+  return code === '42P01' || message.includes('does not exist') || message.includes('could not find the table');
+}
+
+function mapRoomRow(row: Record<string, unknown>): ApiRoom {
+  const gear = Array.isArray(row.gear) ? (row.gear as unknown[]).map((item) => String(item)) : [];
+  const gearEn = Array.isArray(row.gearEn)
+    ? (row.gearEn as unknown[]).map((item) => String(item))
+    : Array.isArray((row as Record<string, unknown>).gear_en)
+      ? ((row as Record<string, unknown>).gear_en as unknown[]).map((item) => String(item))
+      : [];
+  const rawPrice = row.pricePerMemberHour ?? (row as Record<string, unknown>).price_per_member_hour ?? null;
+  return {
+    id: String(row.id),
+    name: String(row.name ?? ''),
+    description: String(row.description ?? ''),
+    descriptionEn: String(row.descriptionEn ?? (row as Record<string, unknown>).description_en ?? ''),
+    maxMembers: Number(row.maxMembers ?? (row as Record<string, unknown>).max_members ?? 4),
+    pricePerMemberHour: rawPrice === null || rawPrice === undefined || rawPrice === '' ? null : Number(rawPrice),
+    gear,
+    gearEn,
+    accent: String(row.accent ?? 'var(--room-red)'),
+    active: row.active !== false,
+  };
+}
+
+function mapServiceRow(row: Record<string, unknown>): ApiService {
+  return {
+    id: String(row.id),
+    name: String(row.name ?? ''),
+    nameEn: String(row.nameEn ?? (row as Record<string, unknown>).name_en ?? ''),
+    description: String(row.description ?? ''),
+    price: Number(row.price ?? 0),
+    active: row.active !== false,
+    sortOrder: Number(row.sortOrder ?? (row as Record<string, unknown>).sort_order ?? 0),
+  };
+}
+
+function slugify(value: string, fallback: string): string {
+  const slug = String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  return slug || fallback;
+}
+
+function splitLines(value: string | undefined): string[] {
+  return String(value || '')
+    .split(/\r?\n|,/) 
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+export function servicesToPricingExtras(services: ApiService[]): Record<string, number> {
+  const extras: Record<string, number> = {};
+  for (const service of services) {
+    if (service.active) extras[service.id] = Number(service.price || 0);
+  }
+  if (Object.keys(extras).length === 0) {
+    for (const fallback of fallbackServices) extras[fallback.id] = fallback.price;
+  }
+  return extras;
+}
+
+// --- Salas (pie-menu) -----------------------------------------
+
+export async function listRooms(options?: { includeInactive?: boolean }): Promise<{ rooms: ApiRoom[] }> {
+  if (!isSupabaseConfigured) {
+    const rooms = options?.includeInactive ? fallbackRooms : fallbackRooms.filter((room) => room.active);
+    return { rooms };
+  }
+  const query = supabase.from('rooms').select('*').order('createdAt', { ascending: true });
+  const { data, error } = options?.includeInactive ? await query : await query.eq('active', true);
+  if (error) {
+    if (isMissingTableError(error)) {
+      const rooms = options?.includeInactive ? fallbackRooms : fallbackRooms.filter((room) => room.active);
+      return { rooms };
+    }
+    throw toError(error.message, 'Could not load rooms');
+  }
+  const rooms = (data ?? []).map((row) => mapRoomRow(row as Record<string, unknown>));
+  if (rooms.length === 0) {
+    const fallback = options?.includeInactive ? fallbackRooms : fallbackRooms.filter((room) => room.active);
+    return { rooms: fallback };
+  }
+  return { rooms };
+}
+
+export async function createRoom(token: string, draft: RoomDraft): Promise<{ room: ApiRoom }> {
+  const actor = await requireActor(token, ['admin']);
+  const name = String(draft?.name || '').trim();
+  const maxMembers = Number(draft?.maxMembers);
+  if (!name) throw new ApiError('Room name is required.', 400);
+  if (!Number.isFinite(maxMembers) || maxMembers <= 0) throw new ApiError('Invalid capacity.', 400);
+  const rawPrice: unknown = draft?.pricePerMemberHour;
+  const pricePerMemberHour =
+    rawPrice === null || rawPrice === undefined || String(rawPrice).trim() === '' ? null : Number(rawPrice);
+  if (pricePerMemberHour !== null && (!Number.isFinite(pricePerMemberHour) || pricePerMemberHour < 0)) {
+    throw new ApiError('Invalid room price.', 400);
+  }
+  const id = String(draft?.id || '').trim() || slugify(name, `sala-${randHex(3).toLowerCase()}`);
+  const row = {
+    id,
+    name,
+    description: String(draft?.description ?? ''),
+    descriptionEn: String(draft?.descriptionEn ?? ''),
+    maxMembers: Math.floor(maxMembers),
+    pricePerMemberHour,
+    gear: splitLines(draft?.gear),
+    gearEn: splitLines(draft?.gearEn),
+    accent: String(draft?.accent || 'var(--room-red)'),
+    active: draft?.active !== false,
+    updatedAt: new Date().toISOString(),
+  };
+  const { data, error } = await supabase.from('rooms').insert(row).select().single();
+  if (error) {
+    if (String(error.code) === '23505') throw new ApiError('Room id already exists.', 409);
+    throw toError(error.message, 'Could not create room');
+  }
+  const room = mapRoomRow(data as Record<string, unknown>);
+  await recordAudit({ action: 'room-created', actor: { id: actor.id, name: actor.name, role: actor.role }, target: room.id, details: { name: room.name } });
+  return { room };
+}
+
+export async function updateRoom(token: string, roomId: string, draft: RoomDraft): Promise<{ room: ApiRoom }> {
+  const actor = await requireActor(token, ['admin']);
+  const name = String(draft?.name || '').trim();
+  const maxMembers = Number(draft?.maxMembers);
+  if (!name) throw new ApiError('Room name is required.', 400);
+  if (!Number.isFinite(maxMembers) || maxMembers <= 0) throw new ApiError('Invalid capacity.', 400);
+  const rawPrice: unknown = draft?.pricePerMemberHour;
+  const pricePerMemberHour =
+    rawPrice === null || rawPrice === undefined || String(rawPrice).trim() === '' ? null : Number(rawPrice);
+  if (pricePerMemberHour !== null && (!Number.isFinite(pricePerMemberHour) || pricePerMemberHour < 0)) {
+    throw new ApiError('Invalid room price.', 400);
+  }
+  const patch: Record<string, unknown> = {
+    name,
+    description: String(draft?.description ?? ''),
+    descriptionEn: String(draft?.descriptionEn ?? ''),
+    maxMembers: Math.floor(maxMembers),
+    pricePerMemberHour,
+    gear: splitLines(draft?.gear),
+    gearEn: splitLines(draft?.gearEn),
+    accent: String(draft?.accent || 'var(--room-red)'),
+    active: draft?.active !== false,
+  };
+  const { data, error } = await supabase.from('rooms').update(patch).eq('id', roomId).select().single();
+  if (error || !data) throw toError(error?.message, 'Could not update room');
+  const room = mapRoomRow(data as Record<string, unknown>);
+  await recordAudit({ action: 'room-updated', actor: { id: actor.id, name: actor.name, role: actor.role }, target: room.id, details: { name: room.name } });
+  return { room };
+}
+
+export async function deleteRoom(token: string, roomId: string): Promise<{ message: string }> {
+  const actor = await requireActor(token, ['admin']);
+  const { data: existing } = await supabase.from('rooms').select('*').eq('id', roomId).maybeSingle();
+  if (!existing) throw new ApiError('Room not found.', 404);
+  const { data: linked } = await supabase.from('bookings').select('id').eq('roomId', roomId).limit(1);
+  if (linked && linked.length > 0) {
+    const { error } = await supabase.from('rooms').update({ active: false }).eq('id', roomId);
+    if (error) throw toError(error.message, 'Could not archive room');
+    await recordAudit({ action: 'room-archived', actor: { id: actor.id, name: actor.name, role: actor.role }, target: roomId, details: { name: String((existing as Record<string, unknown>).name ?? roomId) } });
+    return { message: 'Room archived (has bookings).' };
+  }
+  const { error } = await supabase.from('rooms').delete().eq('id', roomId);
+  if (error) throw toError(error.message, 'Could not delete room');
+  await recordAudit({ action: 'room-deleted', actor: { id: actor.id, name: actor.name, role: actor.role }, target: roomId, details: { name: String((existing as Record<string, unknown>).name ?? roomId) } });
+  return { message: 'Room deleted successfully' };
+}
+
+// --- Serviços (pie-menu) --------------------------------------
+
+export async function listServices(options?: { includeInactive?: boolean }): Promise<{ services: ApiService[] }> {
+  if (!isSupabaseConfigured) {
+    const services = options?.includeInactive ? fallbackServices : fallbackServices.filter((service) => service.active);
+    return { services };
+  }
+  const query = supabase.from('services').select('*').order('sortOrder', { ascending: true });
+  const { data, error } = options?.includeInactive ? await query : await query.eq('active', true);
+  if (error) {
+    if (isMissingTableError(error)) {
+      const services = options?.includeInactive ? fallbackServices : fallbackServices.filter((service) => service.active);
+      return { services };
+    }
+    throw toError(error.message, 'Could not load services');
+  }
+  const services = (data ?? []).map((row) => mapServiceRow(row as Record<string, unknown>));
+  if (services.length === 0) {
+    const fallback = options?.includeInactive ? fallbackServices : fallbackServices.filter((service) => service.active);
+    return { services: fallback };
+  }
+  return { services };
+}
+
+export async function createService(token: string, draft: ServiceDraft): Promise<{ service: ApiService }> {
+  const actor = await requireActor(token, ['admin']);
+  const name = String(draft?.name || '').trim();
+  const price = Number(draft?.price);
+  if (!name) throw new ApiError('Service name is required.', 400);
+  if (!Number.isFinite(price) || price < 0) throw new ApiError('Invalid service price.', 400);
+  const id = String(draft?.id || '').trim() || slugify(name, `servico-${randHex(3).toLowerCase()}`);
+  const { data: existingServices } = await supabase.from('services').select('sortOrder').order('sortOrder', { ascending: false }).limit(1);
+  const nextOrder = Number.isFinite(Number(draft?.sortOrder))
+    ? Number(draft?.sortOrder)
+    : Number((existingServices?.[0] as Record<string, unknown> | undefined)?.sortOrder ?? fallbackServices.length) + 1;
+  const row = {
+    id,
+    name,
+    nameEn: String(draft?.nameEn ?? ''),
+    description: String(draft?.description ?? ''),
+    price,
+    active: draft?.active !== false,
+    sortOrder: nextOrder,
+    updatedAt: new Date().toISOString(),
+  };
+  const { data, error } = await supabase.from('services').insert(row).select().single();
+  if (error) {
+    if (String(error.code) === '23505') throw new ApiError('Service id already exists.', 409);
+    throw toError(error.message, 'Could not create service');
+  }
+  const service = mapServiceRow(data as Record<string, unknown>);
+  await recordAudit({ action: 'service-created', actor: { id: actor.id, name: actor.name, role: actor.role }, target: service.id, details: { name: service.name, price: service.price } });
+  return { service };
+}
+
+export async function updateService(token: string, serviceId: string, draft: ServiceDraft): Promise<{ service: ApiService }> {
+  const actor = await requireActor(token, ['admin']);
+  const name = String(draft?.name || '').trim();
+  const price = Number(draft?.price);
+  if (!name) throw new ApiError('Service name is required.', 400);
+  if (!Number.isFinite(price) || price < 0) throw new ApiError('Invalid service price.', 400);
+  const patch: Record<string, unknown> = {
+    name,
+    nameEn: String(draft?.nameEn ?? ''),
+    description: String(draft?.description ?? ''),
+    price,
+    active: draft?.active !== false,
+  };
+  if (Number.isFinite(Number(draft?.sortOrder))) patch.sortOrder = Number(draft?.sortOrder);
+  const { data, error } = await supabase.from('services').update(patch).eq('id', serviceId).select().single();
+  if (error || !data) throw toError(error?.message, 'Could not update service');
+  const service = mapServiceRow(data as Record<string, unknown>);
+  await recordAudit({ action: 'service-updated', actor: { id: actor.id, name: actor.name, role: actor.role }, target: service.id, details: { name: service.name, price: service.price } });
+  return { service };
+}
+
+export async function deleteService(token: string, serviceId: string): Promise<{ message: string }> {
+  const actor = await requireActor(token, ['admin']);
+  const { data: existing } = await supabase.from('services').select('*').eq('id', serviceId).maybeSingle();
+  if (!existing) throw new ApiError('Service not found.', 404);
+  const { data: linked } = await supabase.from('bookings').select('id,extras').limit(50);
+  const inUse = (linked ?? []).some((row) => Array.isArray((row as Record<string, unknown>).extras) && ((row as Record<string, unknown>).extras as unknown[]).includes(serviceId));
+  if (inUse) {
+    const { error } = await supabase.from('services').update({ active: false }).eq('id', serviceId);
+    if (error) throw toError(error.message, 'Could not archive service');
+    await recordAudit({ action: 'service-archived', actor: { id: actor.id, name: actor.name, role: actor.role }, target: serviceId, details: { name: String((existing as Record<string, unknown>).name ?? serviceId) } });
+    return { message: 'Service archived (in use).' };
+  }
+  const { error } = await supabase.from('services').delete().eq('id', serviceId);
+  if (error) throw toError(error.message, 'Could not delete service');
+  await recordAudit({ action: 'service-deleted', actor: { id: actor.id, name: actor.name, role: actor.role }, target: serviceId, details: { name: String((existing as Record<string, unknown>).name ?? serviceId) } });
+  return { message: 'Service deleted successfully' };
+}
+
 export async function pricing(): Promise<{ pricing: PricingConfig }> {
   if (!isSupabaseConfigured) {
     throw new ApiError('Supabase não configurado: define VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.', 500);
   }
-  const { data, error } = await supabase.from('pricing').select('*').eq('id', 1).maybeSingle();
+  const [{ data, error }, servicesResult] = await Promise.all([
+    supabase.from('pricing').select('*').eq('id', 1).maybeSingle(),
+    supabase.from('services').select('*').eq('active', true).order('sortOrder', { ascending: true }),
+  ]);
   if (error) {
     throw toError(error.message, 'Could not load pricing');
   }
 
+  const extras: Record<string, number> = {};
+  if (servicesResult.data && !isMissingTableError(servicesResult.error)) {
+    for (const row of servicesResult.data ?? []) {
+      const service = mapServiceRow(row as Record<string, unknown>);
+      if (service.active) extras[service.id] = Number(service.price || 0);
+    }
+  }
+  if (Object.keys(extras).length === 0) {
+    const legacy = (data?.extras ?? {}) as Record<string, unknown>;
+    for (const fallback of fallbackServices) {
+      const legacyValue = legacy[fallback.id];
+      extras[fallback.id] = Number.isFinite(Number(legacyValue)) ? Number(legacyValue) : fallback.price;
+    }
+  }
+
   if (!data) {
-    return { pricing: defaultPricing };
+    return { pricing: { ...defaultPricing, extras } };
   }
 
   return {
     pricing: {
       perMemberPerHour: Number(data.perMemberPerHour ?? defaultPricing.perMemberPerHour),
-      extras: {
-        engineer: Number(data.extras?.engineer ?? defaultPricing.extras.engineer),
-        recording: Number(data.extras?.recording ?? defaultPricing.extras.recording),
-        backline: Number(data.extras?.backline ?? defaultPricing.extras.backline),
-      },
+      extras,
     },
   };
 }
 
 export async function updatePricing(
   token: string,
-  updates: { perMemberPerHour?: number; extras?: Partial<PricingConfig['extras']> },
+  updates: { perMemberPerHour?: number; extras?: Record<string, number | string> },
 ): Promise<{ pricing: PricingConfig }> {
   const actor = await requireActor(token, ['admin']);
   const { data: current } = await supabase.from('pricing').select('*').eq('id', 1).maybeSingle();
+  const currentExtras = ((current?.extras ?? {}) as Record<string, unknown>);
+  const knownIds = new Set<string>([
+    ...fallbackServices.map((service) => service.id),
+    ...Object.keys(currentExtras),
+    ...Object.keys(updates.extras ?? {}),
+  ]);
+  const mergedExtras: Record<string, number> = {};
+  for (const id of knownIds) {
+    const candidate = updates.extras && id in updates.extras ? updates.extras[id] : currentExtras[id];
+    const fallbackPrice = fallbackServices.find((service) => service.id === id)?.price ?? 0;
+    mergedExtras[id] = Number.isFinite(Number(candidate)) ? Number(candidate) : Number(fallbackPrice);
+  }
 
   const merged: PricingConfig = {
     perMemberPerHour: Number.isFinite(Number(updates.perMemberPerHour))
       ? Number(updates.perMemberPerHour)
       : Number(current?.perMemberPerHour ?? defaultPricing.perMemberPerHour),
-    extras: {
-      engineer: Number.isFinite(Number(updates.extras?.engineer))
-        ? Number(updates.extras?.engineer)
-        : Number(current?.extras?.engineer ?? defaultPricing.extras.engineer),
-      recording: Number.isFinite(Number(updates.extras?.recording))
-        ? Number(updates.extras?.recording)
-        : Number(current?.extras?.recording ?? defaultPricing.extras.recording),
-      backline: Number.isFinite(Number(updates.extras?.backline))
-        ? Number(updates.extras?.backline)
-        : Number(current?.extras?.backline ?? defaultPricing.extras.backline),
-    },
+    extras: mergedExtras,
   };
 
   const { error } = await supabase

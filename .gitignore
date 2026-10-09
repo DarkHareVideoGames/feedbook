@@ -10,5 +10,17 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# config local do agente (Cline)
+.clinerules/
+
+# logs e artefactos de runtime do Vite
+vite-dev.log
+vite-err.log
+*.tsbuildinfo
+
+# artefactos compilados do config (o fonte é vite.config.ts)
+vite.config.js
+vite.config.d.ts
+
 # dados de execução do servidor (mantém o state.json do repositório)
 server/data/state.json.bak
