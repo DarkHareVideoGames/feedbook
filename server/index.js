@@ -49,6 +49,46 @@ const WHATSAPP_TWILIO_ACCOUNT_SID = String(process.env.WHATSAPP_TWILIO_ACCOUNT_S
 const WHATSAPP_TWILIO_AUTH_TOKEN = String(process.env.WHATSAPP_TWILIO_AUTH_TOKEN || '').trim();
 const WHATSAPP_TWILIO_FROM = String(process.env.WHATSAPP_TWILIO_FROM || '').trim();
 
+// Discord — alerta da equipa para novas marcações (canal #marcação-de-ensaios).
+// Sem esta variável o alerta é ignorado e o resto do fluxo não é afetado.
+const DISCORD_WEBHOOK_URL = String(process.env.DISCORD_WEBHOOK_URL || '').trim();
+
+function plainText(value, fallback = '-') {
+  const text = String(value ?? '').trim();
+  return text || fallback;
+}
+
+// Embed Discord para novas marcações pendentes (canal #marcação-de-ensaios).
+function buildDiscordEmbed(booking) {
+  return {
+    color: 15548997,
+    fields: [
+      { inline: true, name: 'Utilizador', value: plainText(booking.contactName) },
+      { inline: true, name: 'Banda', value: plainText(booking.bandName, plainText(booking.contactName)) },
+      { inline: true, name: 'Data', value: plainText(formatDatePt(booking.date)) },
+      { inline: true, name: 'Hora', value: plainText(booking.time) },
+      { inline: true, name: 'Sala', value: plainText(booking.roomName) },
+      { inline: true, name: 'Telefone do cliente', value: plainText(booking.contactPhone) },
+    ],
+    timestamp: new Date().toISOString(),
+    title: '🚨 Novo Pedido de Marcação!',
+  };
+}
+
+// Disparo em segundo plano: nunca bloqueia nem falha a resposta principal.
+async function sendDiscordAlert(booking) {
+  if (!DISCORD_WEBHOOK_URL) return;
+  try {
+    await fetch(DISCORD_WEBHOOK_URL, {
+      body: JSON.stringify({ embeds: [buildDiscordEmbed(booking)] }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    });
+  } catch (e) {
+    console.error('Erro ao enviar alerta Discord:', e);
+  }
+}
+
 const emailTransport = SMTP_HOST && SMTP_PASS
   ? nodemailer.createTransport({
       host: SMTP_HOST,
@@ -125,6 +165,11 @@ function emailSignature() {
 }
 
 async function sendBookingNotifications(booking, status) {
+  // Alerta Discord em segundo plano para novas marcações (não bloqueia a resposta).
+  if (status === 'pending') {
+    void sendDiscordAlert(booking);
+  }
+
   const recipientEmail = booking.email;
 
   if (recipientEmail && emailTransport) {
