@@ -52,13 +52,13 @@ function formatDatePt(value) {
 // Assinatura partilhada por todos os e-mails de marcação.
 function emailSignature() {
   return (
-    `<br><img src="https://feedbackproductions.pt/mailsign.png" width="108" height="42" style="width:108px;height:42px;display:block;border:0;" alt="Feedback Productions">` +
+    `<br><img src="https://feedbook-kappa.vercel.app/mailsign.png" width="108" height="42" style="width:108px;height:42px;display:block;border:0;" alt="Feedback Productions">` +
     `<p style="color:#555555;font-size:14px;line-height:1.5;margin:12px 0 0 0;">` +
     `Feedback Productions<br>` +
     `Estúdios de Ensaio &amp; Produção Musical<br>` +
     `📍 Parque de Exposições Acácio Dores — Montijo, Portugal<br>` +
     `📞 91 817 62 67 / 93 232 1079 / 91 651 58 02<br>` +
-    `🌐 Link do site: <a href="https://estudiofeedback.weebly.com/">https://estudiofeedback.weebly.com/</a>` +
+    `🌐 Link do site: <a href="https://feedbackproductions.pt/">https://feedbackproductions.pt/</a>` +
     `</p>` +
     `<p style="color:#555555;font-size:14px;line-height:1.5;margin:8px 0 0 0;">` +
     `📸 Instagram: <a href="https://www.instagram.com/feedbackproductions/">https://www.instagram.com/feedbackproductions/</a><br>` +
