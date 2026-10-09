@@ -496,7 +496,7 @@ export async function adminBookings(
   token: string,
   period?: 'future' | 'past',
 ): Promise<{ bookings: ApiBooking[] }> {
-  const actor = await requireActor(token, ['admin']);
+  const actor = await requireActor(token, ['admin', 'collaborator', 'technician']);
 
   const [{ data: rows, error }, profilesResult] = await Promise.all([
     supabase.from('bookings').select('*').order('date', { ascending: true }),

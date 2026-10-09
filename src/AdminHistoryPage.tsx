@@ -80,7 +80,22 @@ const statusLabel: Record<BookingStatus, string> = {
 
 type HistoryFilter = 'all' | 'pending' | 'confirmed' | 'past' | 'cancelled' | 'refunded' | 'rejected';
 
-type AdminPanel = 'unified' | 'rooms' | 'services' | 'pricing';
+type AdminPanel = 'unified' | 'users' | 'rooms' | 'services' | 'pricing';
+
+type NewUserDraft = {
+  name: string;
+  email: string;
+  password: string;
+  role: Role;
+};
+
+type EditUserDraft = {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: Role;
+};
 
 type RoomFormDraft = {
   id: string;
@@ -428,6 +443,16 @@ function AdminHistoryPage() {
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogNotice, setCatalogNotice] = useState('');
+  const [users, setUsers] = useState<AuthUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userActionLoading, setUserActionLoading] = useState(false);
+  const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
+    name: '',
+    email: '',
+    password: '',
+    role: 'collaborator',
+  });
+  const [editUserDraft, setEditUserDraft] = useState<EditUserDraft | null>(null);
   const isAdmin = currentUser?.role === 'admin';
 
   const formatCurrency = (value: number) =>
@@ -503,7 +528,12 @@ function AdminHistoryPage() {
       const payload = await api.adminBookings(token);
       setBookings(payload.bookings as PastBooking[]);
     } catch (err) {
-      if (err instanceof api.ApiError && (err.status === 401 || err.status === 403)) {
+      if (err instanceof api.ApiError && err.status === 403) {
+        // Sessao valida mas sem permissoes — nao e uma sessao expirada.
+        setError('Sem permissoes para aceder aos ensaios. Contacta o administrador.');
+        return;
+      }
+      if (err instanceof api.ApiError && err.status === 401) {
         window.localStorage.removeItem(TOKEN_KEY);
         setToken('');
         setCurrentUser(null);
@@ -565,6 +595,23 @@ function AdminHistoryPage() {
     }
   };
 
+  const loadUsers = async (sessionToken: string) => {
+    if (!sessionToken) return;
+    setUsersLoading(true);
+    try {
+      const payload = await api.adminUsers(sessionToken);
+      setUsers(payload.users as AuthUser[]);
+    } catch (err) {
+      if (err instanceof api.ApiError && (err.status === 401 || err.status === 403)) {
+        setUsers([]);
+        return;
+      }
+      setError('Nao foi possivel carregar utilizadores.');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
   const restoreSession = async (sessionToken: string) => {
     try {
       const payload = await api.me(sessionToken);
@@ -572,7 +619,7 @@ function AdminHistoryPage() {
       setAuthError('');
 
       if (payload.user.role === 'admin') {
-        await Promise.all([loadFinance(sessionToken), loadCatalogs()]);
+        await Promise.all([loadFinance(sessionToken), loadCatalogs(), loadUsers(sessionToken)]);
       }
     } catch (_error) {
       throw new Error('Session expired');
@@ -591,7 +638,7 @@ function AdminHistoryPage() {
       setCurrentUser(payload.user);
       await loadHistory(payload.token);
       if (payload.user.role === 'admin') {
-        await Promise.all([loadFinance(payload.token), loadCatalogs()]);
+        await Promise.all([loadFinance(payload.token), loadCatalogs(), loadUsers(payload.token)]);
       }
     } catch (authErr) {
       if (authErr instanceof Error && authErr.message) {
@@ -615,6 +662,116 @@ function AdminHistoryPage() {
     setAuthError('');
     setActivePanel('unified');
     setCatalogNotice('');
+    setUsers([]);
+    setNewUserDraft({ name: '', email: '', password: '', role: 'collaborator' });
+    setEditUserDraft(null);
+  };
+
+  const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || !isAdmin || userActionLoading) return;
+
+    const name = newUserDraft.name.trim();
+    const email = newUserDraft.email.trim().toLowerCase();
+    const password = newUserDraft.password;
+
+    if (!name || !email || !password) {
+      setError('Preenche nome, email e password para criar o utilizador.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('A password precisa de pelo menos 6 caracteres.');
+      return;
+    }
+
+    setCatalogNotice('');
+    setError('');
+    setUserActionLoading(true);
+    try {
+      await api.createUser(sessionToken, { name, email, password, role: newUserDraft.role });
+      setNewUserDraft({ name: '', email: '', password: '', role: 'collaborator' });
+      await loadUsers(sessionToken);
+      setCatalogNotice('Utilizador criado com sucesso.');
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel criar utilizador.');
+    } finally {
+      setUserActionLoading(false);
+    }
+  };
+
+  const startEditUser = (user: AuthUser) => {
+    setEditUserDraft({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      password: '',
+      role: user.role,
+    });
+    setCatalogNotice('');
+    setError('');
+  };
+
+  const cancelEditUser = () => {
+    setEditUserDraft(null);
+  };
+
+  const handleEditUser = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || !isAdmin || !editUserDraft || userActionLoading) return;
+
+    const name = editUserDraft.name.trim();
+    const email = editUserDraft.email.trim().toLowerCase();
+
+    if (!name || !email) {
+      setError('Nome e email nao podem ficar vazios.');
+      return;
+    }
+    if (editUserDraft.password && editUserDraft.password.length < 6) {
+      setError('A password precisa de pelo menos 6 caracteres.');
+      return;
+    }
+
+    setCatalogNotice('');
+    setError('');
+    setUserActionLoading(true);
+    try {
+      await api.updateUser(sessionToken, {
+        id: editUserDraft.id,
+        name,
+        email,
+        password: editUserDraft.password,
+        role: editUserDraft.role,
+      });
+      setEditUserDraft(null);
+      await loadUsers(sessionToken);
+      setCatalogNotice('Utilizador atualizado com sucesso.');
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel atualizar utilizador.');
+    } finally {
+      setUserActionLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || !isAdmin || userActionLoading) return;
+    if (!window.confirm('Apagar este utilizador?')) return;
+
+    setCatalogNotice('');
+    setError('');
+    setUserActionLoading(true);
+    try {
+      const payload = await api.deleteUser(sessionToken, userId);
+      if (editUserDraft?.id === userId) setEditUserDraft(null);
+      await loadUsers(sessionToken);
+      setCatalogNotice(payload.message || 'Utilizador apagado com sucesso.');
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel apagar utilizador.');
+    } finally {
+      setUserActionLoading(false);
+    }
   };
 
   const startEditRoom = (room: api.ApiRoom) => {
@@ -1488,36 +1645,52 @@ function AdminHistoryPage() {
             >
               Ensaios
             </button>
-            <button
-              type="button"
-              className={`admin-sidebar-item ${activePanel === "rooms" ? "admin-sidebar-item-active" : ""}`}
-              onClick={() => {
-                setActivePanel("rooms");
-                setSidebarOpen(false);
-              }}
-            >
-              Salas
-            </button>
-            <button
-              type="button"
-              className={`admin-sidebar-item ${activePanel === "services" ? "admin-sidebar-item-active" : ""}`}
-              onClick={() => {
-                setActivePanel("services");
-                setSidebarOpen(false);
-              }}
-            >
-              Servicos
-            </button>
-            <button
-              type="button"
-              className={`admin-sidebar-item ${activePanel === "pricing" ? "admin-sidebar-item-active" : ""}`}
-              onClick={() => {
-                setActivePanel("pricing");
-                setSidebarOpen(false);
-              }}
-            >
-              Precos
-            </button>
+            {isAdmin ? (
+              <button
+                type="button"
+                className={`admin-sidebar-item ${activePanel === "users" ? "admin-sidebar-item-active" : ""}`}
+                onClick={() => {
+                  setActivePanel("users");
+                  setSidebarOpen(false);
+                }}
+              >
+                Utilizadores
+              </button>
+            ) : null}
+            {isAdmin ? (
+              <>
+                <button
+                  type="button"
+                  className={`admin-sidebar-item ${activePanel === "rooms" ? "admin-sidebar-item-active" : ""}`}
+                  onClick={() => {
+                    setActivePanel("rooms");
+                    setSidebarOpen(false);
+                  }}
+                >
+                  Salas
+                </button>
+                <button
+                  type="button"
+                  className={`admin-sidebar-item ${activePanel === "services" ? "admin-sidebar-item-active" : ""}`}
+                  onClick={() => {
+                    setActivePanel("services");
+                    setSidebarOpen(false);
+                  }}
+                >
+                  Servicos
+                </button>
+                <button
+                  type="button"
+                  className={`admin-sidebar-item ${activePanel === "pricing" ? "admin-sidebar-item-active" : ""}`}
+                  onClick={() => {
+                    setActivePanel("pricing");
+                    setSidebarOpen(false);
+                  }}
+                >
+                  Precos
+                </button>
+              </>
+            ) : null}
 
             <div className="admin-sidebar-footer">
               <a href="/" className="admin-sidebar-item admin-sidebar-link" onClick={() => setSidebarOpen(false)}>
@@ -1543,7 +1716,157 @@ function AdminHistoryPage() {
           {catalogNotice ? <p className="confirmation">{catalogNotice}</p> : null}
           {loading ? <p className="summary-copy">A carregar...</p> : null}
 
-          {activePanel === 'rooms' ? (
+          {isAdmin && activePanel === 'users' ? (
+            <section className="card admin-section">
+              <div className="section-heading">
+                <p className="eyebrow">Utilizadores</p>
+                <h2>Gestao de utilizadores</h2>
+              </div>
+
+              <form
+                className="admin-create-user"
+                onSubmit={editUserDraft ? handleEditUser : handleCreateUser}
+              >
+                <label>
+                  Nome *
+                  <input
+                    type="text"
+                    required
+                    autoComplete="name"
+                    value={editUserDraft ? editUserDraft.name : newUserDraft.name}
+                    onChange={(event) =>
+                      editUserDraft
+                        ? setEditUserDraft((current) =>
+                            current ? { ...current, name: event.target.value } : current,
+                          )
+                        : setNewUserDraft((current) => ({ ...current, name: event.target.value }))
+                    }
+                  />
+                </label>
+
+                <label>
+                  Email *
+                  <input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    value={editUserDraft ? editUserDraft.email : newUserDraft.email}
+                    onChange={(event) =>
+                      editUserDraft
+                        ? setEditUserDraft((current) =>
+                            current ? { ...current, email: event.target.value } : current,
+                          )
+                        : setNewUserDraft((current) => ({ ...current, email: event.target.value }))
+                    }
+                  />
+                </label>
+
+                <label>
+                  Password {editUserDraft ? '(vazio = manter atual)' : '*'}
+                  <input
+                    type="password"
+                    required={!editUserDraft}
+                    autoComplete="new-password"
+                    placeholder={editUserDraft ? 'Deixar vazio para manter' : ''}
+                    value={editUserDraft ? editUserDraft.password : newUserDraft.password}
+                    onChange={(event) =>
+                      editUserDraft
+                        ? setEditUserDraft((current) =>
+                            current ? { ...current, password: event.target.value } : current,
+                          )
+                        : setNewUserDraft((current) => ({ ...current, password: event.target.value }))
+                    }
+                  />
+                </label>
+
+                <label>
+                  Perfil
+                  <select
+                    value={editUserDraft ? editUserDraft.role : newUserDraft.role}
+                    onChange={(event) =>
+                      editUserDraft
+                        ? setEditUserDraft((current) =>
+                            current ? { ...current, role: event.target.value as Role } : current,
+                          )
+                        : setNewUserDraft((current) => ({
+                            ...current,
+                            role: event.target.value as Role,
+                          }))
+                    }
+                  >
+                    <option value="admin">Administradores</option>
+                    <option value="collaborator">Membros da Equipa</option>
+                    <option value="technician">Tecnicos</option>
+                  </select>
+                </label>
+
+                <div className="admin-user-form-actions">
+                  <button
+                    type="submit"
+                    className="primary-button"
+                    disabled={userActionLoading || usersLoading}
+                  >
+                    {userActionLoading
+                      ? 'A guardar...'
+                      : editUserDraft
+                        ? 'Guardar alteracoes'
+                        : 'Criar utilizador'}
+                  </button>
+                  {editUserDraft ? (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={cancelEditUser}
+                      disabled={userActionLoading}
+                    >
+                      Cancelar edicao
+                    </button>
+                  ) : null}
+                </div>
+              </form>
+
+              {usersLoading ? <p className="summary-copy">A carregar utilizadores...</p> : null}
+              <ul className="admin-user-list">
+                {users.map((user) => (
+                  <li key={user.id}>
+                    <div className="admin-user-card-head">
+                      <strong>{user.name}</strong>
+                      <span className="booking-id-chip">{user.id}</span>
+                    </div>
+                    <span>{user.email}</span>
+                    <span>{roleLabel[user.role]}</span>
+                    <div className="team-actions">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => startEditUser(user)}
+                        disabled={userActionLoading}
+                      >
+                        Editar
+                      </button>
+                      {currentUser?.id !== user.id ? (
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={() => void handleDeleteUser(user.id)}
+                          disabled={userActionLoading}
+                        >
+                          Apagar
+                        </button>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {users.length === 0 && !usersLoading ? (
+                <p className="summary-copy">Sem utilizadores registados.</p>
+              ) : null}
+            </section>
+          ) : null}
+
+          {isAdmin && activePanel === 'rooms' ? (
           <section className="card admin-section">
             <div className="section-heading">
               <p className="eyebrow">Salas</p>
@@ -1691,7 +2014,7 @@ function AdminHistoryPage() {
           </section>
         ) : null}
 
-        {activePanel === 'services' ? (
+        {isAdmin && activePanel === 'services' ? (
           <section className="card admin-section">
             <div className="section-heading">
               <p className="eyebrow">Servicos</p>
@@ -1793,7 +2116,7 @@ function AdminHistoryPage() {
           </section>
         ) : null}
 
-        {activePanel === 'pricing' ? (
+        {isAdmin && activePanel === 'pricing' ? (
           <section className="card admin-section">
             <div className="section-heading">
               <p className="eyebrow">Precos</p>
