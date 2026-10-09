@@ -206,6 +206,14 @@ function randHex(bytes: number): string {
     .join('');
 }
 
+function generateBookingId(): string {
+  const buffer = new Uint8Array(4);
+  crypto.getRandomValues(buffer);
+  const value =
+    (buffer[0] * 0x1000000 + buffer[1] * 0x10000 + buffer[2] * 0x100 + buffer[3]) % 1_000_000;
+  return `FB-${String(value).padStart(6, '0')}`;
+}
+
 function normalizeRole(value: unknown): Role {
   const role = String(value ?? '').trim().toLowerCase();
   return allowedRoles.includes(role as Role) ? (role as Role) : 'collaborator';
@@ -436,7 +444,6 @@ export async function createBooking(draft: CreateBookingDraft): Promise<{ bookin
       : estimateBookingAmount({ duration, participants, extras }, pricing);
 
     const row = {
-      id: `BOOKING-${randHex(8).toUpperCase()}`,
       roomId,
       status: 'pending',
       roomName,
@@ -455,9 +462,21 @@ export async function createBooking(draft: CreateBookingDraft): Promise<{ bookin
       createdAt: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase.from('bookings').insert(row).select().single();
-    if (error || !data) {
-      throw toError(error?.message, 'Falha ao criar marcacao.');
+    let data: Record<string, unknown> | null = null;
+    let insertError: { message?: string; code?: string } | null = null;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const result = await supabase
+        .from('bookings')
+        .insert({ ...row, id: generateBookingId() })
+        .select()
+        .single();
+      data = (result.data as Record<string, unknown> | null) ?? null;
+      insertError = result.error;
+      // 23505 = chave primaria duplicada: gera outro numero e tenta de novo.
+      if (!result.error || String(result.error.code) !== '23505') break;
+    }
+    if (insertError || !data) {
+      throw toError(insertError?.message, 'Falha ao criar marcacao.');
     }
 
     const booking = mapBookingRow(data as Record<string, unknown>);

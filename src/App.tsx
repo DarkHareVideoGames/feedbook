@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
 
@@ -26,6 +26,10 @@ type BookingForm = {
 };
 
 type BookingStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
+
+type BookingStep = 'date' | 'extras' | 'details';
+
+const bookingSteps: BookingStep[] = ['date', 'extras', 'details'];
 
 type TeamBooking = {
   id: string;
@@ -188,8 +192,6 @@ function App() {
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [visibleMonth, setVisibleMonth] = useState(startOfMonth(new Date()));
   const [duration, setDuration] = useState(3);
-  const [participants, setParticipants] = useState(4);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('on-site');
   const [pricing, setPricing] = useState<PricingConfig>(defaultPricing);
   const [selectedExtras, setSelectedExtras] = useState<string[]>(['engineer']);
   const [confirmation, setConfirmation] = useState<string>('');
@@ -198,6 +200,11 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [backendOffline, setBackendOffline] = useState(false);
   const [teamBookings, setTeamBookings] = useState<TeamBooking[]>([]);
+  const [bookingStep, setBookingStep] = useState<BookingStep | null>(null);
+  const dateZoneRef = useRef<HTMLDivElement>(null);
+  const extrasZoneRef = useRef<HTMLDivElement>(null);
+  const detailsZoneRef = useRef<HTMLDivElement>(null);
+  const confirmationRef = useRef<HTMLDivElement>(null);
 
   const currency = useMemo(
     () =>
@@ -226,8 +233,6 @@ function App() {
     };
   });
   const selectedRoom = localizedRooms.find((room) => room.id === selectedRoomId) ?? localizedRooms[0];
-  const maxMembersForSelectedRoom = selectedRoom?.maxMembers ?? 4;
-  const participantsOptions = Array.from({ length: maxMembersForSelectedRoom }, (_, index) => index + 1);
   const selectedStartHour = hourLabelToNumber(selectedSlot);
   const extras = useMemo<Extra[]>(
     () =>
@@ -309,10 +314,32 @@ function App() {
   }, [duration, selectedStartHour]);
 
   useEffect(() => {
-    if (participants > maxMembersForSelectedRoom) {
-      setParticipants(maxMembersForSelectedRoom);
-    }
-  }, [maxMembersForSelectedRoom, participants]);
+    if (!bookingStep) return;
+    const zone =
+      bookingStep === 'date'
+        ? dateZoneRef.current
+        : bookingStep === 'extras'
+          ? extrasZoneRef.current
+          : detailsZoneRef.current;
+    if (!zone) return;
+    zone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    zone.focus({ preventScroll: true });
+  }, [bookingStep]);
+
+  useEffect(() => {
+    if (!confirmation || !confirmationRef.current) return;
+    confirmationRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    confirmationRef.current.focus({ preventScroll: true });
+  }, [confirmation]);
+
+  function zoneClassName(zone: BookingStep): string {
+    const zoneIndex = bookingSteps.indexOf(zone);
+    const activeIndex = bookingStep === null ? -1 : bookingSteps.indexOf(bookingStep);
+    const classes = ['booking-focus-zone'];
+    if (zoneIndex === activeIndex) classes.push('booking-focus-active');
+    if (activeIndex >= 0 && zoneIndex > activeIndex) classes.push('booking-focus-dimmed');
+    return classes.join(' ');
+  }
 
   function toggleExtra(extraId: string) {
     setSelectedExtras((current) =>
@@ -320,6 +347,7 @@ function App() {
         ? current.filter((id) => id !== extraId)
         : [...current, extraId],
     );
+    setBookingStep('details');
   }
 
   async function loadTeamBookings() {
@@ -397,8 +425,7 @@ function App() {
         email: draftForm.email,
         focus: draftForm.focus,
         locale,
-        participants,
-        paymentMethod,
+        paymentMethod: 'on-site',
       });
 
       const message = formatTemplate(translations.booking.confirmation, {
@@ -479,7 +506,10 @@ function App() {
                 <button
                   type="button"
                   className="secondary-button"
-                  onClick={() => setSelectedRoomId(room.id)}
+                  onClick={() => {
+                    setSelectedRoomId(room.id);
+                    setBookingStep('date');
+                  }}
                 >
                   {isSelected ? translations.rooms.selected : translations.rooms.choose}
                 </button>
@@ -491,49 +521,30 @@ function App() {
         <section className="booking-grid">
           <form className="card booking-form" onSubmit={handleSubmit} autoComplete="on">
             <div className="section-heading">
-              <p className="eyebrow">{translations.booking.eyebrow}</p>
               <h2>{translations.booking.title}</h2>
             </div>
 
-            <label>
-              {translations.booking.roomLabel}
-              <select
-                value={selectedRoomId}
-                onChange={(event) => setSelectedRoomId(event.target.value)}
+            {confirmation ? (
+              <div
+                className="confirmation-banner"
+                role="status"
+                aria-live="polite"
+                tabIndex={-1}
+                ref={confirmationRef}
               >
-                {localizedRooms.map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <span className="confirmation-banner-badge">{translations.booking.pendingBadge}</span>
+                <p className="confirmation-banner-message">{confirmation}</p>
+                <div className="confirmation-id-row">
+                  <span>{translations.booking.bookingIdLabel ?? 'N.º da reserva:'}</span>
+                  <strong className="confirmation-id-value">{confirmationId}</strong>
+                </div>
+                <p className="confirmation-id-note">
+                  {translations.booking.bookingIdNote ?? 'Guarda este numero para futuras referencias.'}
+                </p>
+              </div>
+            ) : null}
 
-            <label>
-              {translations.booking.paymentMethodLabel}
-              <select
-                value={paymentMethod}
-                onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
-              >
-                <option value="on-site">{translations.booking.paymentOnSite}</option>
-              </select>
-            </label>
-
-            <label>
-              {translations.booking.participantsLabel}
-              <select
-                value={participants}
-                onChange={(event) => setParticipants(Number(event.target.value))}
-              >
-                {participantsOptions.map((value) => (
-                  <option key={value} value={value}>
-                    {formatTemplate(translations.booking.participantsOption, { count: value })}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="field-row">
+            <div className={`field-row ${zoneClassName('date')}`} ref={dateZoneRef} tabIndex={-1}>
               <label className="calendar-field">
                 {translations.booking.dateLabel}
                 <div className="calendar-picker">
@@ -577,7 +588,10 @@ function App() {
                             isOccupied ? ' calendar-day-occupied' : ''
                           }`}
                           disabled={isDisabled}
-                          onClick={() => setSelectedDate(isoDate)}
+                          onClick={() => {
+                            setSelectedDate(isoDate);
+                            setBookingStep('extras');
+                          }}
                         >
                           <span>{date.getDate()}</span>
                         </button>
@@ -639,7 +653,7 @@ function App() {
               </div>
             </div>
 
-            <div>
+            <div className={zoneClassName('extras')} ref={extrasZoneRef} tabIndex={-1}>
               <span className="field-label">{translations.booking.addonsLabel}</span>
               <div className="extras-list">
                 {extras.map((extra) => (
@@ -656,71 +670,73 @@ function App() {
               </div>
             </div>
 
-            <label>
-              {translations.booking.bandNameLabel}
-              <input
-                id="field-bandName"
-                name="bandName"
-                type="text"
-                autoComplete="organization"
-                placeholder={translations.booking.bandNamePlaceholder}
-              />
-            </label>
-
-            <div className="field-row">
+            <div className={zoneClassName('details')} ref={detailsZoneRef} tabIndex={-1}>
               <label>
-                {translations.booking.contactNameLabel} <span className="required-star">*</span>
+                {translations.booking.bandNameLabel}
                 <input
-                  id="field-contactName"
-                  name="name"
+                  id="field-bandName"
+                  name="bandName"
                   type="text"
-                  required
-                  aria-required="true"
-                  autoComplete="name"
-                  placeholder={translations.booking.contactNamePlaceholder}
+                  autoComplete="organization"
+                  placeholder={translations.booking.bandNamePlaceholder}
                 />
               </label>
 
-              <label>
-                {translations.booking.contactPhoneLabel} <span className="required-star">*</span>
-                <input
-                  id="field-contactPhone"
-                  name="tel"
-                  type="tel"
-                  required
-                  aria-required="true"
-                  autoComplete="tel"
-                  inputMode="tel"
-                  placeholder={translations.booking.contactPhonePlaceholder}
-                />
-              </label>
+              <div className="field-row">
+                <label>
+                  {translations.booking.contactNameLabel} <span className="required-star">*</span>
+                  <input
+                    id="field-contactName"
+                    name="name"
+                    type="text"
+                    required
+                    aria-required="true"
+                    autoComplete="name"
+                    placeholder={translations.booking.contactNamePlaceholder}
+                  />
+                </label>
+
+                <label>
+                  {translations.booking.contactPhoneLabel} <span className="required-star">*</span>
+                  <input
+                    id="field-contactPhone"
+                    name="tel"
+                    type="tel"
+                    required
+                    aria-required="true"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    placeholder={translations.booking.contactPhonePlaceholder}
+                  />
+                </label>
+
+                <label>
+                  {translations.booking.emailLabel} <span className="required-star">*</span>
+                  <input
+                    id="field-email"
+                    name="email"
+                    type="email"
+                    required
+                    aria-required="true"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder={translations.booking.emailPlaceholder}
+                  />
+                </label>
+              </div>
 
               <label>
-                {translations.booking.emailLabel} <span className="required-star">*</span>
-                <input
-                  id="field-email"
-                  name="email"
-                  type="email"
-                  required
-                  aria-required="true"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  placeholder={translations.booking.emailPlaceholder}
+                {translations.booking.focusLabel}
+                <textarea
+                  id="field-focus"
+                  name="focus"
+                  rows={4}
+                  autoComplete="off"
+                  placeholder={translations.booking.focusPlaceholder}
                 />
               </label>
             </div>
-
-            <label>
-              {translations.booking.focusLabel}
-              <textarea
-                id="field-focus"
-                name="focus"
-                rows={4}
-                autoComplete="off"
-                placeholder={translations.booking.focusPlaceholder}
-              />
-            </label>
 
             <button className="primary-button" type="submit" disabled={isSubmitting || backendOffline}>
               {isSubmitting ? translations.booking.submitting : translations.booking.submit}
@@ -743,18 +759,6 @@ function App() {
               <p>{translations.booking.pendingDescription}</p>
             </div>
 
-            {confirmation ? (
-              <div className="confirmation-box">
-                <p className="confirmation">{confirmation}</p>
-                <div className="confirmation-id-row">
-                  <span>{translations.booking.bookingIdLabel ?? 'N.º da reserva:'}</span>
-                  <strong className="confirmation-id-value">{confirmationId}</strong>
-                </div>
-                <p className="confirmation-id-note">
-                  {translations.booking.bookingIdNote ?? 'Guarda este numero para futuras referencias.'}
-                </p>
-              </div>
-            ) : null}
             {errorMessage ? <p className="error-message">{errorMessage}</p> : null}
           </form>
         </section>
