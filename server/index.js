@@ -102,9 +102,9 @@ function formatDatePt(value) {
 }
 
 // Assinatura partilhada por todos os e-mails de marcação.
+// Nota: SVG é removido pelo Gmail/Outlook, por isso usam-se botões de texto.
 function emailSignature() {
-  const iconStyle = 'width:22px;height:22px;display:inline-block;vertical-align:middle;';
-  const linkStyle = 'display:inline-block;margin-right:14px;text-decoration:none;';
+  const btnStyle = 'display:inline-block;margin:0 8px 8px 0;padding:8px 16px;background-color:#222222;color:#ffffff !important;font-size:13px;font-family:Arial,sans-serif;text-decoration:none;border-radius:20px;';
   return (
     `<br><img src="https://feedbook-kappa.vercel.app/mailsign.png" width="108" height="42" style="width:108px;height:42px;display:block;border:0;" alt="Feedback Productions">` +
     `<p style="color:#555555;font-size:14px;line-height:1.5;margin:12px 0 0 0;">` +
@@ -114,15 +114,9 @@ function emailSignature() {
     `📞 91 817 62 67 / 93 232 1079 / 91 651 58 02` +
     `</p>` +
     `<p style="margin:12px 0 0 0;line-height:1;">` +
-    `<a href="https://feedbackproductions.pt/" title="Site" style="${linkStyle}">` +
-    `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="${iconStyle}"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>` +
-    `</a>` +
-    `<a href="https://www.instagram.com/feedbackproductions/" title="Instagram" style="${linkStyle}">` +
-    `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="${iconStyle}"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>` +
-    `</a>` +
-    `<a href="https://www.youtube.com/@FEEDBACKPRODUCTIONS" title="YouTube" style="${linkStyle}">` +
-    `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="${iconStyle}"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>` +
-    `</a>` +
+    `<a href="https://feedbackproductions.pt/" style="${btnStyle}">🌐 Site</a>` +
+    `<a href="https://www.instagram.com/feedbackproductions/" style="${btnStyle}">📸 Instagram</a>` +
+    `<a href="https://www.youtube.com/@FEEDBACKPRODUCTIONS" style="${btnStyle}">🎥 YouTube</a>` +
     `</p>` +
     `<p style="color:#999999;font-size:11px;line-height:1.5;margin:12px 0 0 0;">` +
     `Este é um e-mail automático enviado a partir do sistema de marcações. Por favor, não responda diretamente para este endereço.` +
