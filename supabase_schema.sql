@@ -1,5 +1,5 @@
 -- ============================================================
--- FeedBook — Schema completo para o Supabase
+-- Feedback - Ensaios — Schema completo para o Supabase
 -- Correr no SQL Editor do painel do Supabase (substitui a versão anterior).
 --
 -- ATENÇÃO: recria a tabela "bookings" (versão anterior estava vazia

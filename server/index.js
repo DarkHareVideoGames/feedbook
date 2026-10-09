@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // ============================================================
-// FeedBook — servidor de notificações (emails)
+// Feedback - Ensaios — servidor de notificações (emails)
 // Desde a migração para o Supabase, autenticação, marcações,
 // preçário e auditoria vivem no Supabase; este processo fica
 // apenas com o envio de e-mails (SMTP) e em servir o build.
@@ -43,7 +43,7 @@ const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_SECURE = String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true';
 const SMTP_USER = String(process.env.SMTP_USER || '').trim();
 const SMTP_PASS = String(process.env.SMTP_PASS || '').trim();
-const SMTP_FROM = String(process.env.SMTP_FROM || 'FeedBook <no-reply@feedbook.local>').trim();
+const SMTP_FROM = String(process.env.SMTP_FROM || 'Feedback - Ensaios <no-reply@feedbook.local>').trim();
 const WHATSAPP_TWILIO_ACCOUNT_SID = String(process.env.WHATSAPP_TWILIO_ACCOUNT_SID || '').trim();
 const WHATSAPP_TWILIO_AUTH_TOKEN = String(process.env.WHATSAPP_TWILIO_AUTH_TOKEN || '').trim();
 const WHATSAPP_TWILIO_FROM = String(process.env.WHATSAPP_TWILIO_FROM || '').trim();
@@ -86,7 +86,7 @@ async function sendBookingNotifications(booking, status) {
 
   if (recipientEmail && emailTransport) {
     let subject = '';
-    let bodyHTML = `<h1 style="font-size: 24px;">FeedBook Booking Status</h1>`;
+    let bodyHTML = `<h1 style="font-size: 24px;">Feedback - Ensaios Booking Status</h1>`;
 
     if (status === 'confirmed') {
       subject = '✅ Reserva Confirmada! Seu ensaio está agendado.';
@@ -110,7 +110,7 @@ async function sendBookingNotifications(booking, status) {
   }
 
   if (booking.contactPhone) {
-    const message = `[FeedBook] Seu ensaio foi ${status === 'confirmed' ? 'confirmado' : status === 'rejected' ? 'rejeitado' : 'cancelado'}!`;
+    const message = `[Feedback - Ensaios] Seu ensaio foi ${status === 'confirmed' ? 'confirmado' : status === 'rejected' ? 'rejeitado' : 'cancelado'}!`;
     await sendWhatsApp(booking.contactPhone, message);
   }
 }
@@ -145,5 +145,5 @@ app.get(/^(?!\/api(?:\/|$)).*/, (req, res) => {
 
 // --- INICIALIZAÇÃO DO SERVIDOR ---
 app.listen(PORT, () => {
-  console.log(`FeedBook notifications running on port ${PORT}`);
+  console.log(`Feedback - Ensaios notifications running on port ${PORT}`);
 });

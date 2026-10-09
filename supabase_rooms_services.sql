@@ -1,5 +1,5 @@
 -- ============================================================
--- FeedBook — Salas + Serviços dinâmicos (pie-menu)
+-- Feedback - Ensaios — Salas + Serviços dinâmicos (pie-menu)
 -- Correr no SQL Editor do Supabase DEPOIS do supabase_schema.sql
 -- Cria tabelas public.rooms e public.services com seed inicial
 -- que espelha os valores que hoje estão fixos no código.

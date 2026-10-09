@@ -1,6 +1,6 @@
-# FeedBook Sessions
+# Feedback - Ensaios
 
-FeedBook Sessions is a Vite + React + TypeScript booking app for music rehearsal rooms with a dedicated admin area and backend role-based access.
+Feedback - Ensaios is a Vite + React + TypeScript booking app for music rehearsal rooms with a dedicated admin area and backend role-based access.
 
 ## Features
 

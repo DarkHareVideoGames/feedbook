@@ -2,7 +2,7 @@ import type { User } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 
 // ============================================================
-// Camada de dados do FeedBook sobre o Supabase.
+// Camada de dados do Feedback - Ensaios sobre o Supabase.
 // Espelha os shapes dos antigos endpoints /api/* do Express
 // para manter as páginas praticamente intactas.
 // ============================================================

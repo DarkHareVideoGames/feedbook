@@ -469,7 +469,7 @@ function App() {
             <img
               className="brand-logo"
               src="/feedbook-logo.png"
-              alt="FeedBook Sessions"
+              alt="Feedback - Ensaios"
               onError={() => setLogoVisible(false)}
             />
           ) : null}

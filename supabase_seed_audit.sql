@@ -1,5 +1,5 @@
 -- ============================================================
--- FeedBook — Seed de dados existentes (audit_logs)
+-- Feedback - Ensaios — Seed de dados existentes (audit_logs)
 -- Correr DEPOIS do supabase_schema.sql no painel do Supabase.
 -- Preserva o historico de auditoria (acoes de utilizadores).
 -- ============================================================

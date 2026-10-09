@@ -393,7 +393,7 @@ function abrirWhatsAppMensagem(
     ].join('\n');
   }
 
-  const mensagem = [`Olá ${nomeContato}!`, corpo, ...contexto, 'Obrigado por escolheres o FeedBook.'].join('\n');
+  const mensagem = [`Olá ${nomeContato}!`, corpo, ...contexto, 'Obrigado por escolheres o Feedback - Ensaios.'].join('\n');
   const linkWhatsApp = `https://wa.me/${numeroNormalizado}?text=${encodeURIComponent(mensagem)}`;
   window.open(linkWhatsApp, '_blank', 'noopener,noreferrer');
   return true;
@@ -952,7 +952,7 @@ function AdminHistoryPage() {
       await api.bookingAction(token, bookingId, 'confirm');
 
       if (booking && consegueAbrirWhatsApp(booking)) {
-        abrirWhatsAppMensagem(booking, currentUser?.name || 'FeedBook', 'confirm');
+        abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'confirm');
       }
 
       await loadHistory(token);
@@ -992,7 +992,7 @@ function AdminHistoryPage() {
       await api.bookingAction(token, bookingId, 'reject');
 
       if (booking && consegueAbrirWhatsApp(booking)) {
-        abrirWhatsAppMensagem(booking, currentUser?.name || 'FeedBook', 'cancel');
+        abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'cancel');
       }
 
       await loadHistory(token);
@@ -1022,7 +1022,7 @@ function AdminHistoryPage() {
       await api.bookingAction(token, bookingId, 'cancel');
 
       if (booking && consegueAbrirWhatsApp(booking)) {
-        abrirWhatsAppMensagem(booking, currentUser?.name || 'FeedBook', 'cancel');
+        abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'cancel');
       }
 
       await loadHistory(token);
@@ -1042,7 +1042,7 @@ function AdminHistoryPage() {
       await api.bookingAction(token, bookingId, 'refund');
 
       if (booking && consegueAbrirWhatsApp(booking)) {
-        abrirWhatsAppMensagem(booking, currentUser?.name || 'FeedBook', 'refund');
+        abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'refund');
       }
 
       await loadHistory(token);
@@ -1101,7 +1101,7 @@ function AdminHistoryPage() {
       if (consegueAbrirWhatsApp(booking)) {
         abrirWhatsAppMensagem(
           booking,
-          currentUser?.name || 'FeedBook',
+          currentUser?.name || 'Feedback - Ensaios',
           'reschedule',
           {
             date: rescheduleDraft.date,
@@ -1277,7 +1277,7 @@ function AdminHistoryPage() {
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(17);
-    doc.text('FeedBook - Contas', margin, cursorY + 1);
+    doc.text('Feedback - Ensaios - Contas', margin, cursorY + 1);
 
     if (logoData?.dataUrl) {
       doc.addImage(logoData.dataUrl, logoData.format, pageWidth - 44, margin - 1, 32, 11);
@@ -1478,7 +1478,7 @@ function AdminHistoryPage() {
     doc.setTextColor(17, 24, 39);
 
     const stamp = new Date().toISOString().slice(0, 10);
-    doc.save(`feedbook-contas-${stamp}.pdf`);
+    doc.save(`feedback-ensaios-contas-${stamp}.pdf`);
   };
 
   useEffect(() => {
@@ -1542,7 +1542,7 @@ function AdminHistoryPage() {
               <img
                 className="admin-brand-logo"
                 src="/logoadmin.png"
-                alt="FeedBook Admin"
+                alt="Feedback - Ensaios Admin"
                 onError={() => setAdminLogoVisible(false)}
               />
             ) : null}
@@ -1595,7 +1595,7 @@ function AdminHistoryPage() {
             <img
               className="admin-brand-logo"
               src="/logoadmin.png"
-              alt="FeedBook Admin"
+              alt="Feedback - Ensaios Admin"
               onError={() => setAdminLogoVisible(false)}
             />
           ) : null}
@@ -2329,10 +2329,10 @@ function AdminHistoryPage() {
                 <div className="finance-print-layout" aria-label="Resumo de contas para PDF">
                   <div className="finance-print-header">
                     <div className="finance-print-header-copy">
-                      <h3>FeedBook - Contas</h3>
+                      <h3>Feedback - Ensaios - Contas</h3>
                       <p>{selectedFinanceData.length > 0 ? `${selectedFinanceData.length} mês(es) selecionado(s)` : 'Nenhum mes selecionado'}</p>
                     </div>
-                    <img className="finance-print-logo" src="/feedbook-logo.png" alt="FeedBook" />
+                    <img className="finance-print-logo" src="/feedbook-logo.png" alt="Feedback - Ensaios" />
                   </div>
 
                   {selectedFinanceData.length === 0 ? (
@@ -2688,7 +2688,7 @@ function AdminHistoryPage() {
                                 aria-label="Enviar mensagem por WhatsApp"
                                 title="Enviar mensagem por WhatsApp"
                                 onClick={() => {
-                                  abrirWhatsAppMensagem(b, currentUser?.name || 'FeedBook', b.status === 'pending' ? 'confirm' : 'cancel');
+                                  abrirWhatsAppMensagem(b, currentUser?.name || 'Feedback - Ensaios', b.status === 'pending' ? 'confirm' : 'cancel');
                                 }}
                               >
                                 <WhatsAppIcon />
@@ -2822,7 +2822,7 @@ function AdminHistoryPage() {
                             aria-label="Enviar mensagem por WhatsApp"
                             title="Enviar mensagem por WhatsApp"
                             onClick={() => {
-                              abrirWhatsAppMensagem(b, currentUser?.name || 'FeedBook', b.status === 'pending' ? 'confirm' : 'cancel');
+                              abrirWhatsAppMensagem(b, currentUser?.name || 'Feedback - Ensaios', b.status === 'pending' ? 'confirm' : 'cancel');
                             }}
                           >
                             <WhatsAppIcon />

@@ -2,7 +2,7 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Run FeedBook dev server",
+			"label": "Run Feedback - Ensaios dev server",
 			"type": "shell",
 			"command": "npm",
 			"args": [

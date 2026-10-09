@@ -214,7 +214,7 @@ function abrirWhatsAppMensagem(booking: TeamBooking, colaboradorNome: string, ti
 
   if (tipo === 'cancel') {
     corpo = [
-      `O meu nome é ${colaboradorNome}, da equipa FeedBook.`,
+      `O meu nome é ${colaboradorNome}, da equipa Feedback - Ensaios.`,
       'A tua marcação foi anulada pela equipa.',
       'Se quiseres, ajudamos a reagendar para outro horário.',
     ].join('\n');
@@ -222,7 +222,7 @@ function abrirWhatsAppMensagem(booking: TeamBooking, colaboradorNome: string, ti
 
   if (tipo === 'refund') {
     corpo = [
-      `O meu nome é ${colaboradorNome}, da equipa FeedBook.`,
+      `O meu nome é ${colaboradorNome}, da equipa Feedback - Ensaios.`,
       'Foi registada a devolução do pagamento desta marcação.',
       'Se precisares de ajuda adicional, estamos disponíveis.',
     ].join('\n');
@@ -811,11 +811,11 @@ function AdminPage() {
               <img
                 className="admin-brand-logo"
                 src="/logoadmin.png"
-                alt="FeedBook Admin"
+                alt="Feedback - Ensaios Admin"
                 onError={() => setAdminLogoVisible(false)}
               />
             ) : null}
-            <p className="eyebrow">FeedBook</p>
+            <p className="eyebrow">Feedback - Ensaios</p>
             <h2>Login de Administracao</h2>
             <p className="summary-copy">Acesso para Administradores, Membros da Equipa e Tecnicos.</p>
 
@@ -866,7 +866,7 @@ function AdminPage() {
             <img
               className="admin-brand-logo"
               src="/logoadmin.png"
-              alt="FeedBook Admin"
+              alt="Feedback - Ensaios Admin"
               onError={() => setAdminLogoVisible(false)}
             />
           ) : null}
