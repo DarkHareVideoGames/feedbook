@@ -85,31 +85,74 @@ async function sendWhatsApp(recipient, message) {
   }
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Data ISO (YYYY-MM-DD) -> Dia/Mês/Ano (DD/MM/YYYY); fallback ao valor original.
+function formatDatePt(value) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || '').trim());
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  return String(value || '').trim();
+}
+
+// Assinatura partilhada por todos os e-mails de marcação.
+function emailSignature() {
+  return (
+    `<br><img src="https://feedbackproductions.pt/mailsign.png" width="108" height="42" style="width:108px;height:42px;display:block;border:0;" alt="Feedback Productions">` +
+    `<p style="color:#555555;font-size:14px;line-height:1.5;margin:12px 0 0 0;">` +
+    `Feedback Productions<br>` +
+    `Estúdios de Ensaio &amp; Produção Musical<br>` +
+    `📍 Parque de Exposições Acácio Dores — Montijo, Portugal<br>` +
+    `📞 91 817 62 67 / 93 232 1079 / 91 651 58 02<br>` +
+    `🌐 Link do site: <a href="https://estudiofeedback.weebly.com/">https://estudiofeedback.weebly.com/</a>` +
+    `</p>` +
+    `<p style="color:#555555;font-size:14px;line-height:1.5;margin:8px 0 0 0;">` +
+    `📸 Instagram: <a href="https://www.instagram.com/feedbackproductions/">https://www.instagram.com/feedbackproductions/</a><br>` +
+    `🎥 YouTube: <a href="https://www.youtube.com/@FEEDBACKPRODUCTIONS">https://www.youtube.com/@FEEDBACKPRODUCTIONS</a>` +
+    `</p>` +
+    `<p style="color:#999999;font-size:11px;line-height:1.5;margin:12px 0 0 0;">` +
+    `Este é um e-mail automático enviado a partir do sistema de marcações. Por favor, não responda diretamente para este endereço.` +
+    `</p>`
+  );
+}
+
 async function sendBookingNotifications(booking, status) {
   const recipientEmail = booking.email;
 
   if (recipientEmail && emailTransport) {
     let subject = '';
-    let bodyHTML = `<h1 style="font-size: 24px;">Feedback - Ensaios Booking Status</h1>`;
+    let bodyHTML = `<h1 style="font-size: 24px;">Feedback - Ensaios Status da Reserva</h1>`;
+    const user = escapeHtml(booking.contactName);
+    const band = escapeHtml(booking.bandName || booking.contactName);
+    const date = escapeHtml(formatDatePt(booking.date));
+    const time = escapeHtml(booking.time);
+    const room = escapeHtml(booking.roomName);
 
     if (status === 'confirmed') {
       subject = '✅ Reserva Confirmada! Seu ensaio está agendado.';
-      bodyHTML += `<p>Olá ${booking.contactName}, o seu ensaio foi confirmado.</p>`;
-      bodyHTML += `<p>Detalhes: Data: ${booking.date} | Hora: ${booking.time} | Sala: ${booking.roomName}</p>`;
+      bodyHTML += `<p>Olá ${user}, o seu ensaio foi confirmado.</p>`;
+      bodyHTML += `<p>Detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>`;
     } else if (status === 'rejected') {
       subject = '❌ Reserva Rejeitada.';
-      bodyHTML += `<p>Olá ${booking.contactName}, a sua reserva foi rejeitada pela equipa.</p>`;
+      bodyHTML += `<p>Olá ${user}, a sua reserva foi rejeitada pela equipa.</p>`;
       bodyHTML += `<p>Por favor, entre em contacto connosco para reagendar.</p>`;
     } else if (status === 'cancelled') {
       subject = '⚠️ Reserva Cancelada.';
-      bodyHTML += `<p>Olá ${booking.contactName}, o seu ensaio foi cancelado pela equipa de administração.</p>`;
+      bodyHTML += `<p>Olá ${user}, o seu ensaio foi cancelado pela equipa de administração.</p>`;
     } else if (status === 'pending') {
       subject = '📩 Reserva Recebida. Aguarda confirmação.';
-      bodyHTML += `<p>Olá ${booking.contactName}, recebemos o pedido de ensaio.</p>`;
-      bodyHTML += `<p>Detalhes: Data: ${booking.date} | Hora: ${booking.time} | Sala: ${booking.roomName}</p>`;
-      bodyHTML += `<p>Iremos confirmar o mais rápido possível.</p>`;
+      bodyHTML += `<p>Olá ${user}, recebemos o pedido de ensaio dos ${band}.</p>`;
+      bodyHTML += `<p>Detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>`;
+      bodyHTML += `<p>Iremos confirmar o mais rápido possível. Fica atento ao teu Email e WhatsApp!</p>`;
     }
 
+    bodyHTML += emailSignature();
     await sendEmail(recipientEmail, subject, bodyHTML);
   }
 

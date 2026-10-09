@@ -33,15 +33,59 @@ function getTransport() {
   });
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Data ISO (YYYY-MM-DD) -> Dia/Mês/Ano (DD/MM/YYYY); fallback ao valor original.
+function formatDatePt(value) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || '').trim());
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  return String(value || '').trim();
+}
+
+// Assinatura partilhada por todos os e-mails de marcação.
+function emailSignature() {
+  return (
+    `<br><img src="https://feedbackproductions.pt/mailsign.png" width="108" height="42" style="width:108px;height:42px;display:block;border:0;" alt="Feedback Productions">` +
+    `<p style="color:#555555;font-size:14px;line-height:1.5;margin:12px 0 0 0;">` +
+    `Feedback Productions<br>` +
+    `Estúdios de Ensaio &amp; Produção Musical<br>` +
+    `📍 Parque de Exposições Acácio Dores — Montijo, Portugal<br>` +
+    `📞 91 817 62 67 / 93 232 1079 / 91 651 58 02<br>` +
+    `🌐 Link do site: <a href="https://estudiofeedback.weebly.com/">https://estudiofeedback.weebly.com/</a>` +
+    `</p>` +
+    `<p style="color:#555555;font-size:14px;line-height:1.5;margin:8px 0 0 0;">` +
+    `📸 Instagram: <a href="https://www.instagram.com/feedbackproductions/">https://www.instagram.com/feedbackproductions/</a><br>` +
+    `🎥 YouTube: <a href="https://www.youtube.com/@FEEDBACKPRODUCTIONS">https://www.youtube.com/@FEEDBACKPRODUCTIONS</a>` +
+    `</p>` +
+    `<p style="color:#999999;font-size:11px;line-height:1.5;margin:12px 0 0 0;">` +
+    `Este é um e-mail automático enviado a partir do sistema de marcações. Por favor, não responda diretamente para este endereço.` +
+    `</p>`
+  );
+}
+
 function buildMessage(booking, status) {
-  const head = '<h1 style="font-size: 24px;">Feedback - Ensaios Booking Status</h1>';
+  const head = '<h1 style="font-size: 24px;">Feedback - Ensaios Status da Reserva</h1>';
+  const user = escapeHtml(booking.contactName);
+  const band = escapeHtml(booking.bandName || booking.contactName);
+  const date = escapeHtml(formatDatePt(booking.date));
+  const time = escapeHtml(booking.time);
+  const room = escapeHtml(booking.roomName);
+  const signature = emailSignature();
   if (status === 'confirmed') {
     return {
       subject: '✅ Reserva Confirmada! Seu ensaio está agendado.',
       html:
         head +
-        `<p>Olá ${booking.contactName}, o seu ensaio foi confirmado.</p>` +
-        `<p>Detalhes: Data: ${booking.date} | Hora: ${booking.time} | Sala: ${booking.roomName}</p>`,
+        `<p>Olá ${user}, o seu ensaio foi confirmado.</p>` +
+        `<p>Detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>` +
+        signature,
     };
   }
   if (status === 'rejected') {
@@ -49,8 +93,9 @@ function buildMessage(booking, status) {
       subject: '❌ Reserva Rejeitada.',
       html:
         head +
-        `<p>Olá ${booking.contactName}, a sua reserva foi rejeitada pela equipa.</p>` +
-        `<p>Por favor, entre em contacto connosco para reagendar.</p>`,
+        `<p>Olá ${user}, a sua reserva foi rejeitada pela equipa.</p>` +
+        `<p>Por favor, entre em contacto connosco para reagendar.</p>` +
+        signature,
     };
   }
   if (status === 'cancelled') {
@@ -58,7 +103,8 @@ function buildMessage(booking, status) {
       subject: '⚠️ Reserva Cancelada.',
       html:
         head +
-        `<p>Olá ${booking.contactName}, o seu ensaio foi cancelado pela equipa de administração.</p>`,
+        `<p>Olá ${user}, o seu ensaio foi cancelado pela equipa de administração.</p>` +
+        signature,
     };
   }
   if (status === 'pending') {
@@ -66,9 +112,10 @@ function buildMessage(booking, status) {
       subject: '📩 Reserva Recebida. Aguarda confirmação.',
       html:
         head +
-        `<p>Olá ${booking.contactName}, recebemos o pedido de ensaio.</p>` +
-        `<p>Detalhes: Data: ${booking.date} | Hora: ${booking.time} | Sala: ${booking.roomName}</p>` +
-        `<p>Iremos confirmar o mais rápido possível.</p>`,
+        `<p>Olá ${user}, recebemos o pedido de ensaio dos ${band}.</p>` +
+        `<p>Detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>` +
+        `<p>Iremos confirmar o mais rápido possível. Fica atento ao teu Email e WhatsApp!</p>` +
+        signature,
     };
   }
   return null;
