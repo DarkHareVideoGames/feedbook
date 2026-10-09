@@ -37,23 +37,27 @@ app.use(cors({
 
 app.use(express.json());
 
-// --- Configuração SMTP (opcional; sem config, os emails são ignorados) ---
-const SMTP_HOST = String(process.env.SMTP_HOST || '').trim();
-const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
-const SMTP_SECURE = String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true';
-const SMTP_USER = String(process.env.SMTP_USER || '').trim();
-const SMTP_PASS = String(process.env.SMTP_PASS || '').trim();
-const SMTP_FROM = String(process.env.SMTP_FROM || 'Feedback - Ensaios <no-reply@feedbook.local>').trim();
+// --- Configuração SMTP (servidor próprio; sem SMTP_PASS os emails são ignorados) ---
+const SMTP_HOST = String(process.env.SMTP_HOST || 'mail.feedbackproductions.pt').trim();
+const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+const SMTP_USER = String(process.env.SMTP_USER || 'ensaios@feedbackproductions.pt').trim();
+const SMTP_PASS = String(process.env.SMTP_PASS || '');
+const SMTP_FROM = String(process.env.SMTP_FROM || 'Feedback - Ensaios <ensaios@feedbackproductions.pt>').trim();
+// Porta 465 = SSL/TLS direto (secure); 587 = STARTTLS. Força sempre canal encriptado.
+const SMTP_SECURE = String(process.env.SMTP_SECURE || (SMTP_PORT === 465 ? 'true' : 'false')).toLowerCase() === 'true';
 const WHATSAPP_TWILIO_ACCOUNT_SID = String(process.env.WHATSAPP_TWILIO_ACCOUNT_SID || '').trim();
 const WHATSAPP_TWILIO_AUTH_TOKEN = String(process.env.WHATSAPP_TWILIO_AUTH_TOKEN || '').trim();
 const WHATSAPP_TWILIO_FROM = String(process.env.WHATSAPP_TWILIO_FROM || '').trim();
 
-const emailTransport = SMTP_HOST
+const emailTransport = SMTP_HOST && SMTP_PASS
   ? nodemailer.createTransport({
       host: SMTP_HOST,
       port: SMTP_PORT,
       secure: SMTP_SECURE,
-      auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+      // Garante canal encriptado: SSL/TLS direto (465) ou STARTTLS (587).
+      requireTLS: !SMTP_SECURE,
+      tls: { minVersion: 'TLSv1.2' },
     })
   : null;
 
@@ -146,4 +150,5 @@ app.get(/^(?!\/api(?:\/|$)).*/, (req, res) => {
 // --- INICIALIZAÇÃO DO SERVIDOR ---
 app.listen(PORT, () => {
   console.log(`Feedback - Ensaios notifications running on port ${PORT}`);
+  console.log(`SMTP: ${SMTP_HOST}:${SMTP_PORT} secure=${SMTP_SECURE} user=${SMTP_USER} ${emailTransport ? 'ativo' : 'DESATIVADO (falta SMTP_PASS)'}`);
 });
