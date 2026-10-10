@@ -1101,6 +1101,23 @@ textarea:focus {
   color: #fca5a5;
 }
 
+/* Compact BETA badge only (no descriptive text) */
+.admin-beta-banner.beta-only {
+  display: flex;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: 0;
+  padding: 4px 12px;
+  margin-bottom: 14px;
+  font-size: 0.75rem;
+  border-radius: 999px;
+}
+
+.admin-beta-banner.beta-only .admin-beta-badge {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
 .admin-beta-banner.sub-banner {
   background: rgba(255, 200, 0, 0.15);
   border-color: rgba(255, 200, 0, 0.5);

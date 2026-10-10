@@ -866,6 +866,10 @@ function AdminPage() {
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
 
+      <div className="admin-beta-banner beta-only" role="note">
+        <span className="admin-beta-badge">Beta</span>
+      </div>
+
       <header className="topbar admin-topbar">
         <div className="brand-wrap">
           {adminLogoVisible ? (
@@ -1121,11 +1125,6 @@ function AdminPage() {
             <div className="section-heading">
               <p className="eyebrow">Utilizadores</p>
               <h2>Gestao de utilizadores</h2>
-            </div>
-
-            <div className="admin-beta-banner" role="note">
-              <span className="admin-beta-badge">🔵 Em BETA</span>
-              <span className="admin-beta-text">A plataforma ainda se encontra em BETA. Estamos a refinar funcionalidades e poderá encontrar erros ou alterações. Obrigado pela compreensão.</span>
             </div>
 
             <div className="admin-beta-banner sub-banner" role="note">

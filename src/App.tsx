@@ -463,9 +463,8 @@ function App() {
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
 
-      <div className="admin-beta-banner" role="note">
-        <span className="admin-beta-badge">🔵 Em BETA</span>
-        <span className="admin-beta-text">A plataforma ainda se encontra em BETA. Estamos a refinar funcionalidades e poderá encontrar erros ou alterações. Obrigado pela compreensão.</span>
+      <div className="admin-beta-banner beta-only" role="note">
+        <span className="admin-beta-badge">Beta</span>
       </div>
 
       <header className="topbar">
