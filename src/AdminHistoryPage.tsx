@@ -1732,6 +1732,11 @@ function AdminHistoryPage() {
               {/* BETA banner */}
               <div className="admin-beta-banner" role="note">
                 <span className="admin-beta-badge">🔵 Em BETA</span>
+                <span className="admin-beta-text">A plataforma ainda se encontra em BETA. Estamos a refinar funcionalidades e poderá encontrar erros ou alterações. Obrigado pela compreensão.</span>
+              </div>
+
+              <div className="admin-beta-banner sub-banner" role="note">
+                <span className="admin-beta-badge">⚠ OBRIGATÓRIO</span>
                 <span className="admin-beta-text">O telemovel e obrigatorio para novos utilizadores. Por favor, preencha o telemovel e verifique os dados antes de submeter.</span>
               </div>
 
