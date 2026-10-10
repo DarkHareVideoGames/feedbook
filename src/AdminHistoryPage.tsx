@@ -771,9 +771,10 @@ function AdminHistoryPage() {
 
     const name = editUserDraft.name.trim();
     const email = editUserDraft.email.trim().toLowerCase();
+    const phone = editUserDraft.phone.trim();
 
-    if (!name || !email) {
-      setError('Nome e email nao podem ficar vazios.');
+    if (!name || !email || !phone) {
+      setError('Nome, email e telemovel nao podem ficar vazios.');
       return;
     }
     if (editUserDraft.password && editUserDraft.password.length < 6) {
@@ -789,6 +790,7 @@ function AdminHistoryPage() {
         id: editUserDraft.id,
         name,
         email,
+        phone,
         password: editUserDraft.password,
         role: editUserDraft.role,
         function: editUserDraft.function,
@@ -1777,11 +1779,6 @@ function AdminHistoryPage() {
               <div className="section-heading">
                 <p className="eyebrow">Utilizadores</p>
                 <h2>Gestao de utilizadores</h2>
-              </div>
-
-              <div className="admin-beta-banner sub-banner" role="note">
-                <span className="admin-beta-badge">⚠ OBRIGATÓRIO</span>
-                <span className="admin-beta-text">O telemovel e obrigatorio para novos utilizadores. Por favor, preencha o telemovel e verifique os dados antes de submeter.</span>
               </div>
 
               <form

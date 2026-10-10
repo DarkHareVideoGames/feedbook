@@ -1145,11 +1145,6 @@ function AdminPage() {
               <h2>Gestao de utilizadores</h2>
             </div>
 
-            <div className="admin-beta-banner sub-banner" role="note">
-              <span className="admin-beta-badge">⚠ OBRIGATÓRIO</span>
-              <span className="admin-beta-text">O telemovel e obrigatorio para novos utilizadores. Por favor, preencha o telemovel e verifique os dados antes de submeter.</span>
-            </div>
-
             <form className="admin-create-user" onSubmit={editUserDraft ? handleEditUser : handleCreateUser}>
               <label>
                 Nome

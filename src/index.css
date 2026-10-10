@@ -1165,20 +1165,6 @@ textarea:focus {
   text-transform: uppercase;
 }
 
-.admin-beta-banner.sub-banner {
-  background: rgba(255, 200, 0, 0.15);
-  border-color: rgba(255, 200, 0, 0.5);
-  color: #fcd34d;
-}
-
-.admin-beta-banner.sub-banner .admin-beta-badge {
-  color: #fcd34d;
-}
-
-.admin-beta-banner.sub-banner .admin-beta-text {
-  color: #fcd34d;
-}
-
 .admin-user-list {
   list-style: none;
   padding: 0;

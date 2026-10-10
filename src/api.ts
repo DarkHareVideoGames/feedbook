@@ -1341,13 +1341,19 @@ export async function updateUser(
 ): Promise<{ message: string; user: ApiUser }> {
   const actor = await requireActor(token, ['admin', 'superuser']);
   const staffFunction = draft.function ? normalizeFunction(draft.function) : null;
+  const email = String(draft?.email || '').trim().toLowerCase();
+  const phone = String(draft?.phone || '').trim();
+
+  if (!draft?.name || !email || !phone) {
+    throw new ApiError('Invalid user data provided. Nome, email e telemovel sao obrigatorios.', 400);
+  }
 
   const { data, error } = await supabase.rpc('admin_update_user', {
     p_actor: actor.id,
     p_id: draft.id,
-    p_email: String(draft.email || '').trim().toLowerCase(),
+    p_email: email,
     p_name: draft.name,
-    p_phone: draft.phone,
+    p_phone: phone,
     p_role: draft.role,
     p_function: staffFunction,
     p_password: draft.password && draft.password.trim() ? draft.password.trim() : null,
