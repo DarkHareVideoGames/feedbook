@@ -13,13 +13,14 @@ export type ApiUser = {
   id: string;
   name: string;
   email: string;
+  phone: string;
   role: Role;
   createdAt: string;
 };
 
 export type BookingStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
 
-export type ActorStamp = { id: string; name: string; role: string; at: string };
+export type ActorStamp = { id: string; name: string; role: string; phone: string; at: string };
 
 export type ApiBooking = {
   id: string;
@@ -318,6 +319,7 @@ async function profileFor(user: User): Promise<ApiUser> {
       name: metadata.name || String(user.email ?? '').split('@')[0],
       email: String(user.email ?? ''),
       role: normalizeRole(metadata.role),
+      phone: '',
       createdAt: user.created_at ?? new Date().toISOString(),
     };
   }
@@ -327,6 +329,7 @@ async function profileFor(user: User): Promise<ApiUser> {
     name: String(data.name ?? ''),
     email: String(data.email ?? ''),
     role: normalizeRole(data.role),
+    phone: String(data.phone ?? ''),
     createdAt: String(data.createdAt ?? ''),
   };
 }
@@ -593,7 +596,7 @@ export async function bookingAction(
 
   const booking = mapBookingRow(existing as Record<string, unknown>);
   const now = new Date().toISOString();
-  const actorStamp: ActorStamp = { id: actor.id, name: actor.name, role: actor.role, at: now };
+  const actorStamp: ActorStamp = { id: actor.id, name: actor.name, role: actor.role, phone: actor.phone, at: now };
 
   const patch: Record<string, unknown> = {};
   let auditAction = '';
@@ -1209,6 +1212,7 @@ export async function adminUsers(token: string): Promise<{ users: ApiUser[] }> {
       id: String(row.id),
       name: String(row.name ?? ''),
       email: String(row.email ?? ''),
+      phone: String(row.phone ?? ''),
       role: normalizeRole(row.role),
       createdAt: String(row.createdAt ?? ''),
     })),
@@ -1272,11 +1276,12 @@ export async function updateUser(
     throw toError(error.message, 'Could not update user', 400);
   }
 
-  const row = data as { id: string; name: string; email: string; role: string; createdAt: string };
+  const row = data as { id: string; name: string; email: string; role: string; phone: string; createdAt: string };
   const user: ApiUser = {
     id: String(row.id),
     name: String(row.name ?? ''),
     email: String(row.email ?? ''),
+    phone: String(row.phone ?? ''),
     role: normalizeRole(row.role),
     createdAt: String(row.createdAt ?? ''),
   };

@@ -180,11 +180,15 @@ async function sendBookingNotifications(booking, status) {
     const date = escapeHtml(formatDatePt(booking.date));
     const time = escapeHtml(booking.time);
     const room = escapeHtml(booking.roomName);
+    const confirmerName = escapeHtml(booking.confirmedBy && booking.confirmedBy.name ? booking.confirmedBy.name : '');
+    const confirmerPhone = escapeHtml(booking.confirmedBy && booking.confirmedBy.phone ? booking.confirmedBy.phone : '');
+    const confirmerLine = [confirmerName, confirmerPhone].filter(Boolean).join(' — ');
 
     if (status === 'confirmed') {
       subject = '✅ Reserva Confirmada! Seu ensaio está agendado.';
       bodyHTML += `<p>Olá ${user}, o seu ensaio foi confirmado.</p>`;
       bodyHTML += `<p>Detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>`;
+      if (confirmerLine) bodyHTML += `<p>Confirmado por: ${confirmerLine}</p>`;
     } else if (status === 'rejected') {
       subject = '❌ Reserva Rejeitada.';
       bodyHTML += `<p>Olá ${user}, a sua reserva foi rejeitada pela equipa.</p>`;

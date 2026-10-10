@@ -120,6 +120,9 @@ function buildMessage(booking, status) {
   const date = escapeHtml(formatDatePt(booking.date));
   const time = escapeHtml(booking.time);
   const room = escapeHtml(booking.roomName);
+  const confirmerName = escapeHtml(booking.confirmedBy?.name || '');
+  const confirmerPhone = escapeHtml(booking.confirmedBy?.phone || '');
+  const confirmerLine = [confirmerName, confirmerPhone].filter(Boolean).join(' — ');
   const signature = emailSignature();
   if (status === 'confirmed') {
     return {
@@ -128,6 +131,7 @@ function buildMessage(booking, status) {
         head +
         `<p>Olá ${user}, o seu ensaio foi confirmado.</p>` +
         `<p>Detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>` +
+        (confirmerLine ? `<p>Confirmado por: ${confirmerLine}</p>` : '') +
         signature,
     };
   }

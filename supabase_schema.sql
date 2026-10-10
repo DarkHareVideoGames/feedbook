@@ -64,6 +64,7 @@ create table if not exists public.profiles (
   id          uuid        primary key references auth.users (id) on delete cascade,
   name        text        not null default '',
   email       text        not null unique,
+  phone       text        not null default '',
   role        text        not null default 'collaborator'
               check (role in ('admin', 'collaborator', 'technician')),
   "createdAt" timestamptz not null default now()
@@ -216,7 +217,7 @@ begin
 end;
 $$;
 
-grant execute on function public.admin_update_user(uuid, uuid, text, text, text, text) to anon, authenticated;
+grant execute on function public.admin_update_user(uuid, uuid, text, text, text, text, text) to anon, authenticated;
 grant execute on function public.admin_delete_user(uuid, uuid) to anon, authenticated;
 
 -- ------------------------------------------------------------
