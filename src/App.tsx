@@ -600,7 +600,6 @@ function App() {
                           disabled={isDisabled}
                           onClick={() => {
                             setSelectedDate(isoDate);
-                            setBookingStep('extras');
                           }}
                         >
                           <span>{date.getDate()}</span>
@@ -651,30 +650,24 @@ function App() {
                 </label>
 
                 <div className="starttime-field">
-                  <span className="field-label">{translations.booking.startTimeLabel}</span>
-                  <div className="slot-grid slot-grid-compact">
-                    {startSlotLabels.map((slotLabel) => {
-                      const isActive = selectedSlot === slotLabel;
-                      const isUnavailable = !canSessionFit(hourLabelToNumber(slotLabel), duration);
-                      const slotStateLabel = isUnavailable
-                        ? translations.slots.unavailable
-                        : translations.slots.open;
-
-                      return (
-                        <button
-                          key={slotLabel}
-                          type="button"
-                          className={`slot-button ${isActive ? 'slot-button-active' : ''}`}
-                          disabled={isUnavailable}
-                          onClick={() => setSelectedSlot(slotLabel)}
-                          aria-label={`${slotLabel} - ${slotStateLabel}`}
-                          title={`${slotLabel} - ${slotStateLabel}`}
-                        >
-                          <strong>{slotLabel}</strong>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <label>
+                    {translations.booking.startTimeLabel}
+                    <select
+                      value={selectedSlot}
+                      onChange={(event) => setSelectedSlot(event.target.value)}
+                      className="starttime-select"
+                    >
+                      {startSlotLabels.map((slotLabel) => {
+                        const isUnavailable = !canSessionFit(hourLabelToNumber(slotLabel), duration);
+                        return (
+                          <option key={slotLabel} value={slotLabel} disabled={isUnavailable}>
+                            {slotLabel}
+                            {isUnavailable ? ` — ${translations.slots.unavailable}` : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
                 </div>
               </div>
 

@@ -356,7 +356,8 @@ button {
   gap: 8px;
 }
 
-.duration-select {
+.duration-select,
+.starttime-select {
   width: 100%;
 }
 
