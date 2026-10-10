@@ -1123,6 +1123,45 @@ textarea:focus {
   padding: 24px;
 }
 
+/* Modal: definir password (convite de utilizador) */
+.set-password-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.set-password-card {
+  width: min(420px, 100%);
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(20, 20, 24, 0.97);
+  display: grid;
+  gap: 14px;
+}
+
+.set-password-card h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--text-main);
+}
+
+.set-password-form {
+  display: grid;
+  gap: 12px;
+}
+
+.set-password-error {
+  margin: 0;
+  color: #f87171;
+  font-size: 0.9rem;
+}
+
 /* BETA banner for admin & public pages */
 .admin-beta-banner {
   display: flex;

@@ -1295,17 +1295,28 @@ export async function adminUsers(token: string): Promise<{ users: ApiUser[] }> {
   };
 }
 
+// Password provisória aleatória (16 hex) — usada APENAS para criar a conta quando
+// o admin deixa o campo em branco. Nunca é mostrada a ninguém; o convite por email
+// permite ao utilizador definir a password definitiva.
+function generateProvisionalPassword(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export async function createUser(
   token: string,
-  draft: { name: string; email: string; password: string; phone: string; role: Role; function?: StaffFunction | null },
+  draft: { name: string; email: string; password?: string; phone: string; role: Role; function?: StaffFunction | null },
 ): Promise<{ message: string; user: ApiUser }> {
   const actor = await requireActor(token, ['admin', 'superuser']);
   const email = String(draft?.email || '').trim().toLowerCase();
   const phone = String(draft?.phone || '').trim();
   const staffFunction = draft?.function ? normalizeFunction(draft.function) : null;
+  // Password vazia -> provisória aleatória; o convite por email define a definitiva.
+  const password = String(draft?.password || '').trim() || generateProvisionalPassword();
 
-  if (!draft?.name || !email || !phone || !draft?.password || !allowedRoles.includes(draft.role)) {
-    throw new ApiError('Invalid user data provided. Nome, email, telemovel e password sao obrigatorios.', 400);
+  if (!draft?.name || !email || !phone || !allowedRoles.includes(draft.role)) {
+    throw new ApiError('Invalid user data provided. Nome, email e telemovel sao obrigatorios.', 400);
   }
 
   const { data: existing } = await supabase.from('profiles').select('id').eq('email', email).limit(1);
@@ -1315,7 +1326,7 @@ export async function createUser(
 
   const { data, error } = await supabase.auth.signUp({
     email,
-    password: draft.password,
+    password,
     options: { data: { name: draft.name, phone, role: draft.role, function: staffFunction } },
   });
 
@@ -1331,6 +1342,10 @@ export async function createUser(
     target: profile.id,
     details: { name: profile.name, email: profile.email, phone: profile.phone },
   });
+
+  // Convite "define a tua password" em segundo plano (nunca bloqueia a criação;
+  // falhas ficam nos logs do servidor).
+  sendUserInvite(token, profile.email, profile.name);
 
   return { message: 'User created successfully', user: profile };
 }
@@ -1466,6 +1481,16 @@ async function recordAudit(entry: {
 }
 
 // --- Notificações (Express fica só para emails) --------------
+
+// Envia o email de convite "define a tua password" (disparo em segundo plano;
+// falhas não afetam a criação do utilizador — ver logs do servidor).
+export function sendUserInvite(token: string, email: string, name: string): void {
+  void fetch('/api/user-invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ email, name }),
+  }).catch((err) => console.error('Erro ao enviar convite de utilizador:', err));
+}
 
 function notifyBooking(booking: ApiBooking, status: 'pending' | 'confirmed' | 'rejected' | 'cancelled'): void {
   void fetch('/api/notify', {

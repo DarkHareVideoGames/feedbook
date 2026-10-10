@@ -722,11 +722,11 @@ function AdminHistoryPage() {
     const phone = newUserDraft.phone.trim();
     const password = newUserDraft.password;
 
-    if (!name || !email || !phone || !password) {
-      setError('Preenche nome, email, telemovel e password para criar o utilizador.');
+    if (!name || !email || !phone) {
+      setError('Preenche nome, email e telemovel para criar o utilizador.');
       return;
     }
-    if (password.length < 6) {
+    if (password && password.length < 6) {
       setError('A password precisa de pelo menos 6 caracteres.');
       return;
     }
@@ -738,7 +738,7 @@ function AdminHistoryPage() {
       await api.createUser(sessionToken, { name, email, password, phone, role: newUserDraft.role, function: newUserDraft.function });
       setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null });
       await loadUsers(sessionToken);
-      setCatalogNotice('Utilizador criado com sucesso.');
+      setCatalogNotice('Utilizador criado. Enviamos um convite por email para o utilizador definir a password.');
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel criar utilizador.');
     } finally {
@@ -1840,12 +1840,11 @@ function AdminHistoryPage() {
                 </label>
 
                 <label>
-                  Password {editUserDraft ? '(vazio = manter atual)' : '*'}
+                  Password {editUserDraft ? '(vazio = manter atual)' : '(opcional)'}
                   <input
                     type="password"
-                    required={!editUserDraft}
                     autoComplete="new-password"
-                    placeholder={editUserDraft ? 'Deixar vazio para manter' : ''}
+                    placeholder={editUserDraft ? 'Deixar vazio para manter' : 'Em branco: enviaremos convite por email'}
                     value={editUserDraft ? editUserDraft.password : newUserDraft.password}
                     onChange={(event) =>
                       editUserDraft

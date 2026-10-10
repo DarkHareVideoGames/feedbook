@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import nodemailer from 'nodemailer';
 import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 import { fileURLToPath } from 'url';
 
 // Carrega as variáveis do ficheiro .env (raiz do projeto) para process.env.
@@ -61,6 +62,23 @@ const WHATSAPP_TWILIO_FROM = String(process.env.WHATSAPP_TWILIO_FROM || '').trim
 // Discord — alerta da equipa para novas marcações (canal #marcação-de-ensaios).
 // Sem esta variável o alerta é ignorado e o resto do fluxo não é afetado.
 const DISCORD_WEBHOOK_URL = String(process.env.DISCORD_WEBHOOK_URL || '').trim();
+
+// Supabase — usado apenas na rota de convite (/api/user-invite).
+// A service role key vive SOMENTE no servidor (nunca no bundle do browser).
+// Local: as VITE_ do .env são usadas como fallback; produção define as
+// variáveis sem prefixo no Vercel (Settings → Environment Variables).
+const SUPABASE_URL = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim();
+const SUPABASE_ANON_KEY = String(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
+const SUPABASE_SERVICE_ROLE_KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+// URL base da app para onde o link "define a password" redireciona.
+const APP_BASE_URL = String(process.env.APP_BASE_URL || 'http://localhost:5173').trim().replace(/\/+$/, '');
+
+const supabaseAuth = SUPABASE_URL && SUPABASE_ANON_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
+  : null;
+const supabaseService = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
+  : null;
 
 function plainText(value, fallback = '-') {
   const text = String(value ?? '').trim();
@@ -239,6 +257,74 @@ app.post('/api/notify', (req, res) => {
 
   void sendBookingNotifications(booking, status);
   return res.json({ message: 'Notification queued.' });
+});
+
+// POST /api/user-invite — chamado pelo front (src/api.ts) após criar um utilizador.
+// Gera um link único "define a tua password" via Supabase Admin API (o Supabase
+// NÃO envia email nenhum — só gera o link) e envia-o pelo nosso SMTP.
+app.post('/api/user-invite', async (req, res) => {
+  try {
+    if (!supabaseAuth || !supabaseService) {
+      return res.status(503).json({ message: 'Convite indisponivel: falta SUPABASE_SERVICE_ROLE_KEY (ou SUPABASE_URL/anon key).' });
+    }
+
+    const authHeader = String(req.headers.authorization || '');
+    const token = authHeader.toLowerCase().startsWith('bearer ') ? authHeader.slice(7).trim() : '';
+    if (!token) {
+      return res.status(401).json({ message: 'Missing session token.' });
+    }
+
+    const { data: actorData, error: actorError } = await supabaseAuth.auth.getUser(token);
+    if (actorError || !actorData?.user) {
+      return res.status(401).json({ message: 'Invalid session token.' });
+    }
+
+    const { data: profileRows } = await supabaseAuth
+      .from('profiles')
+      .select('role')
+      .eq('id', actorData.user.id)
+      .limit(1);
+    const actorRole = String(profileRows?.[0]?.role || '');
+    if (!['admin', 'superuser'].includes(actorRole)) {
+      return res.status(403).json({ message: 'Only admins can send invites.' });
+    }
+
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const name = String(req.body?.name || '').trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: 'Valid email is required.' });
+    }
+
+    const { data, error } = await supabaseService.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: { redirectTo: APP_BASE_URL },
+    });
+    const inviteUrl = String(data?.properties?.action_link || '');
+    if (error || !inviteUrl) {
+      const message = String(error?.message || '');
+      if (/not found/i.test(message)) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+      console.error('Erro ao gerar link de convite:', error);
+      return res.status(502).json({ message: 'Could not generate invite link.' });
+    }
+
+    const subject = '📩 A tua conta foi criada — define a tua password';
+    let bodyHTML = '<h1 style="font-size: 24px;">Feedback - Ensaios — Conta criada</h1>';
+    bodyHTML += `<p>Olá ${escapeHtml(name || email)},</p>`;
+    bodyHTML += '<p>A tua conta foi criada na plataforma de marcações. Para entrares, define a tua password:</p>';
+    bodyHTML += `<p style="margin:16px 0;"><a href="${escapeHtml(inviteUrl)}" style="display:inline-block;padding:10px 20px;background-color:#222222;color:#ffffff !important;font-size:14px;font-family:Arial,sans-serif;text-decoration:none;border-radius:20px;">🔑 Definir password</a></p>`;
+    bodyHTML += '<p style="color:#999999;font-size:12px;">O link é único e expira dentro de 1 hora. Se não foste tu a criar esta conta, ignora este email.</p>';
+    bodyHTML += emailSignature();
+
+    // Disparo em segundo plano: a resposta nunca bloqueia no envio.
+    void sendEmail(email, subject, bodyHTML);
+    return res.status(202).json({ message: 'Invite queued.' });
+  } catch (e) {
+    console.error('Erro em /api/user-invite:', e);
+    return res.status(500).json({ message: 'Unexpected error.' });
+  }
 });
 
 // --- SERVE APP BUILD (Frontend) ---
