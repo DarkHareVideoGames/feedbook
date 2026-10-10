@@ -8,6 +8,7 @@ type AuthUser = {
   id: string;
   name: string;
   email: string;
+  phone: string;
   role: Role;
   createdAt: string;
 };
@@ -1202,6 +1203,7 @@ function AdminPage() {
                     <span className="booking-id-chip">{user.id}</span>
                   </div>
                   <span>{user.email}</span>
+                  <span>{user.phone || '-'}</span>
                   <span>{roleLabels[user.role]}</span>
                   {isAdmin ? (
                     <div className="team-actions">
