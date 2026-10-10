@@ -77,10 +77,10 @@ const fallbackRooms: RoomDefinition[] = [
 const lastStartHour = 23;
 const studioClosingHour = 25;
 
-const startSlotHours = [
-  10,
-  ...Array.from({ length: lastStartHour - 13 + 1 }, (_, index) => 13 + index),
-];
+const startSlotHours = Array.from(
+  { length: (lastStartHour - 10) * 2 + 1 },
+  (_, index) => 10 + index * 0.5,
+);
 
 
 const defaultPricing: PricingConfig = {
@@ -99,12 +99,18 @@ function getToday(): string {
 }
 
 function toHourLabel(hour: number): string {
-  return `${`${hour}`.padStart(2, '0')}:00`;
+  const wholeHours = Math.floor(hour);
+  const minutes = Math.round((hour - wholeHours) * 60);
+  return `${`${wholeHours}`.padStart(2, '0')}:${`${minutes}`.padStart(2, '0')}`;
 }
 
 function hourLabelToNumber(hourLabel: string): number {
-  return Number(hourLabel.split(':')[0]);
+  const [hours, minutes] = hourLabel.split(':');
+  return Number(hours) + Number(minutes) / 60;
 }
+
+// Rótulos dos slots de início (startSlotHours já está em passos de 30 min).
+const startSlotLabels: string[] = startSlotHours.map(toHourLabel);
 
 function canSessionFit(startHour: number, rehearsalHours: number): boolean {
   return startHour + rehearsalHours <= studioClosingHour;
@@ -134,7 +140,9 @@ function getWeekdayLabels(locale: Locale): string[] {
   return Array.from({ length: 7 }, (_, index) => {
     const day = new Date(baseMonday);
     day.setUTCDate(baseMonday.getUTCDate() + index);
-    return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(day);
+    return new Intl.DateTimeFormat(locale, { weekday: 'short' })
+      .format(day)
+      .slice(0, 3);
   });
 }
 
@@ -303,9 +311,11 @@ function App() {
 
   useEffect(() => {
     if (!canSessionFit(selectedStartHour, duration)) {
-      const fallbackStart = startSlotHours.find((hour) => canSessionFit(hour, duration));
-      if (fallbackStart !== undefined) {
-        setSelectedSlot(toHourLabel(fallbackStart));
+      const fallbackSlot = startSlotLabels.find((label) =>
+        canSessionFit(hourLabelToNumber(label), duration),
+      );
+      if (fallbackSlot !== undefined) {
+        setSelectedSlot(fallbackSlot);
       }
     }
   }, [duration, selectedStartHour]);
@@ -501,8 +511,23 @@ function App() {
               return (
                 <article
                   key={room.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
+                  aria-label={`${room.name} — ${translations.rooms.choose}`}
                   className={`room-card card ${isSelected ? 'room-card-selected' : ''}`}
                   style={{ borderColor: isSelected ? room.accent : 'transparent' }}
+                  onClick={() => {
+                    setSelectedRoomId(room.id);
+                    goToNextStep();
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedRoomId(room.id);
+                      goToNextStep();
+                    }
+                  }}
                 >
                   <div className="room-card-header">
                     <div>
@@ -520,16 +545,6 @@ function App() {
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => {
-                      setSelectedRoomId(room.id);
-                      goToNextStep();
-                    }}
-                  >
-                    {isSelected ? translations.rooms.selected : translations.rooms.choose}
-                  </button>
                 </article>
               );
             })}
@@ -540,37 +555,15 @@ function App() {
           <section className="booking-grid">
             <form className="card booking-form" onSubmit={handleSubmit} autoComplete="on">
               <div className="section-heading">
-                <p className="eyebrow">
-                  {bookingStep === 'date'
-                    ? translations.booking.stepDate
-                    : bookingStep === 'extras'
-                      ? translations.booking.stepExtras
-                      : translations.booking.stepDetails}
-                </p>
                 <h2>{translations.booking.title}</h2>
               </div>
 
             {bookingStep === 'date' ? (
               <div className="field-row booking-step">
-              <label className="calendar-field">
-                {translations.booking.dateLabel}
+              <div className="calendar-field">
                 <div className="calendar-picker">
                   <div className="calendar-toolbar">
-                    <button
-                      type="button"
-                      className="secondary-button calendar-nav"
-                      onClick={() => setVisibleMonth((current) => addMonths(current, -1))}
-                    >
-                      {translations.booking.calendarPrev}
-                    </button>
                     <strong>{monthLabel}</strong>
-                    <button
-                      type="button"
-                      className="secondary-button calendar-nav"
-                      onClick={() => setVisibleMonth((current) => addMonths(current, 1))}
-                    >
-                      {translations.booking.calendarNext}
-                    </button>
                   </div>
 
                   <div className="calendar-weekdays">
@@ -585,7 +578,17 @@ function App() {
                       const isPast = isoDate < todayIso;
                       const isOccupied = occupiedDatesForSelectedRoom.has(isoDate);
                       const isSelected = isoDate === selectedDate;
-                      const isDisabled = !inCurrentMonth || isPast || isOccupied;
+                      const isDisabled = isOccupied;
+
+                      if (!inCurrentMonth || isPast) {
+                        return (
+                          <span
+                            key={isoDate}
+                            className="calendar-day calendar-day-empty"
+                            aria-hidden="true"
+                          />
+                        );
+                      }
 
                       return (
                         <button
@@ -606,9 +609,26 @@ function App() {
                     })}
                   </div>
 
-                  <p className="calendar-hint">{translations.booking.calendarOccupiedHint}</p>
+                  <div className="calendar-nav-row">
+                    {sameMonth(visibleMonth, startOfMonth(new Date())) ? null : (
+                      <button
+                        type="button"
+                        className="secondary-button calendar-nav calendar-nav-prev"
+                        onClick={() => setVisibleMonth((current) => addMonths(current, -1))}
+                      >
+                        {translations.booking.calendarPrev}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="secondary-button calendar-nav calendar-nav-next"
+                      onClick={() => setVisibleMonth((current) => addMonths(current, 1))}
+                    >
+                      {translations.booking.calendarNext}
+                    </button>
+                  </div>
                 </div>
-              </label>
+              </div>
 
               <div className="duration-field">
                 <label>
@@ -633,10 +653,9 @@ function App() {
                 <div className="starttime-field">
                   <span className="field-label">{translations.booking.startTimeLabel}</span>
                   <div className="slot-grid slot-grid-compact">
-                    {startSlotHours.map((hour) => {
-                      const slotLabel = toHourLabel(hour);
+                    {startSlotLabels.map((slotLabel) => {
                       const isActive = selectedSlot === slotLabel;
-                      const isUnavailable = !canSessionFit(hour, duration);
+                      const isUnavailable = !canSessionFit(hourLabelToNumber(slotLabel), duration);
                       const slotStateLabel = isUnavailable
                         ? translations.slots.unavailable
                         : translations.slots.open;

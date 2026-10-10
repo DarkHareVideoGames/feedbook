@@ -263,7 +263,13 @@ button {
 .room-card {
   padding: 24px;
   border-width: 2px;
+  cursor: pointer;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.room-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .room-card:hover {
@@ -377,7 +383,7 @@ button {
 
 .calendar-toolbar {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr;
   gap: 8px;
   align-items: center;
 }
@@ -393,6 +399,18 @@ button {
   font-size: 0.8rem;
 }
 
+.calendar-nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.calendar-nav-row .calendar-nav-next {
+  margin-left: auto;
+}
+
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -403,8 +421,7 @@ button {
   text-align: center;
   font-size: 0.72rem;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
 .calendar-grid {
@@ -430,8 +447,19 @@ button {
 }
 
 .calendar-day-occupied {
-  border-color: rgba(244, 179, 68, 0.6);
-  background: rgba(244, 179, 68, 0.12);
+  border-color: rgba(244, 179, 68, 0.9);
+  background: rgba(244, 179, 68, 0.28);
+  color: var(--text-muted);
+}
+
+.calendar-day-occupied span {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.calendar-day-empty {
+  border-color: transparent;
+  background: transparent;
 }
 
 .calendar-day:disabled {
@@ -440,6 +468,13 @@ button {
   border-color: rgba(82, 86, 95, 0.5);
   background: rgba(46, 49, 56, 0.7);
   color: rgba(136, 142, 153, 0.75);
+}
+
+/* Dia com marcacao existente: bem visivel, sobrepoe o estado :disabled. */
+.calendar-day.calendar-day-occupied:disabled {
+  border-color: rgba(255, 145, 40, 0.95);
+  background: rgba(255, 138, 30, 0.34);
+  color: #ffd9a8;
 }
 
 .calendar-hint {
