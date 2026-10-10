@@ -4,6 +4,15 @@ import nodemailer from 'nodemailer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// Carrega as variáveis do ficheiro .env (raiz do projeto) para process.env.
+// Necessário para que SMTP_* e DISCORD_WEBHOOK_URL funcionem em desenvolvimento.
+// No Vercel/produção estas vêm das Environment Variables e este passo é inofensivo.
+try {
+  process.loadEnvFile(new URL('../.env', import.meta.url));
+} catch {
+  // .env ausente: seguimos apenas com as variáveis do ambiente (ex.: Vercel).
+}
+
 // ============================================================
 // Feedback - Ensaios — servidor de notificações (emails)
 // Desde a migração para o Supabase, autenticação, marcações,
