@@ -1076,6 +1076,31 @@ textarea:focus {
   padding: 24px;
 }
 
+/* BETA banner for admin & public pages */
+.admin-beta-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  background: rgba(209, 18, 35, 0.12);
+  border: 1px solid rgba(209, 18, 35, 0.35);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #f87171;
+}
+
+.admin-beta-banner .admin-beta-badge {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #f87171;
+  letter-spacing: 0.04em;
+}
+
+.admin-beta-banner .admin-beta-text {
+  color: #fca5a5;
+}
+
 .admin-user-list {
   list-style: none;
   padding: 0;

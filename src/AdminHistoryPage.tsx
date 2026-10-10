@@ -13,6 +13,7 @@ type AuthUser = {
   id: string;
   name: string;
   email: string;
+  phone: string;
   role: Role;
   createdAt: string;
 };
@@ -86,6 +87,7 @@ type NewUserDraft = {
   name: string;
   email: string;
   password: string;
+  phone: string;
   role: Role;
 };
 
@@ -93,6 +95,7 @@ type EditUserDraft = {
   id: string;
   name: string;
   email: string;
+  phone: string;
   password: string;
   role: Role;
 };
@@ -450,6 +453,7 @@ function AdminHistoryPage() {
     name: '',
     email: '',
     password: '',
+    phone: '',
     role: 'collaborator',
   });
   const [editUserDraft, setEditUserDraft] = useState<EditUserDraft | null>(null);
@@ -663,7 +667,7 @@ function AdminHistoryPage() {
     setActivePanel('unified');
     setCatalogNotice('');
     setUsers([]);
-    setNewUserDraft({ name: '', email: '', password: '', role: 'collaborator' });
+    setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator' });
     setEditUserDraft(null);
   };
 
@@ -674,10 +678,11 @@ function AdminHistoryPage() {
 
     const name = newUserDraft.name.trim();
     const email = newUserDraft.email.trim().toLowerCase();
+    const phone = newUserDraft.phone.trim();
     const password = newUserDraft.password;
 
-    if (!name || !email || !password) {
-      setError('Preenche nome, email e password para criar o utilizador.');
+    if (!name || !email || !phone || !password) {
+      setError('Preenche nome, email, telemovel e password para criar o utilizador.');
       return;
     }
     if (password.length < 6) {
@@ -689,8 +694,8 @@ function AdminHistoryPage() {
     setError('');
     setUserActionLoading(true);
     try {
-      await api.createUser(sessionToken, { name, email, password, role: newUserDraft.role });
-      setNewUserDraft({ name: '', email: '', password: '', role: 'collaborator' });
+      await api.createUser(sessionToken, { name, email, password, phone, role: newUserDraft.role });
+      setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator' });
       await loadUsers(sessionToken);
       setCatalogNotice('Utilizador criado com sucesso.');
     } catch (err) {
@@ -705,6 +710,7 @@ function AdminHistoryPage() {
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       password: '',
       role: user.role,
     });
@@ -1723,6 +1729,12 @@ function AdminHistoryPage() {
                 <h2>Gestao de utilizadores</h2>
               </div>
 
+              {/* BETA banner */}
+              <div className="admin-beta-banner" role="note">
+                <span className="admin-beta-badge">🔵 Em BETA</span>
+                <span className="admin-beta-text">O telemovel e obrigatorio para novos utilizadores. Por favor, preencha o telemovel e verifique os dados antes de submeter.</span>
+              </div>
+
               <form
                 className="admin-create-user"
                 onSubmit={editUserDraft ? handleEditUser : handleCreateUser}
@@ -1759,6 +1771,24 @@ function AdminHistoryPage() {
                             current ? { ...current, email: event.target.value } : current,
                           )
                         : setNewUserDraft((current) => ({ ...current, email: event.target.value }))
+                    }
+                  />
+                </label>
+
+                <label>
+                  Telemovel *
+                  <input
+                    type="tel"
+                    required
+                    autoComplete="tel"
+                    inputMode="tel"
+                    value={editUserDraft ? editUserDraft.phone : newUserDraft.phone}
+                    onChange={(event) =>
+                      editUserDraft
+                        ? setEditUserDraft((current) =>
+                            current ? { ...current, phone: event.target.value } : current,
+                          )
+                        : setNewUserDraft((current) => ({ ...current, phone: event.target.value }))
                     }
                   />
                 </label>

@@ -109,11 +109,12 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, name, email, role)
+  insert into public.profiles (id, name, email, phone, role)
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'name', split_part(coalesce(new.email, ''), '@', 1)),
     lower(new.email),
+    coalesce(new.raw_user_meta_data ->> 'phone', ''),
     coalesce(new.raw_user_meta_data ->> 'role', 'collaborator')
   )
   on conflict (id) do nothing;
@@ -139,7 +140,8 @@ create or replace function public.admin_update_user(
   p_email    text,
   p_name     text,
   p_role     text,
-  p_password text default null
+  p_password text default null,
+  p_phone    text default ''
 )
 returns public.profiles
 language plpgsql
@@ -174,6 +176,7 @@ begin
   update public.profiles
      set name = p_name,
          email = lower(p_email),
+         phone = coalesce(nullif(p_phone, ''), phone),
          role = p_role
    where id = p_id;
 
@@ -182,7 +185,7 @@ begin
          email_confirmed_at = coalesce(email_confirmed_at, now()),
          encrypted_password = coalesce(crypt(p_password, gen_salt('bf', 10)), encrypted_password),
          raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
-                              || jsonb_build_object('name', p_name, 'role', p_role)
+                              || jsonb_build_object('name', p_name, 'phone', p_phone, 'role', p_role)
    where id = p_id;
 
   select * into v_profile from public.profiles where id = p_id;
@@ -217,7 +220,7 @@ begin
 end;
 $$;
 
-grant execute on function public.admin_update_user(uuid, uuid, text, text, text, text, text) to anon, authenticated;
+grant execute on function public.admin_update_user(uuid, uuid, text, text, text, text, text, text) to anon, authenticated;
 grant execute on function public.admin_delete_user(uuid, uuid) to anon, authenticated;
 
 -- ------------------------------------------------------------

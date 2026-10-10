@@ -1221,13 +1221,14 @@ export async function adminUsers(token: string): Promise<{ users: ApiUser[] }> {
 
 export async function createUser(
   token: string,
-  draft: { name: string; email: string; password: string; role: Role },
+  draft: { name: string; email: string; password: string; phone: string; role: Role },
 ): Promise<{ message: string; user: ApiUser }> {
   const actor = await requireActor(token, ['admin']);
   const email = String(draft?.email || '').trim().toLowerCase();
+  const phone = String(draft?.phone || '').trim();
 
-  if (!draft?.name || !email || !draft?.password || !allowedRoles.includes(draft.role)) {
-    throw new ApiError('Invalid user data provided.', 400);
+  if (!draft?.name || !email || !phone || !draft?.password || !allowedRoles.includes(draft.role)) {
+    throw new ApiError('Invalid user data provided. Nome, email, telemovel e password sao obrigatorios.', 400);
   }
 
   const { data: existing } = await supabase.from('profiles').select('id').eq('email', email).limit(1);
@@ -1238,7 +1239,7 @@ export async function createUser(
   const { data, error } = await supabase.auth.signUp({
     email,
     password: draft.password,
-    options: { data: { name: draft.name, role: draft.role } },
+    options: { data: { name: draft.name, phone, role: draft.role } },
   });
 
   if (error || !data.user) {
@@ -1251,7 +1252,7 @@ export async function createUser(
     action: 'user-created',
     actor: { id: actor.id, name: actor.name, role: actor.role },
     target: profile.id,
-    details: { name: profile.name, email: profile.email },
+    details: { name: profile.name, email: profile.email, phone: profile.phone },
   });
 
   return { message: 'User created successfully', user: profile };
@@ -1259,7 +1260,7 @@ export async function createUser(
 
 export async function updateUser(
   token: string,
-  draft: { id: string; name: string; email: string; password?: string; role: Role },
+  draft: { id: string; name: string; email: string; password?: string; role: Role; phone?: string },
 ): Promise<{ message: string; user: ApiUser }> {
   const actor = await requireActor(token, ['admin']);
 
@@ -1268,6 +1269,7 @@ export async function updateUser(
     p_id: draft.id,
     p_email: String(draft.email || '').trim().toLowerCase(),
     p_name: draft.name,
+    p_phone: draft.phone,
     p_role: draft.role,
     p_password: draft.password && draft.password.trim() ? draft.password.trim() : null,
   });

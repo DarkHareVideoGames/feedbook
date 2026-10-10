@@ -106,6 +106,7 @@ type NewUserDraft = {
   name: string;
   email: string;
   password: string;
+  phone: string;
   role: Role;
 };
 
@@ -113,6 +114,7 @@ type EditUserDraft = {
   id: string;
   name: string;
   email: string;
+  phone: string;
   password: string;
   role: Role;
 };
@@ -264,6 +266,7 @@ function AdminPage() {
     name: '',
     email: '',
     password: '',
+    phone: '',
     role: 'collaborator',
   });
   const [editUserDraft, setEditUserDraft] = useState<EditUserDraft | null>(null);
@@ -450,6 +453,7 @@ function AdminPage() {
         name: '',
         email: '',
         password: '',
+        phone: '',
         role: 'collaborator',
       });
       await Promise.all([loadUsers(token), loadAuditLogs(token)]);
@@ -468,6 +472,7 @@ function AdminPage() {
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       password: '',
       role: user.role,
     });
@@ -1118,6 +1123,11 @@ function AdminPage() {
               <h2>Gestao de utilizadores</h2>
             </div>
 
+            <div className="admin-beta-banner" role="note">
+              <span className="admin-beta-badge">🔵 Em BETA</span>
+              <span className="admin-beta-text">O telemovel e obrigatorio para novos utilizadores. Por favor, preencha o telemovel e verifique os dados antes de submeter.</span>
+            </div>
+
             <form className="admin-create-user" onSubmit={editUserDraft ? handleEditUser : handleCreateUser}>
               <label>
                 Nome
@@ -1145,6 +1155,22 @@ function AdminPage() {
                           current ? { ...current, email: event.target.value } : current,
                         )
                       : setNewUserDraft((current) => ({ ...current, email: event.target.value }))
+                  }
+                />
+              </label>
+
+              <label>
+                Telemovel
+                <input
+                  type="tel"
+                  placeholder="Ex: 912345678"
+                  value={editUserDraft ? editUserDraft.phone : newUserDraft.phone}
+                  onChange={(event) =>
+                    editUserDraft
+                      ? setEditUserDraft((current) =>
+                          current ? { ...current, phone: event.target.value } : current,
+                        )
+                      : setNewUserDraft((current) => ({ ...current, phone: event.target.value }))
                   }
                 />
               </label>
