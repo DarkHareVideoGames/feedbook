@@ -2,7 +2,9 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
 
-type Role = 'admin' | 'collaborator' | 'technician';
+type Role = api.Role;
+
+type StaffFunction = api.StaffFunction;
 
 type AuthUser = {
   id: string;
@@ -10,6 +12,7 @@ type AuthUser = {
   email: string;
   phone: string;
   role: Role;
+  function: StaffFunction | null;
   createdAt: string;
 };
 
@@ -137,9 +140,10 @@ type AdminPanel = 'bookings' | 'users' | 'pricing' | 'rooms' | 'services' | 'aud
 const TOKEN_KEY = 'feedbook-admin-token';
 
 const roleLabels: Record<Role, string> = {
-  admin: 'Administradores',
-  collaborator: 'Membros da Equipa',
-  technician: 'Tecnicos',
+  superuser: 'Superuser',
+  admin: 'Admin',
+  collaborator: 'Colab',
+  technician: 'Técnico',
 };
 
 const defaultPricing: PricingConfig = {
@@ -298,8 +302,21 @@ function AdminPage() {
   );
 
   const canConfirmBookings =
-    currentUser?.role === 'admin' || currentUser?.role === 'collaborator' || currentUser?.role === 'technician';
+    currentUser?.role === 'superuser' ||
+    currentUser?.role === 'admin' ||
+    currentUser?.role === 'collaborator' ||
+    currentUser?.role === 'technician';
   const isAdmin = currentUser?.role === 'admin';
+  // Dropdown "Perfil": apenas Administradores e Colaboradores.
+  // O superuser não é escolhível (é detetado pelo login) e "Técnico" passou para o campo Função.
+  const baseRoleOptions: { value: Role; label: string }[] = [
+    { value: 'admin', label: 'Administradores' },
+    { value: 'collaborator', label: 'Colaboradores' },
+  ];
+  const selectedRole = editUserDraft ? editUserDraft.role : newUserDraft.role;
+  const roleOptions = baseRoleOptions.some((option) => option.value === selectedRole)
+    ? baseRoleOptions
+    : [...baseRoleOptions, { value: selectedRole, label: roleLabels[selectedRole] }];
 
   useEffect(() => {
     const storedToken = window.localStorage.getItem(TOKEN_KEY);
@@ -823,7 +840,7 @@ function AdminPage() {
             ) : null}
             <p className="eyebrow">Feedback - Ensaios</p>
             <h2>Login de Administracao</h2>
-            <p className="summary-copy">Acesso para Administradores, Membros da Equipa e Tecnicos.</p>
+            <p className="summary-copy">Acesso para Administradores e Colaboradores.</p>
 
             <form className="admin-login-form" onSubmit={handleLogin}>
               <label>
@@ -882,7 +899,8 @@ function AdminPage() {
           ) : null}
           <div className="admin-session-bar">
             <p className="summary-copy admin-session-pill">
-              Sessao ativa: {currentUser.name} ({roleLabels[currentUser.role]})
+              Sessao ativa: {currentUser.name} ({roleLabels[currentUser.role]}
+              {currentUser.function ? ` · ${api.staffFunctionLabels[currentUser.function]}` : ''})
             </p>
             <button type="button" className="secondary-button admin-logout-inline" onClick={handleLogout}>
               Sair
@@ -1207,9 +1225,11 @@ function AdminPage() {
                       : setNewUserDraft((current) => ({ ...current, role: event.target.value as Role }))
                   }
                 >
-                  <option value="admin">Administradores</option>
-                  <option value="collaborator">Membros da Equipa</option>
-                  <option value="technician">Tecnicos</option>
+                  {roleOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </label>
 

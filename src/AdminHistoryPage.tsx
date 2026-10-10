@@ -1,12 +1,30 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import * as api from './api';
 
-type Role = 'admin' | 'collaborator' | 'technician';
+type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
+
+type StaffFunction =
+  | 'diretor-producao'
+  | 'diretor-tecnico'
+  | 'produtor-executivo'
+  | 'gestor-operativo'
+  | 'gestor-manutencao'
+  | 'tecnico';
+
+const staffFunctionLabels: Record<StaffFunction, string> = {
+  'diretor-producao': 'Diretor de Produção',
+  'diretor-tecnico': 'Diretor Técnico',
+  'produtor-executivo': 'Produtor Executivo',
+  'gestor-operativo': 'Gestor Operativo',
+  'gestor-manutencao': 'Gestor de Manutenção',
+  tecnico: 'Técnico',
+};
 
 const roleLabel: Record<Role, string> = {
+  superuser: 'Superuser',
   admin: 'Admin',
   collaborator: 'Colab',
-  technician: 'Tech',
+  technician: 'Técnico',
 };
 
 type AuthUser = {
@@ -15,6 +33,7 @@ type AuthUser = {
   email: string;
   phone: string;
   role: Role;
+  function: StaffFunction | null;
   createdAt: string;
 };
 
@@ -89,6 +108,7 @@ type NewUserDraft = {
   password: string;
   phone: string;
   role: Role;
+  function: StaffFunction | null;
 };
 
 type EditUserDraft = {
@@ -98,6 +118,7 @@ type EditUserDraft = {
   phone: string;
   password: string;
   role: Role;
+  function: StaffFunction | null;
 };
 
 type RoomFormDraft = {
@@ -455,9 +476,24 @@ function AdminHistoryPage() {
     password: '',
     phone: '',
     role: 'collaborator',
+    function: null,
   });
   const [editUserDraft, setEditUserDraft] = useState<EditUserDraft | null>(null);
-  const isAdmin = currentUser?.role === 'admin';
+  // Superuser e admin têm acesso total (utilizadores, salas, serviços, preços, contas).
+  const isPrivilegedRole = (role: Role | null | undefined) => role === 'admin' || role === 'superuser';
+  const isPrivileged = isPrivilegedRole(currentUser?.role);
+  // Dropdown "Perfil": apenas Administradores e Colaboradores.
+  // O superuser não é escolhível (é detetado pelo login) e "Técnico" passou para o campo Função.
+  // Em edição, um perfil legado (technician/superuser) mantém-se como opção para não
+  // alterar silenciosamente o role ao guardar.
+  const baseRoleOptions: { value: Role; label: string }[] = [
+    { value: 'admin', label: 'Administradores' },
+    { value: 'collaborator', label: 'Colaboradores' },
+  ];
+  const selectedRole = editUserDraft ? editUserDraft.role : newUserDraft.role;
+  const roleOptions = baseRoleOptions.some((option) => option.value === selectedRole)
+    ? baseRoleOptions
+    : [...baseRoleOptions, { value: selectedRole, label: roleLabel[selectedRole] }];
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-PT', {
@@ -487,7 +523,12 @@ function AdminHistoryPage() {
   };
 
   const canConfirmPaymentReceipt = (booking: PastBooking) => {
-    if (currentUser?.role !== 'admin' && currentUser?.role !== 'collaborator' && currentUser?.role !== 'technician') {
+    if (
+      currentUser?.role !== 'superuser' &&
+      currentUser?.role !== 'admin' &&
+      currentUser?.role !== 'collaborator' &&
+      currentUser?.role !== 'technician'
+    ) {
       return false;
     }
 
@@ -622,7 +663,7 @@ function AdminHistoryPage() {
       setCurrentUser(payload.user);
       setAuthError('');
 
-      if (payload.user.role === 'admin') {
+      if (isPrivilegedRole(payload.user.role)) {
         await Promise.all([loadFinance(sessionToken), loadCatalogs(), loadUsers(sessionToken)]);
       }
     } catch (_error) {
@@ -641,7 +682,7 @@ function AdminHistoryPage() {
       setToken(payload.token);
       setCurrentUser(payload.user);
       await loadHistory(payload.token);
-      if (payload.user.role === 'admin') {
+      if (isPrivilegedRole(payload.user.role)) {
         await Promise.all([loadFinance(payload.token), loadCatalogs(), loadUsers(payload.token)]);
       }
     } catch (authErr) {
@@ -667,14 +708,14 @@ function AdminHistoryPage() {
     setActivePanel('unified');
     setCatalogNotice('');
     setUsers([]);
-    setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator' });
+    setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null });
     setEditUserDraft(null);
   };
 
   const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isAdmin || userActionLoading) return;
+    if (!sessionToken || !isPrivileged || userActionLoading) return;
 
     const name = newUserDraft.name.trim();
     const email = newUserDraft.email.trim().toLowerCase();
@@ -694,8 +735,8 @@ function AdminHistoryPage() {
     setError('');
     setUserActionLoading(true);
     try {
-      await api.createUser(sessionToken, { name, email, password, phone, role: newUserDraft.role });
-      setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator' });
+      await api.createUser(sessionToken, { name, email, password, phone, role: newUserDraft.role, function: newUserDraft.function });
+      setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null });
       await loadUsers(sessionToken);
       setCatalogNotice('Utilizador criado com sucesso.');
     } catch (err) {
@@ -713,6 +754,7 @@ function AdminHistoryPage() {
       phone: user.phone,
       password: '',
       role: user.role,
+      function: user.function ?? null,
     });
     setCatalogNotice('');
     setError('');
@@ -725,7 +767,7 @@ function AdminHistoryPage() {
   const handleEditUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isAdmin || !editUserDraft || userActionLoading) return;
+    if (!sessionToken || !isPrivileged || !editUserDraft || userActionLoading) return;
 
     const name = editUserDraft.name.trim();
     const email = editUserDraft.email.trim().toLowerCase();
@@ -749,6 +791,7 @@ function AdminHistoryPage() {
         email,
         password: editUserDraft.password,
         role: editUserDraft.role,
+        function: editUserDraft.function,
       });
       setEditUserDraft(null);
       await loadUsers(sessionToken);
@@ -762,7 +805,7 @@ function AdminHistoryPage() {
 
   const handleDeleteUser = async (userId: string) => {
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isAdmin || userActionLoading) return;
+    if (!sessionToken || !isPrivileged || userActionLoading) return;
     if (!window.confirm('Apagar este utilizador?')) return;
 
     setCatalogNotice('');
@@ -795,7 +838,7 @@ function AdminHistoryPage() {
   const handleSaveRoom = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isAdmin) return;
+    if (!sessionToken || !isPrivileged) return;
     const maxMembers = Number(roomForm.maxMembers);
     const trimmedName = roomForm.name.trim();
     if (!trimmedName) {
@@ -843,7 +886,7 @@ function AdminHistoryPage() {
 
   const handleDeleteRoom = async (roomId: string) => {
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isAdmin) return;
+    if (!sessionToken || !isPrivileged) return;
     if (!window.confirm('Apagar esta sala? Se tiver marcacoes, sera arquivada.')) return;
     setCatalogNotice('');
     setError('');
@@ -872,7 +915,7 @@ function AdminHistoryPage() {
   const handleSaveService = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isAdmin) return;
+    if (!sessionToken || !isPrivileged) return;
     const trimmedName = serviceForm.name.trim();
     const price = Number(serviceForm.price);
     if (!trimmedName) {
@@ -910,7 +953,7 @@ function AdminHistoryPage() {
 
   const handleDeleteService = async (serviceId: string) => {
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isAdmin) return;
+    if (!sessionToken || !isPrivileged) return;
     if (!window.confirm('Apagar este servico? Se estiver em uso, sera arquivado.')) return;
     setCatalogNotice('');
     setError('');
@@ -927,7 +970,7 @@ function AdminHistoryPage() {
   const handleSavePricing = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isAdmin) return;
+    if (!sessionToken || !isPrivileged) return;
     const parsedRate = Number(globalRate);
     const parsedExtras: Record<string, number> = {};
     for (const [key, raw] of Object.entries(pricingDraft)) {
@@ -962,7 +1005,7 @@ function AdminHistoryPage() {
       }
 
       await loadHistory(token);
-      if (currentUser?.role === 'admin') {
+      if (isPrivileged) {
         await loadFinance(token);
       }
     });
@@ -982,7 +1025,7 @@ function AdminHistoryPage() {
       });
 
       await loadHistory(token);
-      if (currentUser?.role === 'admin') {
+      if (isPrivileged) {
         await loadFinance(token);
       }
     });
@@ -1032,7 +1075,7 @@ function AdminHistoryPage() {
       }
 
       await loadHistory(token);
-      if (currentUser?.role === 'admin') {
+      if (isPrivileged) {
         await loadFinance(token);
       }
     });
@@ -1052,7 +1095,7 @@ function AdminHistoryPage() {
       }
 
       await loadHistory(token);
-      if (currentUser?.role === 'admin') {
+      if (isPrivileged) {
         await loadFinance(token);
       }
     });
@@ -1118,7 +1161,7 @@ function AdminHistoryPage() {
       }
 
       await loadHistory(token);
-      if (currentUser?.role === 'admin') {
+      if (isPrivileged) {
         await loadFinance(token);
       }
       closeRescheduleModal();
@@ -1613,7 +1656,7 @@ function AdminHistoryPage() {
       </header>
 
       <main className="layout admin-layout admin-shell">
-        {!loading && isAdmin ? (
+        {!loading && isPrivileged ? (
           <button
             type="button"
             className="admin-sidebar-toggle"
@@ -1655,7 +1698,7 @@ function AdminHistoryPage() {
             >
               Ensaios
             </button>
-            {isAdmin ? (
+            {isPrivileged ? (
               <button
                 type="button"
                 className={`admin-sidebar-item ${activePanel === "users" ? "admin-sidebar-item-active" : ""}`}
@@ -1667,7 +1710,7 @@ function AdminHistoryPage() {
                 Utilizadores
               </button>
             ) : null}
-            {isAdmin ? (
+            {isPrivileged ? (
               <>
                 <button
                   type="button"
@@ -1718,7 +1761,10 @@ function AdminHistoryPage() {
             {currentUser ? (
               <div className="admin-user-chip" title={currentUser.email}>
                 <span className="admin-user-chip-name">{currentUser.name}</span>
-                <span className={`admin-user-chip-role admin-role-${currentUser.role}`}>{roleLabel[currentUser.role]}</span>
+                <span className={`admin-user-chip-role admin-role-${currentUser.role}`}>
+                  {roleLabel[currentUser.role]}
+                  {currentUser.function ? ` · ${staffFunctionLabels[currentUser.function]}` : ''}
+                </span>
               </div>
             ) : null}
           </div>
@@ -1726,7 +1772,7 @@ function AdminHistoryPage() {
           {catalogNotice ? <p className="confirmation">{catalogNotice}</p> : null}
           {loading ? <p className="summary-copy">A carregar...</p> : null}
 
-          {isAdmin && activePanel === 'users' ? (
+          {isPrivileged && activePanel === 'users' ? (
             <section className="card admin-section">
               <div className="section-heading">
                 <p className="eyebrow">Utilizadores</p>
@@ -1829,9 +1875,38 @@ function AdminHistoryPage() {
                           }))
                     }
                   >
-                    <option value="admin">Administradores</option>
-                    <option value="collaborator">Membros da Equipa</option>
-                    <option value="technician">Tecnicos</option>
+                    {roleOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Função
+                  <select
+                    value={(editUserDraft ? editUserDraft.function : newUserDraft.function) ?? ''}
+                    onChange={(event) =>
+                      editUserDraft
+                        ? setEditUserDraft((current) =>
+                            current
+                              ? { ...current, function: (event.target.value || null) as StaffFunction | null }
+                              : current,
+                          )
+                        : setNewUserDraft((current) => ({
+                            ...current,
+                            function: (event.target.value || null) as StaffFunction | null,
+                          }))
+                    }
+                  >
+                    <option value="">Sem função</option>
+                    <option value="diretor-producao">Diretor de Produção</option>
+                    <option value="diretor-tecnico">Diretor Técnico</option>
+                    <option value="produtor-executivo">Produtor Executivo</option>
+                    <option value="gestor-operativo">Gestor Operativo</option>
+                    <option value="gestor-manutencao">Gestor de Manutenção</option>
+                    <option value="tecnico">Técnico</option>
                   </select>
                 </label>
 
@@ -1869,7 +1944,10 @@ function AdminHistoryPage() {
                       <span className="booking-id-chip">{user.id}</span>
                     </div>
                     <span>{user.email}</span>
-                    <span>{roleLabel[user.role]}</span>
+                    <span>
+                      {roleLabel[user.role]}
+                      {user.function ? ` · ${staffFunctionLabels[user.function]}` : ''}
+                    </span>
                     <div className="team-actions">
                       <button
                         type="button"
@@ -1899,7 +1977,7 @@ function AdminHistoryPage() {
             </section>
           ) : null}
 
-          {isAdmin && activePanel === 'rooms' ? (
+          {isPrivileged && activePanel === 'rooms' ? (
           <section className="card admin-section">
             <div className="section-heading">
               <p className="eyebrow">Salas</p>
@@ -2047,7 +2125,7 @@ function AdminHistoryPage() {
           </section>
         ) : null}
 
-        {isAdmin && activePanel === 'services' ? (
+        {isPrivileged && activePanel === 'services' ? (
           <section className="card admin-section">
             <div className="section-heading">
               <p className="eyebrow">Servicos</p>
@@ -2149,7 +2227,7 @@ function AdminHistoryPage() {
           </section>
         ) : null}
 
-        {isAdmin && activePanel === 'pricing' ? (
+        {isPrivileged && activePanel === 'pricing' ? (
           <section className="card admin-section">
             <div className="section-heading">
               <p className="eyebrow">Precos</p>
@@ -2202,14 +2280,14 @@ function AdminHistoryPage() {
                 <p className="eyebrow">Ensaios</p>
                 <h2>{filteredBookings.length === 0 ? 'Sem ensaios neste filtro' : historyCountLabel}</h2>
               </div>
-              {currentUser.role === 'admin' ? (
+              {isPrivileged ? (
                 <button type="button" className="secondary-button" onClick={() => setShowFinance((value) => !value)}>
                   {showFinance ? 'Esconder contas' : 'Ver contas'}
                 </button>
               ) : null}
             </div>
 
-            {currentUser.role === 'admin' && showFinance ? (
+            {isPrivileged && showFinance ? (
               <div className="finance-panel">
                 <div className="finance-stat-grid">
                   <div className="finance-stat">

@@ -7,7 +7,32 @@ import { isSupabaseConfigured, supabase } from './supabaseClient';
 // para manter as páginas praticamente intactas.
 // ============================================================
 
-export type Role = 'admin' | 'collaborator' | 'technician';
+export type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
+
+// Função/cargo (metadado, não confere permissões — as permissões vêm do Role).
+export type StaffFunction =
+  | 'diretor-producao'
+  | 'diretor-tecnico'
+  | 'produtor-executivo'
+  | 'gestor-operativo'
+  | 'gestor-manutencao'
+  | 'tecnico';
+
+// Email do SUPERUSER (administrador root). Fallback de login: se as credenciais
+// do Supabase Auth são válidas e este email coincide, entra sempre como superuser,
+// mesmo que o perfil/roles falhem. Configurável por VITE_SUPERUSER_EMAIL.
+export const SUPERUSER_EMAIL = String(
+  (import.meta.env.VITE_SUPERUSER_EMAIL as string | undefined) || 'pedroveiga.box@gmail.com',
+).trim().toLowerCase();
+
+export const staffFunctionLabels: Record<StaffFunction, string> = {
+  'diretor-producao': 'Diretor de Produção',
+  'diretor-tecnico': 'Diretor Técnico',
+  'produtor-executivo': 'Produtor Executivo',
+  'gestor-operativo': 'Gestor Operativo',
+  'gestor-manutencao': 'Gestor de Manutenção',
+  tecnico: 'Técnico',
+};
 
 export type ApiUser = {
   id: string;
@@ -15,6 +40,7 @@ export type ApiUser = {
   email: string;
   phone: string;
   role: Role;
+  function: StaffFunction | null;
   createdAt: string;
 };
 
@@ -132,7 +158,16 @@ export type FinanceMonthSummary = {
   bookings: FinanceBooking[];
 };
 
-const allowedRoles: Role[] = ['admin', 'collaborator', 'technician'];
+const allowedRoles: Role[] = ['superuser', 'admin', 'collaborator', 'technician'];
+
+const allowedFunctions: StaffFunction[] = [
+  'diretor-producao',
+  'diretor-tecnico',
+  'produtor-executivo',
+  'gestor-operativo',
+  'gestor-manutencao',
+  'tecnico',
+];
 
 const fallbackRooms: ApiRoom[] = [
   {
@@ -218,6 +253,20 @@ function generateBookingId(): string {
 function normalizeRole(value: unknown): Role {
   const role = String(value ?? '').trim().toLowerCase();
   return allowedRoles.includes(role as Role) ? (role as Role) : 'collaborator';
+}
+
+function normalizeFunction(value: unknown): StaffFunction | null {
+  const fn = String(value ?? '').trim().toLowerCase();
+  return allowedFunctions.includes(fn as StaffFunction) ? (fn as StaffFunction) : null;
+}
+
+// Aplica o fallback de SUPERUSER: se o email coincide com o administrador root,
+// força role 'superuser' (independentemente do que a BD/perfil devolva).
+function withSuperuserFallback(user: ApiUser): ApiUser {
+  if (String(user.email ?? '').trim().toLowerCase() === SUPERUSER_EMAIL) {
+    return { ...user, role: 'superuser' };
+  }
+  return user;
 }
 
 export function normalizePaymentStatus(value: unknown): string {
@@ -313,25 +362,27 @@ async function profileFor(user: User): Promise<ApiUser> {
   }
 
   if (!data) {
-    const metadata = (user.user_metadata ?? {}) as { name?: string; role?: string };
-    return {
+    const metadata = (user.user_metadata ?? {}) as { name?: string; role?: string; function?: string };
+    return withSuperuserFallback({
       id: user.id,
       name: metadata.name || String(user.email ?? '').split('@')[0],
       email: String(user.email ?? ''),
       role: normalizeRole(metadata.role),
+      function: normalizeFunction(metadata.function),
       phone: '',
       createdAt: user.created_at ?? new Date().toISOString(),
-    };
+    });
   }
 
-  return {
+  return withSuperuserFallback({
     id: String(data.id),
     name: String(data.name ?? ''),
     email: String(data.email ?? ''),
     role: normalizeRole(data.role),
+    function: normalizeFunction(data.function),
     phone: String(data.phone ?? ''),
     createdAt: String(data.createdAt ?? ''),
-  };
+  });
 }
 
 async function requireActor(token: string, roles: Role[]): Promise<ApiUser> {
@@ -363,8 +414,32 @@ export async function login(
     throw new Error(message || 'Invalid credentials');
   }
 
-  const profile = await profileFor(data.user);
-  return { token: data.session.access_token, user: profile };
+  const authUser = data.user;
+  try {
+    const profile = await profileFor(authUser);
+    return { token: data.session.access_token, user: profile };
+  } catch (profileError) {
+    // Fallback do SUPERUSER: credenciais Auth válidas + email do root.
+    // Mesmo que o perfil/roles falhem (ex.: falha de rede na tabela profiles),
+    // concede acesso como superuser — "pode logar sempre".
+    const authEmail = String(authUser?.email ?? '').trim().toLowerCase();
+    if (authEmail === SUPERUSER_EMAIL) {
+      const metadata = (authUser.user_metadata ?? {}) as { name?: string };
+      return {
+        token: data.session.access_token,
+        user: {
+          id: authUser.id,
+          name: metadata.name || authEmail.split('@')[0],
+          email: authEmail,
+          phone: '',
+          role: 'superuser',
+          function: null,
+          createdAt: authUser.created_at ?? new Date().toISOString(),
+        },
+      };
+    }
+    throw profileError;
+  }
 }
 
 export async function me(token: string): Promise<{ user: ApiUser }> {
@@ -518,7 +593,7 @@ export async function adminBookings(
   token: string,
   period?: 'future' | 'past',
 ): Promise<{ bookings: ApiBooking[] }> {
-  const actor = await requireActor(token, ['admin', 'collaborator', 'technician']);
+  const actor = await requireActor(token, ['superuser', 'admin', 'collaborator', 'technician']);
 
   const [{ data: rows, error }, profilesResult] = await Promise.all([
     supabase.from('bookings').select('*').order('date', { ascending: true }),
@@ -579,7 +654,7 @@ export async function bookingAction(
   action: BookingAction,
   body?: { date?: string; time?: string; duration?: number; amount?: number },
 ): Promise<{ booking: ApiBooking }> {
-  const actor = await requireActor(token, ['admin', 'collaborator', 'technician']);
+  const actor = await requireActor(token, ['superuser', 'admin', 'collaborator', 'technician']);
 
   const { data: existing, error: fetchError } = await supabase
     .from('bookings')
@@ -747,7 +822,7 @@ export async function adminFinance(token: string): Promise<{
   months: FinanceMonthSummary[];
   extrasCatalog: Record<string, number>;
 }> {
-  await requireActor(token, ['admin']);
+  await requireActor(token, ['admin', 'superuser']);
 
   const [{ data: rows, error }] = await Promise.all([
     supabase.from('bookings').select('*'),
@@ -926,7 +1001,7 @@ export async function listRooms(options?: { includeInactive?: boolean }): Promis
 }
 
 export async function createRoom(token: string, draft: RoomDraft): Promise<{ room: ApiRoom }> {
-  const actor = await requireActor(token, ['admin']);
+  const actor = await requireActor(token, ['admin', 'superuser']);
   const name = String(draft?.name || '').trim();
   const maxMembers = Number(draft?.maxMembers);
   if (!name) throw new ApiError('Room name is required.', 400);
@@ -962,7 +1037,7 @@ export async function createRoom(token: string, draft: RoomDraft): Promise<{ roo
 }
 
 export async function updateRoom(token: string, roomId: string, draft: RoomDraft): Promise<{ room: ApiRoom }> {
-  const actor = await requireActor(token, ['admin']);
+  const actor = await requireActor(token, ['admin', 'superuser']);
   const name = String(draft?.name || '').trim();
   const maxMembers = Number(draft?.maxMembers);
   if (!name) throw new ApiError('Room name is required.', 400);
@@ -992,7 +1067,7 @@ export async function updateRoom(token: string, roomId: string, draft: RoomDraft
 }
 
 export async function deleteRoom(token: string, roomId: string): Promise<{ message: string }> {
-  const actor = await requireActor(token, ['admin']);
+  const actor = await requireActor(token, ['admin', 'superuser']);
   const { data: existing } = await supabase.from('rooms').select('*').eq('id', roomId).maybeSingle();
   if (!existing) throw new ApiError('Room not found.', 404);
   const { data: linked } = await supabase.from('bookings').select('id').eq('roomId', roomId).limit(1);
@@ -1033,7 +1108,7 @@ export async function listServices(options?: { includeInactive?: boolean }): Pro
 }
 
 export async function createService(token: string, draft: ServiceDraft): Promise<{ service: ApiService }> {
-  const actor = await requireActor(token, ['admin']);
+  const actor = await requireActor(token, ['admin', 'superuser']);
   const name = String(draft?.name || '').trim();
   const price = Number(draft?.price);
   if (!name) throw new ApiError('Service name is required.', 400);
@@ -1064,7 +1139,7 @@ export async function createService(token: string, draft: ServiceDraft): Promise
 }
 
 export async function updateService(token: string, serviceId: string, draft: ServiceDraft): Promise<{ service: ApiService }> {
-  const actor = await requireActor(token, ['admin']);
+  const actor = await requireActor(token, ['admin', 'superuser']);
   const name = String(draft?.name || '').trim();
   const price = Number(draft?.price);
   if (!name) throw new ApiError('Service name is required.', 400);
@@ -1085,7 +1160,7 @@ export async function updateService(token: string, serviceId: string, draft: Ser
 }
 
 export async function deleteService(token: string, serviceId: string): Promise<{ message: string }> {
-  const actor = await requireActor(token, ['admin']);
+  const actor = await requireActor(token, ['admin', 'superuser']);
   const { data: existing } = await supabase.from('services').select('*').eq('id', serviceId).maybeSingle();
   if (!existing) throw new ApiError('Service not found.', 404);
   const { data: linked } = await supabase.from('bookings').select('id,extras').limit(50);
@@ -1145,7 +1220,7 @@ export async function updatePricing(
   token: string,
   updates: { perMemberPerHour?: number; extras?: Record<string, number | string> },
 ): Promise<{ pricing: PricingConfig }> {
-  const actor = await requireActor(token, ['admin']);
+  const actor = await requireActor(token, ['admin', 'superuser']);
   const { data: current } = await supabase.from('pricing').select('*').eq('id', 1).maybeSingle();
   const currentExtras = ((current?.extras ?? {}) as Record<string, unknown>);
   const knownIds = new Set<string>([
@@ -1196,7 +1271,7 @@ export async function updatePricing(
 // --- Utilizadores (admin) ------------------------------------
 
 export async function adminUsers(token: string): Promise<{ users: ApiUser[] }> {
-  await requireActor(token, ['admin']);
+  await requireActor(token, ['admin', 'superuser']);
 
   const { data, error } = await supabase
     .from('profiles')
@@ -1214,6 +1289,7 @@ export async function adminUsers(token: string): Promise<{ users: ApiUser[] }> {
       email: String(row.email ?? ''),
       phone: String(row.phone ?? ''),
       role: normalizeRole(row.role),
+      function: normalizeFunction(row.function),
       createdAt: String(row.createdAt ?? ''),
     })),
   };
@@ -1221,11 +1297,12 @@ export async function adminUsers(token: string): Promise<{ users: ApiUser[] }> {
 
 export async function createUser(
   token: string,
-  draft: { name: string; email: string; password: string; phone: string; role: Role },
+  draft: { name: string; email: string; password: string; phone: string; role: Role; function?: StaffFunction | null },
 ): Promise<{ message: string; user: ApiUser }> {
-  const actor = await requireActor(token, ['admin']);
+  const actor = await requireActor(token, ['admin', 'superuser']);
   const email = String(draft?.email || '').trim().toLowerCase();
   const phone = String(draft?.phone || '').trim();
+  const staffFunction = draft?.function ? normalizeFunction(draft.function) : null;
 
   if (!draft?.name || !email || !phone || !draft?.password || !allowedRoles.includes(draft.role)) {
     throw new ApiError('Invalid user data provided. Nome, email, telemovel e password sao obrigatorios.', 400);
@@ -1239,7 +1316,7 @@ export async function createUser(
   const { data, error } = await supabase.auth.signUp({
     email,
     password: draft.password,
-    options: { data: { name: draft.name, phone, role: draft.role } },
+    options: { data: { name: draft.name, phone, role: draft.role, function: staffFunction } },
   });
 
   if (error || !data.user) {
@@ -1260,9 +1337,10 @@ export async function createUser(
 
 export async function updateUser(
   token: string,
-  draft: { id: string; name: string; email: string; password?: string; role: Role; phone?: string },
+  draft: { id: string; name: string; email: string; password?: string; role: Role; phone?: string; function?: StaffFunction | null },
 ): Promise<{ message: string; user: ApiUser }> {
-  const actor = await requireActor(token, ['admin']);
+  const actor = await requireActor(token, ['admin', 'superuser']);
+  const staffFunction = draft.function ? normalizeFunction(draft.function) : null;
 
   const { data, error } = await supabase.rpc('admin_update_user', {
     p_actor: actor.id,
@@ -1271,6 +1349,7 @@ export async function updateUser(
     p_name: draft.name,
     p_phone: draft.phone,
     p_role: draft.role,
+    p_function: staffFunction,
     p_password: draft.password && draft.password.trim() ? draft.password.trim() : null,
   });
 
@@ -1278,13 +1357,14 @@ export async function updateUser(
     throw toError(error.message, 'Could not update user', 400);
   }
 
-  const row = data as { id: string; name: string; email: string; role: string; phone: string; createdAt: string };
+  const row = data as { id: string; name: string; email: string; role: string; phone: string; function?: string; createdAt: string };
   const user: ApiUser = {
     id: String(row.id),
     name: String(row.name ?? ''),
     email: String(row.email ?? ''),
     phone: String(row.phone ?? ''),
     role: normalizeRole(row.role),
+    function: normalizeFunction(row.function),
     createdAt: String(row.createdAt ?? ''),
   };
 
@@ -1299,7 +1379,7 @@ export async function updateUser(
 }
 
 export async function deleteUser(token: string, userId: string): Promise<{ message: string }> {
-  const actor = await requireActor(token, ['admin']);
+  const actor = await requireActor(token, ['admin', 'superuser']);
 
   const { data: target } = await supabase
     .from('profiles')
@@ -1333,7 +1413,7 @@ export async function deleteUser(token: string, userId: string): Promise<{ messa
 // --- Auditoria ----------------------------------------------
 
 export async function auditLogs(token: string): Promise<{ auditLogs: ApiAuditEntry[] }> {
-  await requireActor(token, ['admin']);
+  await requireActor(token, ['admin', 'superuser']);
 
   const { data, error } = await supabase
     .from('audit_logs')

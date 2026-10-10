@@ -66,9 +66,23 @@ create table if not exists public.profiles (
   email       text        not null unique,
   phone       text        not null default '',
   role        text        not null default 'collaborator'
-              check (role in ('admin', 'collaborator', 'technician')),
+              check (role in ('superuser', 'admin', 'collaborator', 'technician')),
+  -- Função/cargo (metadado; NÃO confere permissões — permissões vêm do role).
+  "function"  text
+              check ("function" is null or "function" in
+                ('diretor-producao', 'diretor-tecnico', 'produtor-executivo', 'gestor-operativo', 'gestor-manutencao', 'tecnico')),
   "createdAt" timestamptz not null default now()
 );
+
+-- Migração idempotente para bases já existentes (adiciona coluna/actualiza checks).
+alter table public.profiles add column if not exists "function" text;
+alter table public.profiles drop constraint if exists profiles_role_check;
+alter table public.profiles add constraint profiles_role_check
+  check (role in ('superuser', 'admin', 'collaborator', 'technician'));
+alter table public.profiles drop constraint if exists profiles_function_check;
+alter table public.profiles add constraint profiles_function_check
+  check ("function" is null or "function" in
+    ('diretor-producao', 'diretor-tecnico', 'produtor-executivo', 'gestor-operativo', 'gestor-manutencao', 'tecnico'));
 
 -- ------------------------------------------------------------
 -- 3. pricing — preçário (linha única)
@@ -109,13 +123,14 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, name, email, phone, role)
+  insert into public.profiles (id, name, email, phone, role, "function")
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'name', split_part(coalesce(new.email, ''), '@', 1)),
     lower(new.email),
     coalesce(new.raw_user_meta_data ->> 'phone', ''),
-    coalesce(new.raw_user_meta_data ->> 'role', 'collaborator')
+    coalesce(new.raw_user_meta_data ->> 'role', 'collaborator'),
+    nullif(new.raw_user_meta_data ->> 'function', '')
   )
   on conflict (id) do nothing;
   return new;
@@ -141,7 +156,8 @@ create or replace function public.admin_update_user(
   p_name     text,
   p_role     text,
   p_password text default null,
-  p_phone    text default ''
+  p_phone    text default '',
+  p_function text default null
 )
 returns public.profiles
 language plpgsql
@@ -151,8 +167,13 @@ as $$
 declare
   v_profile public.profiles%rowtype;
 begin
-  if p_role not in ('admin', 'collaborator', 'technician') then
+  if p_role not in ('superuser', 'admin', 'collaborator', 'technician') then
     raise exception 'Invalid role.';
+  end if;
+
+  if p_function is not null
+     and p_function not in ('diretor-producao', 'diretor-tecnico', 'produtor-executivo', 'gestor-operativo', 'gestor-manutencao', 'tecnico') then
+    raise exception 'Invalid function.';
   end if;
 
   select * into v_profile from public.profiles where id = p_id;
@@ -160,12 +181,16 @@ begin
     raise exception 'User not found.';
   end if;
 
-  if v_profile.role = 'admin' and p_role <> 'admin' then
+  -- Protecção: não remover o último privilegiado (superuser/admin) do sistema.
+  if v_profile.role in ('superuser', 'admin') and p_role not in ('superuser', 'admin') then
     if p_actor = p_id then
       raise exception 'Cannot remove admin role from your own account.';
     end if;
-    if not exists (select 1 from public.profiles where role = 'admin' and id <> p_id) then
-      raise exception 'Cannot remove the last admin role.';
+    if not exists (
+      select 1 from public.profiles
+       where role in ('superuser', 'admin') and id <> p_id
+    ) then
+      raise exception 'Cannot remove the last administrator role.';
     end if;
   end if;
 
@@ -177,7 +202,8 @@ begin
      set name = p_name,
          email = lower(p_email),
          phone = coalesce(nullif(p_phone, ''), phone),
-         role = p_role
+         role = p_role,
+         "function" = p_function
    where id = p_id;
 
   update auth.users
@@ -185,7 +211,7 @@ begin
          email_confirmed_at = coalesce(email_confirmed_at, now()),
          encrypted_password = coalesce(crypt(p_password, gen_salt('bf', 10)), encrypted_password),
          raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
-                              || jsonb_build_object('name', p_name, 'phone', p_phone, 'role', p_role)
+                              || jsonb_build_object('name', p_name, 'phone', p_phone, 'role', p_role, 'function', p_function)
    where id = p_id;
 
   select * into v_profile from public.profiles where id = p_id;
@@ -207,8 +233,11 @@ begin
     raise exception 'User not found.';
   end if;
 
-  if v_profile.role = 'admin'
-     and not exists (select 1 from public.profiles where role = 'admin' and id <> p_id) then
+  if v_profile.role in ('superuser', 'admin')
+     and not exists (
+       select 1 from public.profiles
+        where role in ('superuser', 'admin') and id <> p_id
+     ) then
     raise exception 'Cannot delete the last system administrator account.';
   end if;
 
@@ -258,5 +287,17 @@ $$;
 --    conta em Authentication → Users no painel do Supabase):
 --
 --    update public.profiles set role = 'admin'
+--    where email = 'pedroveiga.box@gmail.com';
+--
+--    Nota: o SUPERUSER é identificado pelo email definido em
+--    VITE_SUPABASE_EMAIL/SUPERUSER_EMAIL no código (default:
+--    pedroveiga.box@gmail.com) com fallback no login. Podes ainda
+--    marcá-lo como 'superuser' na BD para ficar explícito:
+--
+--    update public.profiles set role = 'superuser'
+--    where email = 'pedroveiga.box@gmail.com';
+--
+--    Função/cargo (metadado opcional por utilizador):
+--    update public.profiles set "function" = 'produtor-executivo'
 --    where email = 'pedroveiga.box@gmail.com';
 -- ------------------------------------------------------------
