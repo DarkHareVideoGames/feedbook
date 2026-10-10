@@ -24,3 +24,7 @@ vite.config.d.ts
 
 # dados de execução do servidor (mantém o state.json do repositório)
 server/data/state.json.bak
+
+# logs de runtime e rascunhos temporários (não devem ser versionados)
+dev.log
+*.new
