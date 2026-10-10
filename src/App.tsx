@@ -116,6 +116,67 @@ function canSessionFit(startHour: number, rehearsalHours: number): boolean {
   return startHour + rehearsalHours <= studioClosingHour;
 }
 
+// === Disponibilidade por intervalo (30 min de folga entre marcações na mesma sala) ===
+const BOOKING_BUFFER_MINUTES = 30;
+
+// Só pending/confirmed ocupam a sala; rejected/cancelled/refunded não contam.
+function isBookingActive(booking: TeamBooking): boolean {
+  if (booking.status === 'rejected' || booking.status === 'cancelled') return false;
+  if (String(booking.paymentStatus || '').toLowerCase() === 'refunded') return false;
+  return true;
+}
+
+function toMinutes(hourLabel: string): number {
+  return Math.round(hourLabelToNumber(hourLabel) * 60);
+}
+
+function roomBookingsOnDate(bookings: TeamBooking[], roomId: string, date: string): TeamBooking[] {
+  return bookings.filter(
+    (booking) => booking.roomId === roomId && booking.date === date && isBookingActive(booking),
+  );
+}
+
+// Colisão: o intervalo [início, fim + folga] intersecta o de outra marcação (mesma sala/dia).
+function slotCollides(
+  startMinutes: number,
+  endMinutes: number,
+  dayBookings: TeamBooking[],
+): boolean {
+  return dayBookings.some((booking) => {
+    const bookingStart = toMinutes(booking.time);
+    const bookingEnd = bookingStart + Number(booking.duration) * 60;
+    return (
+      startMinutes < bookingEnd + BOOKING_BUFFER_MINUTES &&
+      bookingStart < endMinutes + BOOKING_BUFFER_MINUTES
+    );
+  });
+}
+
+// Um horário serve se cabe até ao fecho E não colide com marcações da sala nesse dia.
+function isSlotAvailable(
+  slotLabel: string,
+  duration: number,
+  date: string,
+  roomId: string,
+  bookings: TeamBooking[],
+): boolean {
+  if (!canSessionFit(hourLabelToNumber(slotLabel), duration)) return false;
+  const start = toMinutes(slotLabel);
+  const end = start + duration * 60;
+  return !slotCollides(start, end, roomBookingsOnDate(bookings, roomId, date));
+}
+
+// O dia ainda vale a pena se existir pelo menos um início onde caiba a duração mínima.
+function dayHasAvailableSlot(date: string, roomId: string, bookings: TeamBooking[]): boolean {
+  const dayBookings = roomBookingsOnDate(bookings, roomId, date);
+  const minDuration = durations[0];
+  return startSlotLabels.some((label) => {
+    if (!canSessionFit(hourLabelToNumber(label), minDuration)) return false;
+    const start = toMinutes(label);
+    return !slotCollides(start, start + minDuration * 60, dayBookings);
+  });
+}
+
 function toIsoDate(date: Date): string {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -252,18 +313,23 @@ function App() {
   const availableDurationsForSelectedStart = durations.filter((hours) =>
     canSessionFit(selectedStartHour, hours),
   );
-  const occupiedDatesForSelectedRoom = useMemo(
-    () =>
-      new Set(
+  const fullyBookedDatesForSelectedRoom = useMemo(
+    () => {
+      const bookedDates = new Set(
         teamBookings
-          .filter((booking) => {
-            if (booking.roomId !== selectedRoomId) return false;
-            if (booking.status === 'rejected' || booking.status === 'cancelled') return false;
-            if (String(booking.paymentStatus || '').toLowerCase() === 'refunded') return false;
-            return true;
-          })
+          .filter(
+            (booking) => booking.roomId === selectedRoomId && isBookingActive(booking),
+          )
           .map((booking) => booking.date),
-      ),
+      );
+      const fullyBooked = new Set<string>();
+      for (const date of bookedDates) {
+        if (!dayHasAvailableSlot(date, selectedRoomId, teamBookings)) {
+          fullyBooked.add(date);
+        }
+      }
+      return fullyBooked;
+    },
     [teamBookings, selectedRoomId],
   );
   const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
@@ -295,12 +361,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (selectedDate < todayIso || occupiedDatesForSelectedRoom.has(selectedDate)) {
-      const nextAvailable = findNextAvailableDate(todayIso, occupiedDatesForSelectedRoom);
+    if (selectedDate < todayIso || fullyBookedDatesForSelectedRoom.has(selectedDate)) {
+      const nextAvailable = findNextAvailableDate(todayIso, fullyBookedDatesForSelectedRoom);
       setSelectedDate(nextAvailable);
       setVisibleMonth(startOfMonth(new Date(nextAvailable)));
     }
-  }, [occupiedDatesForSelectedRoom, selectedDate, todayIso]);
+  }, [fullyBookedDatesForSelectedRoom, selectedDate, todayIso]);
 
   useEffect(() => {
     if (!availableDurationsForSelectedStart.includes(duration)) {
@@ -310,15 +376,15 @@ function App() {
   }, [availableDurationsForSelectedStart, duration]);
 
   useEffect(() => {
-    if (!canSessionFit(selectedStartHour, duration)) {
+    if (!isSlotAvailable(selectedSlot, duration, selectedDate, selectedRoomId, teamBookings)) {
       const fallbackSlot = startSlotLabels.find((label) =>
-        canSessionFit(hourLabelToNumber(label), duration),
+        isSlotAvailable(label, duration, selectedDate, selectedRoomId, teamBookings),
       );
       if (fallbackSlot !== undefined) {
         setSelectedSlot(fallbackSlot);
       }
     }
-  }, [duration, selectedStartHour]);
+  }, [duration, selectedDate, selectedSlot, selectedRoomId, teamBookings]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -576,7 +642,7 @@ function App() {
                     {calendarDays.map(({ date, inCurrentMonth }) => {
                       const isoDate = toIsoDate(date);
                       const isPast = isoDate < todayIso;
-                      const isOccupied = occupiedDatesForSelectedRoom.has(isoDate);
+                      const isOccupied = fullyBookedDatesForSelectedRoom.has(isoDate);
                       const isSelected = isoDate === selectedDate;
                       const isDisabled = isOccupied;
 
@@ -658,7 +724,13 @@ function App() {
                       className="starttime-select"
                     >
                       {startSlotLabels.map((slotLabel) => {
-                        const isUnavailable = !canSessionFit(hourLabelToNumber(slotLabel), duration);
+                        const isUnavailable = !isSlotAvailable(
+                          slotLabel,
+                          duration,
+                          selectedDate,
+                          selectedRoomId,
+                          teamBookings,
+                        );
                         return (
                           <option key={slotLabel} value={slotLabel} disabled={isUnavailable}>
                             {slotLabel}
