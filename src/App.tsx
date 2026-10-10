@@ -27,9 +27,9 @@ type BookingForm = {
 
 type BookingStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
 
-type BookingStep = 'date' | 'extras' | 'details';
+type BookingStep = 'room' | 'date' | 'extras' | 'details' | 'confirmation';
 
-const bookingSteps: BookingStep[] = ['date', 'extras', 'details'];
+const bookingSteps: BookingStep[] = ['room', 'date', 'extras', 'details', 'confirmation'];
 
 type TeamBooking = {
   id: string;
@@ -200,10 +200,7 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [backendOffline, setBackendOffline] = useState(false);
   const [teamBookings, setTeamBookings] = useState<TeamBooking[]>([]);
-  const [bookingStep, setBookingStep] = useState<BookingStep | null>(null);
-  const dateZoneRef = useRef<HTMLDivElement>(null);
-  const extrasZoneRef = useRef<HTMLDivElement>(null);
-  const detailsZoneRef = useRef<HTMLDivElement>(null);
+  const [bookingStep, setBookingStep] = useState<BookingStep>('room');
   const confirmationRef = useRef<HTMLDivElement>(null);
 
   const currency = useMemo(
@@ -314,16 +311,7 @@ function App() {
   }, [duration, selectedStartHour]);
 
   useEffect(() => {
-    if (!bookingStep) return;
-    const zone =
-      bookingStep === 'date'
-        ? dateZoneRef.current
-        : bookingStep === 'extras'
-          ? extrasZoneRef.current
-          : detailsZoneRef.current;
-    if (!zone) return;
-    zone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    zone.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [bookingStep]);
 
   useEffect(() => {
@@ -332,13 +320,20 @@ function App() {
     confirmationRef.current.focus({ preventScroll: true });
   }, [confirmation]);
 
-  function zoneClassName(zone: BookingStep): string {
-    const zoneIndex = bookingSteps.indexOf(zone);
-    const activeIndex = bookingStep === null ? -1 : bookingSteps.indexOf(bookingStep);
-    const classes = ['booking-focus-zone'];
-    if (zoneIndex === activeIndex) classes.push('booking-focus-active');
-    if (activeIndex >= 0 && zoneIndex > activeIndex) classes.push('booking-focus-dimmed');
-    return classes.join(' ');
+  function goToNextStep() {
+    setBookingStep((current) => {
+      const index = bookingSteps.indexOf(current);
+      const next = bookingSteps[index + 1];
+      return next && next !== 'confirmation' ? next : current;
+    });
+  }
+
+  function goToPreviousStep() {
+    setBookingStep((current) => {
+      const index = bookingSteps.indexOf(current);
+      const previous = bookingSteps[index - 1];
+      return previous && previous !== 'confirmation' ? previous : current;
+    });
   }
 
   function toggleExtra(extraId: string) {
@@ -347,7 +342,6 @@ function App() {
         ? current.filter((id) => id !== extraId)
         : [...current, extraId],
     );
-    setBookingStep('details');
   }
 
   async function loadTeamBookings() {
@@ -440,6 +434,7 @@ function App() {
       setConfirmation(message);
       setConfirmationId(payload.booking.id);
       setBackendOffline(false);
+      setBookingStep('confirmation');
 
       await loadTeamBookings();
     } catch (error) {
@@ -481,74 +476,82 @@ function App() {
       </header>
 
       <main className="layout">
-        <section className="rooms-grid">
-          {localizedRooms.map((room) => {
-            const isSelected = room.id === selectedRoom.id;
+        {bookingStep !== 'confirmation' ? (
+          <div className="booking-stepper" aria-hidden="true">
+            {(['room', 'date', 'extras', 'details'] as const).map((step) => (
+              <span
+                key={step}
+                className={`booking-stepper-dot${bookingSteps.indexOf(bookingStep) >= bookingSteps.indexOf(step) ? ' booking-stepper-dot-done' : ''}`}
+              />
+            ))}
+            <span className="booking-stepper-label">
+              {formatTemplate(translations.booking.stepIndicator, {
+                current: bookingSteps.indexOf(bookingStep) + 1,
+                total: 4,
+              })}
+            </span>
+          </div>
+        ) : null}
 
-            return (
-              <article
-                key={room.id}
-                className={`room-card card ${isSelected ? 'room-card-selected' : ''}`}
-                style={{ borderColor: isSelected ? room.accent : 'transparent' }}
-              >
-                <div className="room-card-header">
-                  <div>
-                    <p className="eyebrow">{room.capacity}</p>
-                    <h3>{room.name}</h3>
-                  </div>
-                  <strong>
-                    {currency.format(room.pricePerMemberHour === null || room.pricePerMemberHour === undefined ? pricing.perMemberPerHour : Number(room.pricePerMemberHour))}
-                    {translations.rooms.rate}
-                  </strong>
-                </div>
-                <p>{room.vibe}</p>
-                <ul className="gear-list">
-                  {room.gear.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => {
-                    setSelectedRoomId(room.id);
-                    setBookingStep('date');
-                  }}
+        {bookingStep === 'room' ? (
+          <section className="rooms-grid">
+            {localizedRooms.map((room) => {
+              const isSelected = room.id === selectedRoom.id;
+
+              return (
+                <article
+                  key={room.id}
+                  className={`room-card card ${isSelected ? 'room-card-selected' : ''}`}
+                  style={{ borderColor: isSelected ? room.accent : 'transparent' }}
                 >
-                  {isSelected ? translations.rooms.selected : translations.rooms.choose}
-                </button>
-              </article>
-            );
-          })}
-        </section>
+                  <div className="room-card-header">
+                    <div>
+                      <p className="eyebrow">{room.capacity}</p>
+                      <h3>{room.name}</h3>
+                    </div>
+                    <strong>
+                      {currency.format(room.pricePerMemberHour === null || room.pricePerMemberHour === undefined ? pricing.perMemberPerHour : Number(room.pricePerMemberHour))}
+                      {translations.rooms.rate}
+                    </strong>
+                  </div>
+                  <p>{room.vibe}</p>
+                  <ul className="gear-list">
+                    {room.gear.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => {
+                      setSelectedRoomId(room.id);
+                      goToNextStep();
+                    }}
+                  >
+                    {isSelected ? translations.rooms.selected : translations.rooms.choose}
+                  </button>
+                </article>
+              );
+            })}
+          </section>
+        ) : null}
 
-        <section className="booking-grid">
-          <form className="card booking-form" onSubmit={handleSubmit} autoComplete="on">
-            <div className="section-heading">
-              <h2>{translations.booking.title}</h2>
-            </div>
-
-            {confirmation ? (
-              <div
-                className="confirmation-banner"
-                role="status"
-                aria-live="polite"
-                tabIndex={-1}
-                ref={confirmationRef}
-              >
-                <span className="confirmation-banner-badge">{translations.booking.pendingBadge}</span>
-                <p className="confirmation-banner-message">{confirmation}</p>
-                <div className="confirmation-id-row">
-                  <span>{translations.booking.bookingIdLabel ?? 'N.º da reserva:'}</span>
-                  <strong className="confirmation-id-value">{confirmationId}</strong>
-                </div>
-                <p className="confirmation-id-note">
-                  {translations.booking.bookingIdNote ?? 'Guarda este numero para futuras referencias.'}
+        {bookingStep === 'date' || bookingStep === 'extras' || bookingStep === 'details' ? (
+          <section className="booking-grid">
+            <form className="card booking-form" onSubmit={handleSubmit} autoComplete="on">
+              <div className="section-heading">
+                <p className="eyebrow">
+                  {bookingStep === 'date'
+                    ? translations.booking.stepDate
+                    : bookingStep === 'extras'
+                      ? translations.booking.stepExtras
+                      : translations.booking.stepDetails}
                 </p>
+                <h2>{translations.booking.title}</h2>
               </div>
-            ) : null}
 
-            <div className={`field-row ${zoneClassName('date')}`} ref={dateZoneRef} tabIndex={-1}>
+            {bookingStep === 'date' ? (
+              <div className="field-row booking-step">
               <label className="calendar-field">
                 {translations.booking.dateLabel}
                 <div className="calendar-picker">
@@ -655,26 +658,48 @@ function App() {
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className={zoneClassName('extras')} ref={extrasZoneRef} tabIndex={-1}>
-              <span className="field-label">{translations.booking.addonsLabel}</span>
-              <div className="extras-list">
-                {extras.map((extra) => (
-                  <label key={extra.id} className="extra-toggle">
-                    <input
-                      type="checkbox"
-                      checked={selectedExtras.includes(extra.id)}
-                      onChange={() => toggleExtra(extra.id)}
-                    />
-                    <span>{extra.label}</span>
-                    <strong>{currency.format(extra.price)}</strong>
-                  </label>
-                ))}
+              <div className="booking-nav">
+                <button type="button" className="secondary-button" onClick={goToPreviousStep}>
+                  {translations.booking.back}
+                </button>
+                <button type="button" className="primary-button" onClick={goToNextStep}>
+                  {translations.booking.next}
+                </button>
               </div>
-            </div>
+              </div>
+            ) : null}
 
-            <div className={zoneClassName('details')} ref={detailsZoneRef} tabIndex={-1}>
+            {bookingStep === 'extras' ? (
+              <div className="booking-step">
+                <span className="field-label">{translations.booking.addonsLabel}</span>
+                <div className="extras-list">
+                  {extras.map((extra) => (
+                    <label key={extra.id} className="extra-toggle">
+                      <input
+                        type="checkbox"
+                        checked={selectedExtras.includes(extra.id)}
+                        onChange={() => toggleExtra(extra.id)}
+                      />
+                      <span>{extra.label}</span>
+                      <strong>{currency.format(extra.price)}</strong>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="booking-nav">
+                  <button type="button" className="secondary-button" onClick={goToPreviousStep}>
+                    {translations.booking.back}
+                  </button>
+                  <button type="button" className="primary-button" onClick={goToNextStep}>
+                    {translations.booking.next}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {bookingStep === 'details' ? (
+              <div className="booking-step">
               <label>
                 {translations.booking.bandNameLabel}
                 <input
@@ -740,32 +765,58 @@ function App() {
                   placeholder={translations.booking.focusPlaceholder}
                 />
               </label>
-            </div>
 
-            <button className="primary-button" type="submit" disabled={isSubmitting || backendOffline}>
-              {isSubmitting ? translations.booking.submitting : translations.booking.submit}
-            </button>
-            {backendOffline ? (
-              <div className="offline-banner" role="alert">
-                <span>⚠ Servico temporariamente indisponivel.</span>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => { void Promise.all([loadTeamBookings(), loadPricing()]); }}
-                >
-                  Tentar novamente
+              {backendOffline ? (
+                <div className="offline-banner" role="alert">
+                  <span>⚠ Servico temporariamente indisponivel.</span>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => { void Promise.all([loadTeamBookings(), loadPricing()]); }}
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : null}
+
+              <div className="booking-nav">
+                <button type="button" className="secondary-button" onClick={goToPreviousStep}>
+                  {translations.booking.back}
+                </button>
+                <button className="primary-button" type="submit" disabled={isSubmitting || backendOffline}>
+                  {isSubmitting ? translations.booking.submitting : translations.booking.submit}
                 </button>
               </div>
-            ) : null}
-
-            <div className="pending-box" role="status" aria-live="polite">
-              <strong>{translations.booking.pendingBadge}</strong>
-              <p>{translations.booking.pendingDescription}</p>
             </div>
+            ) : null}
 
             {errorMessage ? <p className="error-message">{errorMessage}</p> : null}
           </form>
         </section>
+        ) : null}
+
+        {bookingStep === 'confirmation' ? (
+          <section className="booking-grid">
+            <div className="card booking-form">
+              <div className="confirmation-banner" role="status" aria-live="polite" tabIndex={-1} ref={confirmationRef}>
+                <span className="confirmation-banner-badge">{translations.booking.pendingBadge}</span>
+                <p className="confirmation-banner-message">{confirmation}</p>
+                <div className="confirmation-id-row">
+                  <span>{translations.booking.bookingIdLabel ?? 'N.º da reserva:'}</span>
+                  <strong className="confirmation-id-value">{confirmationId}</strong>
+                </div>
+                <p className="confirmation-id-note">
+                  {translations.booking.bookingIdNote ?? 'Guarda este numero para futuras referencias.'}
+                </p>
+              </div>
+
+              <div className="pending-box" role="status" aria-live="polite">
+                <strong>{translations.booking.pendingBadge}</strong>
+                <p>{translations.booking.pendingDescription}</p>
+              </div>
+            </div>
+          </section>
+        ) : null}
       </main>
     </div>
   );

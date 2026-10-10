@@ -46,6 +46,13 @@
   },
   "booking": {
     "title": "Reserva o teu ensaio",
+    "next": "Continuar",
+    "back": "Voltar",
+    "stepIndicator": "Passo {{current}} de {{total}}",
+    "stepRoom": "Sala",
+    "stepDate": "Data",
+    "stepExtras": "Extras",
+    "stepDetails": "Dados",
     "dateLabel": "Data",
     "durationLabel": "Duracao",
     "calendarPrev": "Mes anterior",

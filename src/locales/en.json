@@ -46,6 +46,13 @@
   },
   "booking": {
     "title": "Book your rehearsal",
+    "next": "Continue",
+    "back": "Back",
+    "stepIndicator": "Step {{current}} of {{total}}",
+    "stepRoom": "Room",
+    "stepDate": "Date",
+    "stepExtras": "Add-ons",
+    "stepDetails": "Details",
     "dateLabel": "Date",
     "durationLabel": "Duration",
     "calendarPrev": "Previous month",

@@ -679,27 +679,74 @@ textarea:focus {
   line-height: 1.5;
 }
 
-/* --- Fluxo de marcacao: foco progressivo por etapa --- */
-.booking-focus-zone {
-  border-radius: 18px;
-  padding: 12px;
-  margin: -12px;
-  outline: none;
-  transition:
-    opacity 0.25s ease,
-    box-shadow 0.25s ease,
-    background-color 0.25s ease;
+/* --- Fluxo de marcacao: wizard por etapas --- */
+.booking-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  font-size: 0.82rem;
+  color: var(--text-muted, #b3b3b3);
 }
 
-.booking-focus-zone.booking-focus-active {
-  background: rgba(209, 19, 35, 0.07);
-  box-shadow:
-    inset 0 0 0 1.5px rgba(209, 19, 35, 0.6),
-    0 0 28px rgba(209, 19, 35, 0.16);
+.booking-stepper-dot {
+  width: 28px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background-color 0.25s ease;
 }
 
-.booking-focus-zone.booking-focus-dimmed {
-  opacity: 0.45;
+.booking-stepper-dot-done {
+  background: var(--accent, #d11223);
+}
+
+.booking-stepper-label {
+  margin-left: 4px;
+  letter-spacing: 0.02em;
+}
+
+.booking-step {
+  display: grid;
+  gap: 18px;
+  animation: booking-step-in 0.28s ease;
+}
+
+@keyframes booking-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.booking-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  grid-column: 1 / -1;
+}
+
+.booking-nav .primary-button,
+.booking-nav .secondary-button {
+  min-width: 132px;
+}
+
+@media (max-width: 480px) {
+  .booking-nav {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .booking-nav .primary-button,
+  .booking-nav .secondary-button {
+    width: 100%;
+  }
 }
 
 /* --- Banner de reserva a aguardar confirmacao --- */
