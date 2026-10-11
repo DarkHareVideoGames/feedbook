@@ -5,6 +5,7 @@ import AdminHistoryPage from './AdminHistoryPage';
 import SetPasswordModal from './SetPasswordModal';
 import { I18nProvider } from './i18n';
 import './index.css';
+import './brand-overrides.css';
 
 const path = window.location.pathname;
 

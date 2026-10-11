@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Wallet } from 'lucide-react';
+import { AlertTriangle, Check, MessageCircle, Wallet } from 'lucide-react';
 import * as api from './api';
 
 type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
@@ -567,6 +567,8 @@ function AdminHistoryPage() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [userActionLoading, setUserActionLoading] = useState(false);
   const [clearBookingsLoading, setClearBookingsLoading] = useState(false);
+  const [clearBookingsModalOpen, setClearBookingsModalOpen] = useState(false);
+  const [clearBookingsConfirmation, setClearBookingsConfirmation] = useState('');
   const [extrasVisible, setExtrasVisible] = useState<Record<string, boolean>>({});
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
     name: '',
@@ -624,24 +626,25 @@ function AdminHistoryPage() {
   const renderWhatsAppOptIn = (bookingId: string, canSend: boolean) => {
     const active = Boolean(whatsappOptIn[bookingId]);
     return (
-      <label
+      <button
+        type="button"
         className={`wa-optin ${active ? 'wa-optin-active' : ''}`}
+        aria-pressed={active}
+        aria-label={active ? 'Enviar mensagem por WhatsApp' : 'Não enviar mensagem por WhatsApp'}
         title={
           canSend
             ? 'Enviar tambem mensagem por WhatsApp ao confirmar/desmarcar/reagendar'
             : 'Sem telemovel valido para WhatsApp'
         }
+        disabled={!canSend || Boolean(actionLoading[bookingId])}
+        onClick={() =>
+          setWhatsappOptIn((prev) => ({ ...prev, [bookingId]: !active }))
+        }
       >
-        <input
-          type="checkbox"
-          checked={active}
-          disabled={!canSend || Boolean(actionLoading[bookingId])}
-          onChange={(event) =>
-            setWhatsappOptIn((prev) => ({ ...prev, [bookingId]: event.target.checked }))
-          }
-        />
+        <MessageCircle aria-hidden="true" size={14} strokeWidth={2.25} />
         <span>WhatsApp</span>
-      </label>
+        {active ? <Check aria-hidden="true" size={13} strokeWidth={2.5} /> : null}
+      </button>
     );
   };
 
@@ -995,8 +998,7 @@ function AdminHistoryPage() {
   const handleClearAllBookings = async () => {
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
     if (!sessionToken || currentUser?.role !== 'superuser' || clearBookingsLoading) return;
-    if (!window.confirm('Apagar TODOS os ensaios da base de dados? Esta acao e irreversivel.')) return;
-    if (!window.confirm('Confirmacao final: apagar mesmo todos os ensaios (teste + reais)?')) return;
+    if (clearBookingsConfirmation.trim().toLocaleLowerCase('pt-PT') !== 'apaga os ensaios') return;
 
     setCatalogNotice('');
     setError('');
@@ -1007,6 +1009,8 @@ function AdminHistoryPage() {
       setFinanceData([]);
       await loadHistory(sessionToken);
       setCatalogNotice(payload.message || 'Base de dados de ensaios limpa.');
+      setClearBookingsModalOpen(false);
+      setClearBookingsConfirmation('');
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel limpar os ensaios.');
     } finally {
@@ -2747,7 +2751,7 @@ function AdminHistoryPage() {
                                     void handleConfirmBooking(b.id);
                                   }}
                                 >
-                                  OK
+                                  Confirma
                                 </button>
                                 <button
                                   type="button"
@@ -2857,7 +2861,7 @@ function AdminHistoryPage() {
                                 void handleConfirmBooking(b.id);
                               }}
                             >
-                              OK
+                              Confirma
                             </button>
                             <button
                               type="button"
@@ -2935,26 +2939,92 @@ function AdminHistoryPage() {
             ) : null}
 
             {currentUser?.role === 'superuser' ? (
-              <div className="mt-6 rounded-lg border border-red-500/40 bg-red-950/30 p-4">
-                <p className="eyebrow" style={{ color: '#fca5a5' }}>Zona de perigo · Superuser</p>
-                <h3 className="mt-1 text-lg font-semibold text-red-100">Limpar base de dados de ensaios</h3>
-                <p className="summary-copy mt-1">
-                  Apaga TODOS os ensaios (pendentes, confirmados, anulados e historico). Irreversivel — usa para remover os dados de teste antes do lancamento.
-                </p>
-                <button
-                  type="button"
-                  className="primary-button mt-3 bg-red-600 hover:bg-red-700 disabled:opacity-60"
-                  disabled={clearBookingsLoading}
-                  onClick={() => { void handleClearAllBookings(); }}
-                >
-                  {clearBookingsLoading ? 'A apagar ensaios...' : 'Apagar todos os ensaios'}
-                </button>
-              </div>
+              <section className="danger-zone" aria-labelledby="danger-zone-title">
+                <div className="danger-zone-heading">
+                  <AlertTriangle aria-hidden="true" size={16} strokeWidth={2.2} />
+                  <p>Zona restrita · Superuser</p>
+                </div>
+                <div className="danger-zone-content">
+                  <div>
+                    <h3 id="danger-zone-title">Eliminar todos os ensaios</h3>
+                    <p>
+                      Remove permanentemente ensaios pendentes, confirmados, anulados e histórico. Esta operação não pode ser desfeita.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="danger-zone-action"
+                    disabled={clearBookingsLoading}
+                    onClick={() => {
+                      setClearBookingsConfirmation('');
+                      setClearBookingsModalOpen(true);
+                    }}
+                  >
+                    {clearBookingsLoading ? 'A eliminar ensaios...' : 'Eliminar todos os ensaios'}
+                  </button>
+                </div>
+              </section>
             ) : null}
           </section>
         ) : null}
         </div>
       </main>
+
+      {clearBookingsModalOpen ? (
+        <div
+          className="admin-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clear-bookings-modal-title"
+        >
+          <section className="card admin-modal-card clear-bookings-modal">
+            <div className="clear-bookings-modal-alert">
+              <AlertTriangle aria-hidden="true" size={18} strokeWidth={2.25} />
+              <span>Operação irreversível</span>
+            </div>
+            <h3 id="clear-bookings-modal-title">Eliminar todos os ensaios?</h3>
+            <p>
+              Isto remove todos os ensaios e o respetivo histórico. Para confirmar, escreve{' '}
+              <strong>apaga os ensaios</strong> no campo abaixo.
+            </p>
+            <label className="clear-bookings-confirmation-field">
+              Confirmação
+              <input
+                autoComplete="off"
+                autoFocus
+                disabled={clearBookingsLoading}
+                value={clearBookingsConfirmation}
+                onChange={(event) => setClearBookingsConfirmation(event.target.value)}
+                placeholder="apaga os ensaios"
+              />
+            </label>
+            <div className="admin-modal-actions clear-bookings-modal-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={clearBookingsLoading}
+                onClick={() => {
+                  setClearBookingsModalOpen(false);
+                  setClearBookingsConfirmation('');
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="danger-zone-action"
+                disabled={
+                  clearBookingsLoading ||
+                  clearBookingsConfirmation.trim().toLocaleLowerCase('pt-PT') !== 'apaga os ensaios'
+                }
+                onClick={() => { void handleClearAllBookings(); }}
+              >
+                {clearBookingsLoading ? 'A eliminar...' : 'Eliminar definitivamente'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {rescheduleDraft ? (
         <div className="admin-modal-backdrop" role="dialog" aria-modal="true" aria-label="Reagendar marcacao">

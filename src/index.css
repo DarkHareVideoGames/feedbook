@@ -723,18 +723,18 @@ textarea:focus {
 }
 
 
-/* Checkmark de opt-in para envio de WhatsApp por marcacao. */
+/* Opt-in compacto para envio de WhatsApp, alinhado com as restantes ações. */
 .wa-optin {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  align-self: center;
+  justify-content: center;
+  gap: 5px;
   height: 30px;
   box-sizing: border-box;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border: 1px solid var(--border);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  background: #111216;
   color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 600;
@@ -745,30 +745,23 @@ textarea:focus {
 }
 
 .wa-optin:hover {
-  border-color: rgba(37, 211, 102, 0.6);
+  border-color: rgba(37, 211, 102, 0.72);
+  background: rgba(37, 211, 102, 0.08);
 }
 
-.wa-optin input {
-  width: 14px;
-  height: 14px;
-  margin: 0;
-  accent-color: #25d366;
-  cursor: pointer;
-}
-
-.wa-optin input:disabled {
+.wa-optin:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .wa-optin-active {
   border-color: rgba(37, 211, 102, 0.8);
-  background: rgba(37, 211, 102, 0.16);
+  background: rgba(37, 211, 102, 0.14);
   color: #86efac;
 }
 
-.wa-optin:has(input:disabled) {
-  opacity: 0.6;
+.wa-optin svg {
+  flex: none;
 }
 
 .confirmation {
@@ -1786,11 +1779,6 @@ textarea:focus {
   white-space: nowrap;
 }
 
-/* Checkmark encostado a direita na mesma linha das acoes. */
-.history-actions .wa-optin {
-  margin-left: auto;
-}
-
 /* Dropdown de responsavel pelo ensaio (so para admin). */
 .assignee-select-wrap {
   display: flex;
@@ -2183,6 +2171,132 @@ textarea:focus {
 
 .admin-approval-row select {
   max-width: 320px;
+}
+
+.danger-zone {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  margin-top: 56px;
+  padding: 14px 16px 16px;
+  border: 1px solid rgba(239, 68, 68, 0.52);
+  border-left: 4px solid #dc2626;
+  border-radius: 4px;
+  background: linear-gradient(100deg, rgba(127, 29, 29, 0.28), rgba(24, 9, 11, 0.86));
+}
+
+.danger-zone::before {
+  position: absolute;
+  top: -29px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  content: '';
+  background: linear-gradient(90deg, #dc2626, rgba(220, 38, 38, 0.15) 42%, transparent 72%);
+}
+
+.danger-zone-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #fca5a5;
+}
+
+.danger-zone-heading p {
+  margin: 0;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.danger-zone-content {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.danger-zone h3 {
+  margin: 0;
+  color: #fee2e2;
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+}
+
+.danger-zone-content p {
+  max-width: 68ch;
+  margin: 5px 0 0;
+  color: #d1a5a9;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.danger-zone-action {
+  flex: none;
+  border: 1px solid rgba(248, 113, 113, 0.78);
+  border-radius: 3px;
+  padding: 8px 10px;
+  background: #7f1d1d;
+  color: #fff1f2;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.danger-zone-action:hover:not(:disabled) {
+  border-color: #fecaca;
+  background: #b91c1c;
+}
+
+.danger-zone-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.clear-bookings-modal {
+  width: min(100%, 460px);
+  padding: 20px;
+  border-color: rgba(248, 113, 113, 0.62);
+  border-top: 3px solid #dc2626;
+}
+
+.clear-bookings-modal-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #fca5a5;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.clear-bookings-modal > p {
+  margin: -4px 0 2px;
+  color: #d1a5a9;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.clear-bookings-modal > p strong {
+  color: #fee2e2;
+  font-weight: 800;
+}
+
+.clear-bookings-confirmation-field {
+  color: #f3d1d4;
+  font-size: 0.76rem;
+}
+
+.clear-bookings-confirmation-field input {
+  border-color: rgba(248, 113, 113, 0.42);
+}
+
+.clear-bookings-modal-actions {
+  grid-template-columns: 1fr 1.3fr;
 }
 
 .admin-modal-backdrop {
@@ -3000,5 +3114,26 @@ textarea:focus {
   .admin-modal-backdrop,
   .admin-sidebar-overlay {
     background: rgba(0, 0, 0, 0.78);
+  }
+
+  .danger-zone {
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .danger-zone {
+    margin-top: 44px;
+    padding: 13px 14px 14px;
+  }
+
+  .danger-zone-content {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .danger-zone-action {
+    width: 100%;
   }
 }

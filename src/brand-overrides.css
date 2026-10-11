@@ -1,0 +1,22 @@
+/* Ajustes pontuais de marca: logótipos limpos e cabeçalho admin compacto. */
+.topbar .brand-wrap,
+.admin-topbar .brand-wrap {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+}
+
+.brand-logo,
+.admin-brand-logo {
+  width: min(100%, 420px);
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 900px) {
+  .admin-content {
+    padding-top: 24px;
+  }
+}
