@@ -2665,6 +2665,7 @@ function AdminHistoryPage() {
                       <th>Hora</th>
                       <th>Sala</th>
                       <th>Banda</th>
+                      <th>Extras</th>
                       <th>Duracao</th>
                       <th>Pagamento</th>
                       <th>Estado</th>
@@ -2685,6 +2686,13 @@ function AdminHistoryPage() {
                           {b.contactPhone ? (
                             <span className="history-sub">{b.contactPhone}</span>
                           ) : null}
+                        </td>
+                        <td>
+                          {(b.extras ?? []).map((extraId) => (
+                            <span key={extraId} className="history-extra-chip">
+                              {extraId}
+                            </span>
+                          ))}
                         </td>
                         <td>{b.duration}h</td>
                         <td>
