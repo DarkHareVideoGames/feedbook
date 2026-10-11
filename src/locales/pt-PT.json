@@ -91,7 +91,7 @@
     "apiError": "Nao foi possivel comunicar com o backend. Tenta novamente.",
     "validationError": "Preenche os campos obrigatorios (marcados com *).",
     "bookingIdLabel": "N.\u00ba da reserva:",
-    "bookingIdNote": "Guarda este numero para futuras referencias.",
+    "bookingIdNote": "Guarda este numero para futuras referencias.", "noExtras": "Sem servicos extra — so o ensaio.",
     "teamTitle": "Confirmacao da equipa",
     "teamRefresh": "Atualizar pendentes",
     "teamLoading": "A carregar...",

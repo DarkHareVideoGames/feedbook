@@ -267,6 +267,7 @@ function App() {
   const [selectedExtras, setSelectedExtras] = useState<string[]>(['engineer']);
   const [confirmation, setConfirmation] = useState<string>('');
   const [confirmationId, setConfirmationId] = useState<string>('');
+  const [confirmationExtras, setConfirmationExtras] = useState<Array<{ id: string; label: string; price: number }>>([]);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [backendOffline, setBackendOffline] = useState(false);
@@ -515,6 +516,11 @@ function App() {
 
       setConfirmation(message);
       setConfirmationId(payload.booking.id);
+      setConfirmationExtras(
+        extras
+          .filter((extra) => selectedExtras.includes(extra.id))
+          .map((extra) => ({ id: extra.id, label: extra.label, price: extra.price })),
+      );
       setBackendOffline(false);
       setBookingStep('confirmation');
 
@@ -900,6 +906,18 @@ function App() {
               <div className="confirmation-banner" role="status" aria-live="polite" tabIndex={-1} ref={confirmationRef}>
                 <span className="confirmation-banner-badge">{translations.booking.pendingBadge}</span>
                 <p className="confirmation-banner-message">{confirmation}</p>
+                {confirmationExtras.length > 0 ? (
+                  <ul className="confirmation-extras-list" aria-label={translations.booking.addonsLabel}>
+                    {confirmationExtras.map((extra) => (
+                      <li key={extra.id}>
+                        <span>{extra.label}</span>
+                        <strong>{currency.format(extra.price)}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="confirmation-extras-empty">{translations.booking.noExtras ?? 'Sem servicos extra — so o ensaio.'}</p>
+                )}
                 <div className="confirmation-id-row">
                   <span>{translations.booking.bookingIdLabel ?? 'N.º da reserva:'}</span>
                   <strong className="confirmation-id-value">{confirmationId}</strong>

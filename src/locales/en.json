@@ -91,7 +91,7 @@
     "apiError": "Could not reach the backend. Please try again.",
     "validationError": "Please fill in all required fields (marked with *).",
     "bookingIdLabel": "Booking number:",
-    "bookingIdNote": "Save this number for future reference.",
+    "bookingIdNote": "Save this number for future reference.", "noExtras": "No extra services — rehearsal only.",
     "teamTitle": "Team confirmation",
     "teamRefresh": "Refresh pending list",
     "teamLoading": "Loading...",

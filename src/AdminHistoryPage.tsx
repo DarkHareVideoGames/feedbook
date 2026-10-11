@@ -1167,7 +1167,7 @@ function AdminHistoryPage() {
   const handleDeleteService = async (serviceId: string) => {
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
     if (!sessionToken || !isPrivileged) return;
-    if (!window.confirm('Apagar este servico? Se estiver em uso, sera arquivado.')) return;
+    if (!window.confirm('Apagar DEFINITIVAMENTE este servico? Sai do site e do admin.')) return;
     setCatalogNotice('');
     setError('');
     try {

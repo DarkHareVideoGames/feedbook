@@ -1232,10 +1232,6 @@ export async function listServices(options?: { includeInactive?: boolean }): Pro
     throw toError(error.message, 'Could not load services');
   }
   const services = (data ?? []).map((row) => mapServiceRow(row as Record<string, unknown>));
-  if (services.length === 0) {
-    const fallback = options?.includeInactive ? fallbackServices : fallbackServices.filter((service) => service.active);
-    return { services: fallback };
-  }
   return { services };
 }
 
@@ -1295,18 +1291,24 @@ export async function deleteService(token: string, serviceId: string): Promise<{
   const actor = await requireActor(token, ['admin', 'superuser']);
   const { data: existing } = await supabase.from('services').select('*').eq('id', serviceId).maybeSingle();
   if (!existing) throw new ApiError('Service not found.', 404);
-  const { data: linked } = await supabase.from('bookings').select('id,extras').limit(50);
-  const inUse = (linked ?? []).some((row) => Array.isArray((row as Record<string, unknown>).extras) && ((row as Record<string, unknown>).extras as unknown[]).includes(serviceId));
-  if (inUse) {
-    const { error } = await supabase.from('services').update({ active: false }).eq('id', serviceId);
-    if (error) throw toError(error.message, 'Could not archive service');
-    await recordAudit({ action: 'service-archived', actor: { id: actor.id, name: actor.name, role: actor.role }, target: serviceId, details: { name: String((existing as Record<string, unknown>).name ?? serviceId) } });
-    return { message: 'Service archived (in use).' };
-  }
+  // Apagar definitivo: remove o servico do catalogo (site + admin) mesmo que
+  // tenha sido usado em marcacoes antigas — o historico guarda so o id.
   const { error } = await supabase.from('services').delete().eq('id', serviceId);
   if (error) throw toError(error.message, 'Could not delete service');
+  // Limpa o legado na tabela pricing para nao "ressuscitar" o extra no site.
+  try {
+    const { data: pricingRow } = await supabase.from('pricing').select('*').eq('id', 1).maybeSingle();
+    const currentExtras = ((pricingRow?.extras ?? {}) as Record<string, unknown>);
+    if (serviceId in currentExtras) {
+      const nextExtras: Record<string, unknown> = { ...currentExtras };
+      delete nextExtras[serviceId];
+      await supabase.from('pricing').upsert({ id: 1, extras: nextExtras, updatedAt: new Date().toISOString() }, { onConflict: 'id' });
+    }
+  } catch {
+    // Nao bloqueia o apagar se a limpeza do legado falhar.
+  }
   await recordAudit({ action: 'service-deleted', actor: { id: actor.id, name: actor.name, role: actor.role }, target: serviceId, details: { name: String((existing as Record<string, unknown>).name ?? serviceId) } });
-  return { message: 'Service deleted successfully' };
+  return { message: 'Servico apagado definitivamente.' };
 }
 
 export async function pricing(): Promise<{ pricing: PricingConfig }> {
