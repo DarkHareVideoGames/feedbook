@@ -537,7 +537,7 @@ function consegueAbrirWhatsApp(booking: PastBooking): boolean {
 function AdminHistoryPage() {
   const [bookings, setBookings] = useState<PastBooking[]>([]);
   const [adminLogoVisible, setAdminLogoVisible] = useState(true);
-  const [betaEnabled, setBetaEnabled] = useState(() => localStorage.getItem('feedbook-beta-enabled') !== 'false');
+  const [betaEnabled, setBetaEnabled] = useState(true);
   const [token, setToken] = useState('');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [loginEmail, setLoginEmail] = useState('admin@feedbook.local');
@@ -594,12 +594,22 @@ function AdminHistoryPage() {
   const isPrivilegedRole = (role: Role | null | undefined) => role === 'admin' || role === 'superuser';
   const isPrivileged = isPrivilegedRole(currentUser?.role);
   const isSuperuser = currentUser?.role === 'superuser';
-  const toggleBetaMode = () => {
-    setBetaEnabled((enabled) => {
-      const nextEnabled = !enabled;
-      localStorage.setItem('feedbook-beta-enabled', String(nextEnabled));
-      return nextEnabled;
-    });
+  const toggleBetaMode = async () => {
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || actionLoading['beta']) return;
+    const nextEnabled = !betaEnabled;
+    // Atualiza de imediato (otimista) e persiste no Supabase (estado global).
+    setBetaEnabled(nextEnabled);
+    setError('');
+    try {
+      await withActionLock('beta', async () => {
+        await api.updateAppSettings(sessionToken, { betaEnabled: nextEnabled });
+      });
+    } catch (err) {
+      // Reverte em caso de falha para não divergir do servidor.
+      setBetaEnabled(!nextEnabled);
+      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel atualizar o modo Beta.');
+    }
   };
   // Dropdown "Perfil": apenas Administradores e Colaboradores.
   // O superuser não é escolhível (é detetado pelo login) e "Técnico" passou para o campo Função.
@@ -1801,7 +1811,12 @@ function AdminHistoryPage() {
     }
 
     setToken(sessionToken);
-    Promise.all([restoreSession(sessionToken), loadHistory(sessionToken)])
+    Promise.all([
+      restoreSession(sessionToken),
+      loadHistory(sessionToken),
+      // Estado global do badge (Supabase), para o toggle refletir o valor real.
+      api.getAppSettings().then((settings) => setBetaEnabled(settings.betaEnabled)).catch(() => {}),
+    ])
       .catch(() => {
         window.localStorage.removeItem(TOKEN_KEY);
         setToken('');
@@ -1877,9 +1892,16 @@ function AdminHistoryPage() {
               type="button"
               className="beta-mode-toggle"
               aria-pressed={betaEnabled}
-              onClick={toggleBetaMode}
+              disabled={Boolean(actionLoading['beta'])}
+              onClick={() => {
+                void toggleBetaMode();
+              }}
             >
-              {betaEnabled ? 'Desativar' : 'Ativar'}
+              {actionLoading['beta']
+                ? 'A guardar...'
+                : betaEnabled
+                  ? 'Desativar'
+                  : 'Ativar'}
             </button>
           ) : null}
         </div>

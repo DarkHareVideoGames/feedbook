@@ -1412,6 +1412,56 @@ export async function updatePricing(
   return { pricing: merged };
 }
 
+// --- Definições da app (feature flags globais) ---------------
+
+// Estado global do badge "Beta". Leitura pública (sem login): o site precisa de
+// o mostrar/esconder em todos os dispositivos. Se a tabela ainda não existir
+// (migração não corrida), assume o badge ativo para não esconder nada por engano.
+export async function getAppSettings(): Promise<{ betaEnabled: boolean }> {
+  if (!isSupabaseConfigured) {
+    return { betaEnabled: true };
+  }
+  const { data, error } = await supabase
+    .from('app_settings')
+    .select('"betaEnabled"')
+    .eq('id', true)
+    .maybeSingle();
+  if (error) {
+    if (isMissingTableError(error)) return { betaEnabled: true };
+    throw toError(error.message, 'Could not load app settings');
+  }
+  return { betaEnabled: data?.betaEnabled !== false };
+}
+
+// Atualiza o estado do badge. Reservado a admin/superuser.
+export async function updateAppSettings(
+  token: string,
+  updates: { betaEnabled: boolean },
+): Promise<{ betaEnabled: boolean }> {
+  const actor = await requireActor(token, ['admin', 'superuser']);
+  const betaEnabled = updates.betaEnabled !== false;
+
+  const { error } = await supabase
+    .from('app_settings')
+    .upsert(
+      { id: true, betaEnabled, updatedAt: new Date().toISOString() },
+      { onConflict: 'id' },
+    );
+
+  if (error) {
+    throw toError(error.message, 'Could not update app settings');
+  }
+
+  await recordAudit({
+    action: 'app-settings-updated',
+    actor: { id: actor.id, name: actor.name, role: actor.role },
+    target: 'app_settings',
+    details: { betaEnabled },
+  });
+
+  return { betaEnabled };
+}
+
 // --- Utilizadores (admin) ------------------------------------
 
 export async function adminUsers(token: string): Promise<{ users: ApiUser[] }> {

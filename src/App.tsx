@@ -286,7 +286,7 @@ function App() {
   const [backendOffline, setBackendOffline] = useState(false);
   const [teamBookings, setTeamBookings] = useState<TeamBooking[]>([]);
   const [bookingStep, setBookingStep] = useState<BookingStep>('room');
-  const [betaEnabled, setBetaEnabled] = useState(() => localStorage.getItem('feedbook-beta-enabled') !== 'false');
+  const [betaEnabled, setBetaEnabled] = useState(true);
   const confirmationRef = useRef<HTMLDivElement>(null);
 
   const currency = useMemo(
@@ -555,10 +555,21 @@ function App() {
     }
   }
 
+  // Estado global do badge "Beta" (Supabase), partilhado por todos os
+  // dispositivos — já não depende do localStorage, que era por-browser.
   useEffect(() => {
-    const syncBetaMode = () => setBetaEnabled(localStorage.getItem('feedbook-beta-enabled') !== 'false');
-    window.addEventListener('storage', syncBetaMode);
-    return () => window.removeEventListener('storage', syncBetaMode);
+    let active = true;
+    api
+      .getAppSettings()
+      .then((settings) => {
+        if (active) setBetaEnabled(settings.betaEnabled);
+      })
+      .catch(() => {
+        // Em falha de rede/BD mantém o valor por omissão (badge visível).
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (
