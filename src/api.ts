@@ -1356,17 +1356,27 @@ export async function updatePricing(
 ): Promise<{ pricing: PricingConfig }> {
   const actor = await requireActor(token, ['admin', 'superuser']);
   const { data: current } = await supabase.from('pricing').select('*').eq('id', 1).maybeSingle();
-  const currentExtras = ((current?.extras ?? {}) as Record<string, unknown>);
-  const knownIds = new Set<string>([
-    ...fallbackServices.map((service) => service.id),
-    ...Object.keys(currentExtras),
-    ...Object.keys(updates.extras ?? {}),
-  ]);
+  // Fonte unica de extras: tabela services. Se updates.extras vier omitido,
+  // nao toca no legado — evita ressuscitar servicos apagados.
+  const { data: liveServices } = await supabase.from('services').select('id,price').eq('active', true);
   const mergedExtras: Record<string, number> = {};
-  for (const id of knownIds) {
-    const candidate = updates.extras && id in updates.extras ? updates.extras[id] : currentExtras[id];
-    const fallbackPrice = fallbackServices.find((service) => service.id === id)?.price ?? 0;
-    mergedExtras[id] = Number.isFinite(Number(candidate)) ? Number(candidate) : Number(fallbackPrice);
+  if (updates.extras) {
+    const currentExtras = ((current?.extras ?? {}) as Record<string, unknown>);
+    const knownIds = new Set<string>([
+      ...fallbackServices.map((service) => service.id),
+      ...Object.keys(currentExtras),
+      ...Object.keys(updates.extras ?? {}),
+    ]);
+    for (const id of knownIds) {
+      const candidate = updates.extras && id in updates.extras ? updates.extras[id] : currentExtras[id];
+      const fallbackPrice = fallbackServices.find((service) => service.id === id)?.price ?? 0;
+      mergedExtras[id] = Number.isFinite(Number(candidate)) ? Number(candidate) : Number(fallbackPrice);
+    }
+  } else if (liveServices) {
+    for (const row of liveServices) {
+      const id = String((row as Record<string, unknown>).id ?? '');
+      if (id) mergedExtras[id] = Number((row as Record<string, unknown>).price ?? 0);
+    }
   }
 
   const merged: PricingConfig = {

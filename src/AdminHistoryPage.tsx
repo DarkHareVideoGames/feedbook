@@ -125,7 +125,7 @@ type HistoryFilter = 'all' | 'pending' | 'confirmed' | 'rescheduled' | 'cancelle
 // Futuro/hoje fica sempre visivel; 'all' mostra o historico completo.
 type PeriodScope = 'month' | '3m' | '6m' | 'year' | 'all';
 
-type AdminPanel = 'unified' | 'users' | 'rooms' | 'services' | 'pricing';
+type AdminPanel = 'unified' | 'users' | 'rooms' | 'services';
 
 type NewUserDraft = {
   name: string;
@@ -551,7 +551,6 @@ function AdminHistoryPage() {
   const [rooms, setRooms] = useState<api.ApiRoom[]>([]);
   const [services, setServices] = useState<api.ApiService[]>([]);
   const [globalRate, setGlobalRate] = useState('');
-  const [pricingDraft, setPricingDraft] = useState<Record<string, string>>({});
   const [roomForm, setRoomForm] = useState<RoomFormDraft>(emptyRoomForm);
   const [roomImageFile, setRoomImageFile] = useState<File | null>(null);
   const [roomImageUploading, setRoomImageUploading] = useState(false);
@@ -794,11 +793,6 @@ function AdminHistoryPage() {
       setServices(servicesPayload.services);
       if (pricingPayload?.pricing) {
         setGlobalRate(String(pricingPayload.pricing.perMemberPerHour));
-        const draft: Record<string, string> = {};
-        for (const [key, value] of Object.entries(pricingPayload.pricing.extras ?? {})) {
-          draft[key] = String(value);
-        }
-        setPricingDraft(draft);
       }
     } catch {
       setError('Nao foi possivel carregar salas e servicos. Confirma que correste o supabase_rooms_services.sql.');
@@ -1180,27 +1174,23 @@ function AdminHistoryPage() {
     }
   };
 
-  const handleSavePricing = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSaveGlobalRate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
     if (!sessionToken || !isPrivileged) return;
     const parsedRate = Number(globalRate);
-    const parsedExtras: Record<string, number> = {};
-    for (const [key, raw] of Object.entries(pricingDraft)) {
-      parsedExtras[key] = Number(raw);
-    }
-    if (!Number.isFinite(parsedRate) || parsedRate < 0 || Object.values(parsedExtras).some((value) => !Number.isFinite(value) || value < 0)) {
-      setError('Valores invalidos. Usa numeros validos.');
+    if (!Number.isFinite(parsedRate) || parsedRate < 0) {
+      setError('Valor invalido. Usa um numero valido.');
       return;
     }
     setCatalogNotice('');
     setError('');
     try {
-      await api.updatePricing(sessionToken, { perMemberPerHour: parsedRate, extras: parsedExtras });
+      await api.updatePricing(sessionToken, { perMemberPerHour: parsedRate });
       await loadCatalogs();
-      setCatalogNotice('Precos atualizados com sucesso.');
+      setCatalogNotice('Preco global atualizado com sucesso.');
     } catch {
-      setError('Nao foi possivel guardar os precos.');
+      setError('Nao foi possivel guardar o preco global.');
     }
   };
 
@@ -1913,16 +1903,6 @@ function AdminHistoryPage() {
                 >
                   Servicos
                 </button>
-                <button
-                  type="button"
-                  className={`admin-sidebar-item ${activePanel === "pricing" ? "admin-sidebar-item-active" : ""}`}
-                  onClick={() => {
-                    setActivePanel("pricing");
-                    setSidebarOpen(false);
-                  }}
-                >
-                  Precos
-                </button>
               </>
             ) : null}
 
@@ -2158,6 +2138,22 @@ function AdminHistoryPage() {
               <p className="eyebrow">Salas</p>
               <h2>Gerir salas</h2>
             </div>
+            <form className="admin-pricing-grid" onSubmit={handleSaveGlobalRate}>
+              <label>
+                Preco por hora global — fallback (EUR)
+                <input
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  value={globalRate}
+                  onChange={(event) => setGlobalRate(event.target.value)}
+                />
+              </label>
+              <p className="admin-helper-note">Usado quando a sala nao tem preco proprio. Os precos dos extras definem-se em Servicos.</p>
+              <button type="submit" className="primary-button">
+                Guardar preco global
+              </button>
+            </form>
             <form className="admin-create-user" onSubmit={handleSaveRoom}>
               {!editingRoomId ? (
                 <label>
@@ -2432,52 +2428,6 @@ function AdminHistoryPage() {
                 </li>
               ))}
             </ul>
-          </section>
-        ) : null}
-
-        {isPrivileged && activePanel === 'pricing' ? (
-          <section className="card admin-section">
-            <div className="section-heading">
-              <p className="eyebrow">Precos</p>
-              <h2>Atualizar tabela de precos</h2>
-            </div>
-            <form className="admin-pricing-grid" onSubmit={handleSavePricing}>
-              <label>
-                Preco por hora — global (EUR)
-                <input
-                  type="number"
-                  min={0}
-                  step="0.5"
-                  value={globalRate}
-                  onChange={(event) => setGlobalRate(event.target.value)}
-                />
-              </label>
-
-              {Object.entries(pricingDraft).map(([extraId, rawValue]) => {
-                const service = services.find((item) => item.id === extraId);
-                const label = service ? service.name : extraId;
-                return (
-                  <label key={extraId}>
-                    Extra {label} (EUR)
-                    <input
-                      type="number"
-                      min={0}
-                      step="1"
-                      value={rawValue}
-                      onChange={(event) =>
-                        setPricingDraft((current) => ({ ...current, [extraId]: event.target.value }))
-                      }
-                    />
-                  </label>
-                );
-              })}
-
-              <p className="admin-helper-note">Para adicionar ou remover extras, usa o painel Servicos.</p>
-
-              <button type="submit" className="primary-button">
-                Guardar precos
-              </button>
-            </form>
           </section>
         ) : null}
 
