@@ -1472,8 +1472,6 @@ function AdminHistoryPage() {
     let cursorY = margin;
 
     const receivedTotal = financeDataToShow.reduce((sum, month) => sum + month.totalReceived, 0);
-    const refundedTotal = financeDataToShow.reduce((sum, month) => sum + month.totalRefunded, 0);
-    const netTotal = financeDataToShow.reduce((sum, month) => sum + month.netTotal, 0);
     const periodLabel = financeDataToShow.map((month) => formatFinanceMonthLabel(month.month)).join(', ');
     const logoData = await loadImageAsDataUrl('/logo.png');
 
@@ -1497,11 +1495,9 @@ function AdminHistoryPage() {
     autoTable(doc, {
       startY: cursorY,
       theme: 'grid',
-      head: [['Recebido', 'Devolvido', 'Liquido', 'Registos']],
+      head: [['Recebido', 'Registos']],
       body: [[
         formatCurrency(receivedTotal),
-        formatCurrency(refundedTotal),
-        formatCurrency(netTotal),
         String(financeDataToShow.reduce((sum, month) => sum + month.bookingCount, 0)),
       ]],
       styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 3, textColor: [17, 24, 39] },
@@ -1509,9 +1505,7 @@ function AdminHistoryPage() {
       alternateRowStyles: { fillColor: [243, 253, 247] },
       columnStyles: {
         0: { halign: 'right' },
-        1: { halign: 'right' },
-        2: { halign: 'right' },
-        3: { halign: 'center' },
+        1: { halign: 'center' },
       },
       margin: { left: margin, right: margin },
     });
@@ -1536,7 +1530,7 @@ function AdminHistoryPage() {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.text(
-        `Recebido: ${formatCurrency(month.totalReceived)}   Devolvido: ${formatCurrency(month.totalRefunded)}   Liquido: ${formatCurrency(month.netTotal)}`,
+        `Recebido: ${formatCurrency(month.totalReceived)}`,
         margin,
         cursorY,
       );
@@ -2434,14 +2428,6 @@ function AdminHistoryPage() {
                     <strong>{formatCurrency(totals.totalReceived)}</strong>
                   </div>
                   <div className="finance-stat">
-                    <span>Total devolvido</span>
-                    <strong>{formatCurrency(totals.totalRefunded)}</strong>
-                  </div>
-                  <div className="finance-stat">
-                    <span>Liquido</span>
-                    <strong>{formatCurrency(totals.netTotal)}</strong>
-                  </div>
-                  <div className="finance-stat">
                     <span>Pagamentos</span>
                     <strong>{String(totals.bookingCount)}</strong>
                   </div>
@@ -2461,7 +2447,6 @@ function AdminHistoryPage() {
                   <div className="finance-month-grid">
                     {financeData.map((month) => {
                       const receivedEntries = month.bookings.filter((entry) => entry.paymentStatus === 'received');
-                      const refundedEntries = month.bookings.filter((entry) => entry.paymentStatus === 'refunded');
 
                       return (
                         <article key={month.month} className="finance-month-card">
@@ -2471,8 +2456,6 @@ function AdminHistoryPage() {
                           </div>
                           <div className="finance-month-values">
                             <p>Recebido: <strong>{formatCurrency(month.totalReceived)}</strong></p>
-                            <p>Devolvido: <strong>{formatCurrency(month.totalRefunded)}</strong></p>
-                            <p>Liquido: <strong>{formatCurrency(month.netTotal)}</strong></p>
                           </div>
 
                           {receivedEntries.length > 0 ? (
@@ -2495,36 +2478,6 @@ function AdminHistoryPage() {
                                   <ul className="finance-breakdown-list">
                                     {summarizeFinanceEntries(receivedEntries, (entry) => entry.bandName || 'Sem banda').map((item) => (
                                       <li key={`received-band-${item.name}`}>
-                                        <span>{item.name}</span>
-                                        <strong>{formatCurrency(item.total)}</strong>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              </div>
-                            </div>
-                          ) : null}
-
-                          {refundedEntries.length > 0 ? (
-                            <div className="finance-bookings-group">
-                              <p className="finance-bookings-group-title">Devoluções</p>
-                              <div className="finance-breakdown-grid">
-                                <div className="finance-breakdown-card">
-                                  <span className="finance-breakdown-label">Por colaborador</span>
-                                  <ul className="finance-breakdown-list">
-                                    {summarizeFinanceEntries(refundedEntries, (entry) => entry.confirmedBy?.name || 'Sem colaborador').map((item) => (
-                                      <li key={`refunded-collaborator-${item.name}`}>
-                                        <span>{item.name}</span>
-                                        <strong>{formatCurrency(item.total)}</strong>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                                <div className="finance-breakdown-card">
-                                  <span className="finance-breakdown-label">Por banda</span>
-                                  <ul className="finance-breakdown-list">
-                                    {summarizeFinanceEntries(refundedEntries, (entry) => entry.bandName || 'Sem banda').map((item) => (
-                                      <li key={`refunded-band-${item.name}`}>
                                         <span>{item.name}</span>
                                         <strong>{formatCurrency(item.total)}</strong>
                                       </li>
@@ -2562,19 +2515,10 @@ function AdminHistoryPage() {
                           <span>Recebido</span>
                           <strong>{formatCurrency(financeDataToShow.reduce((sum, month) => sum + month.totalReceived, 0))}</strong>
                         </div>
-                        <div>
-                          <span>Devolvido</span>
-                          <strong>{formatCurrency(financeDataToShow.reduce((sum, month) => sum + month.totalRefunded, 0))}</strong>
-                        </div>
-                        <div>
-                          <span>Líquido</span>
-                          <strong>{formatCurrency(financeDataToShow.reduce((sum, month) => sum + month.netTotal, 0))}</strong>
-                        </div>
                       </div>
 
                       {financeDataToShow.map((month) => {
                         const receivedEntries = month.bookings.filter((entry) => entry.paymentStatus === 'received');
-                        const refundedEntries = month.bookings.filter((entry) => entry.paymentStatus === 'refunded');
 
                         return (
                           <article key={`print-${month.month}`} className="finance-print-month">
@@ -2586,14 +2530,6 @@ function AdminHistoryPage() {
                               <div>
                                 <span>Recebido</span>
                                 <strong>{formatCurrency(month.totalReceived)}</strong>
-                              </div>
-                              <div>
-                                <span>Devolvido</span>
-                                <strong>{formatCurrency(month.totalRefunded)}</strong>
-                              </div>
-                              <div>
-                                <span>Líquido</span>
-                                <strong>{formatCurrency(month.netTotal)}</strong>
                               </div>
                             </div>
 
@@ -2638,59 +2574,6 @@ function AdminHistoryPage() {
                                             <div className="finance-print-payment-field"><span>Data</span><strong>{entry.date}</strong></div>
                                             <div className="finance-print-payment-field"><span>Sala</span><strong>{entry.roomName}</strong></div>
                                             <div className="finance-print-payment-field"><span>Estado</span><strong>Recebido</strong></div>
-                                            <div className="finance-print-payment-field"><span>Banda</span><strong>{entry.bandName || 'Banda'}</strong></div>
-                                            <div className="finance-print-payment-field"><span>Valor</span><strong>{formatCurrency(entry.amount)}</strong></div>
-                                            <div className="finance-print-payment-field"><span>Recebido por</span><strong>{entry.confirmedBy?.name || '-'}</strong></div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : null}
-
-                            {refundedEntries.length > 0 ? (
-                              <div className="finance-print-bookings-section">
-                                <p className="finance-print-subhead">Devoluções</p>
-                                <div className="finance-print-breakdown">
-                                  <div className="finance-print-breakdown-card">
-                                    <span>Por colaborador</span>
-                                    <ul>
-                                      {summarizeFinanceEntries(refundedEntries, (entry) => entry.confirmedBy?.name || 'Sem colaborador').map((item) => (
-                                        <li key={`print-refunded-collaborator-${item.name}`}>
-                                          <span>{item.name}</span>
-                                          <strong>{formatCurrency(item.total)}</strong>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                  <div className="finance-print-breakdown-card">
-                                    <span>Por banda</span>
-                                    <ul>
-                                      {summarizeFinanceEntries(refundedEntries, (entry) => entry.bandName || 'Sem banda').map((item) => (
-                                        <li key={`print-refunded-band-${item.name}`}>
-                                          <span>{item.name}</span>
-                                          <strong>{formatCurrency(item.total)}</strong>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                </div>
-                                {Array.from(new Map(refundedEntries.map((entry) => [entry.roomName || 'Outra sala', [] as typeof refundedEntries])).entries()).map(([roomName, _entries]) => {
-                                  const roomEntries = refundedEntries.filter((entry) => (entry.roomName || 'Outra sala') === roomName);
-                                  return (
-                                    <div key={`print-room-refunded-${roomName}`} className={`finance-print-room-group ${financeRoomTone(roomName)}`}>
-                                      <div className="finance-print-room-header">
-                                        <strong>{roomName}</strong>
-                                        <span>{roomEntries.length} registo(s)</span>
-                                      </div>
-                                      <div className="finance-print-payment-list">
-                                        {roomEntries.map((entry) => (
-                                          <div key={`print-refunded-${entry.id}`} className="finance-print-payment-card">
-                                            <div className="finance-print-payment-field"><span>Data</span><strong>{entry.date}</strong></div>
-                                            <div className="finance-print-payment-field"><span>Sala</span><strong>{entry.roomName}</strong></div>
-                                            <div className="finance-print-payment-field"><span>Estado</span><strong>Devolvido</strong></div>
                                             <div className="finance-print-payment-field"><span>Banda</span><strong>{entry.bandName || 'Banda'}</strong></div>
                                             <div className="finance-print-payment-field"><span>Valor</span><strong>{formatCurrency(entry.amount)}</strong></div>
                                             <div className="finance-print-payment-field"><span>Recebido por</span><strong>{entry.confirmedBy?.name || '-'}</strong></div>
