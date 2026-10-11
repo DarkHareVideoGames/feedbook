@@ -324,6 +324,24 @@ function formatDateDayMonthYear(value: string): string {
   }).format(parsed);
 }
 
+// Data no formato Dia/Mês/Ano + dia da semana, ex.: "14/05/2024 (Ter)".
+function formatDateWithWeekday(value: string): string {
+  const raw = String(value || '').trim();
+  if (!raw) return '-';
+
+  const parsed = new Date(raw.includes('T') ? raw : `${raw}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return raw;
+
+  const datePart = new Intl.DateTimeFormat('pt-PT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(parsed);
+  const weekday = new Intl.DateTimeFormat('pt-PT', { weekday: 'short' }).format(parsed);
+
+  return `${datePart} (${weekday})`;
+}
+
 function formatExtraLabel(extraKey: string): string {
   const normalized = String(extraKey || '').trim();
   if (!normalized) return 'Sem extra';
@@ -455,6 +473,8 @@ function AdminHistoryPage() {
   const [rescheduleDraft, setRescheduleDraft] = useState<RescheduleDraft | null>(null);
   // Opt-in por marcacao: so abre o WhatsApp quando o checkmark esta ativo.
   const [whatsappOptIn, setWhatsappOptIn] = useState<Record<string, boolean>>({});
+  // Escolha do responsavel pelo ensaio (apenas admin/superuser escolhe no dropdown).
+  const [assigneeChoice, setAssigneeChoice] = useState<Record<string, string>>({});
   const [financeData, setFinanceData] = useState<FinanceMonthSummary[]>([]);
   const [financeExtrasCatalog, setFinanceExtrasCatalog] = useState<Record<string, number>>({});
   const [selectedFinanceMonths, setSelectedFinanceMonths] = useState<string[]>([]);
@@ -548,6 +568,52 @@ function AdminHistoryPage() {
         />
         <span>WhatsApp</span>
       </label>
+    );
+  };
+
+  // Dropdown de responsavel pelo ensaio — visivel apenas para admin/superuser.
+  // Mostra todos os utilizadores registados, por defeito o proprio admin logado.
+  const renderAssigneeSelect = (booking: PastBooking) => {
+    if (!isPrivileged || booking.status !== 'pending') return null;
+    if (!currentUser) return null;
+
+    const selectedId = assigneeChoice[booking.id] || currentUser.id;
+
+    return (
+      <label className="assignee-select-wrap" title="Quem ira assegurar o ensaio">
+        <span className="assignee-select-label">Assegura:</span>
+        <select
+          className="assignee-select"
+          value={selectedId}
+          disabled={Boolean(actionLoading[booking.id])}
+          onChange={(event) =>
+            setAssigneeChoice((prev) => ({ ...prev, [booking.id]: event.target.value }))
+          }
+        >
+          {!users.some((user) => user.id === currentUser.id) ? (
+            <option value={currentUser.id}>{currentUser.name}</option>
+          ) : null}
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.name}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  };
+
+  // Chip de estado com o responsavel atribuido, ex.: "Confirmado" + "Ana" (badge do tom).
+  const renderStatusWithAssignee = (booking: PastBooking) => {
+    const tag = bookingMainTag(booking);
+    const assignee = booking.assignedCollaborator?.name;
+    return (
+      <>
+        <span className={`status-chip ${tag.tone}`}>{tag.label}</span>
+        {assignee ? (
+          <span className={`status-assignee-chip ${tag.tone}`}>{assignee}</span>
+        ) : null}
+      </>
     );
   };
 
@@ -1028,9 +1094,13 @@ function AdminHistoryPage() {
 
     const booking = bookings.find((item) => item.id === bookingId);
     const sendWhatsApp = Boolean(whatsappOptIn[bookingId]);
+    // Admin/superuser escolhe o responsavel (por defeito fica ele proprio).
+    const chosenAssigneeId = isPrivileged
+      ? assigneeChoice[bookingId] || currentUser?.id || ''
+      : undefined;
 
     await withActionLock(bookingId, async () => {
-      await api.bookingAction(token, bookingId, 'confirm');
+      await api.bookingAction(token, bookingId, 'confirm', { assignedCollaboratorId: chosenAssigneeId });
 
       if (sendWhatsApp && booking && consegueAbrirWhatsApp(booking)) {
         abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'confirm');
@@ -2681,10 +2751,8 @@ function AdminHistoryPage() {
                       <th>Data</th>
                       <th>Hora</th>
                       <th>Sala</th>
-                      <th>Banda / Contacto</th>
-                      <th>Participantes</th>
+                      <th>Banda</th>
                       <th>Duracao</th>
-                      <th>Abre a sala</th>
                       <th>Pagamento</th>
                       <th>Estado</th>
                       <th>Acoes</th>
@@ -2696,27 +2764,20 @@ function AdminHistoryPage() {
                         key={b.id}
                         className={`history-row-${b.status} ${isPastConfirmed(b) ? 'history-row-past' : ''} ${roomToneClass(b)}`}
                       >
-                        <td>{b.date}</td>
+                        <td>{formatDateWithWeekday(b.date)}</td>
                         <td>{b.time}</td>
                         <td>{b.roomName}</td>
                         <td>
-                          <span>{b.bandName || b.contactName || '-'}</span>
+                          <span className="band-name">{b.bandName || '-'}</span>
                           {b.contactPhone ? (
                             <span className="history-sub">{b.contactPhone}</span>
                           ) : null}
                         </td>
-                        <td>{b.participants ?? '-'}</td>
                         <td>{b.duration}h</td>
-                        <td>{b.assignedCollaborator?.name || '-'}</td>
                         <td>
-                          No dia
-                          <span className={`history-sub ${paymentStatusTone(b)}`}>{paymentStatusLabel(b)}</span>
+                          <span className={paymentStatusTone(b)}>{paymentStatusLabel(b)}</span>
                         </td>
-                        <td className="status-cell">
-                          <span className={`status-chip ${bookingMainTag(b).tone}`}>
-                            {bookingMainTag(b).label}
-                          </span>
-                        </td>
+                        <td className="status-cell">{renderStatusWithAssignee(b)}</td>
                         <td>
                           <div className="history-actions">
                             {b.status === 'pending' ? (
@@ -2795,6 +2856,7 @@ function AdminHistoryPage() {
                             ) : null}
                             {podeUsarCheckmarkWhatsApp(b) ? renderWhatsAppOptIn(b.id, consegueAbrirWhatsApp(b)) : null}
                           </div>
+                          {renderAssigneeSelect(b)}
                         </td>
                       </tr>
                     ))}
@@ -2806,19 +2868,16 @@ function AdminHistoryPage() {
                     <li key={`${b.id}-mobile`} className={`history-mobile-card ${roomToneClass(b)}`}>
                       <div className="team-item-top">
                         <strong>{b.roomName}</strong>
-                        <span className={`status-chip ${bookingMainTag(b).tone}`}>{bookingMainTag(b).label}</span>
+                        {renderStatusWithAssignee(b)}
                       </div>
 
                       <p>
-                        {b.date} · {b.time} · {b.duration}h
+                        {formatDateWithWeekday(b.date)} · {b.time} · {b.duration}h
                       </p>
-                      <p>
-                        {b.bandName || b.contactName || '-'} · {b.participants ?? '-'} participantes
-                      </p>
+                      <p className="band-name">{b.bandName || '-'}</p>
                       <p>Contacto: {b.contactPhone || '-'}</p>
-                      <p>Abertura de sala: {b.assignedCollaborator?.name || '-'}</p>
                       <p>
-                        Pagamento: No dia · <span className={paymentStatusTone(b)}>{paymentStatusLabel(b)}</span>
+                        Pagamento: <span className={paymentStatusTone(b)}>{paymentStatusLabel(b)}</span>
                       </p>
 
                       <div className="history-log-lines">
@@ -2905,6 +2964,7 @@ function AdminHistoryPage() {
                         ) : null}
                         {podeUsarCheckmarkWhatsApp(b) ? renderWhatsAppOptIn(b.id, consegueAbrirWhatsApp(b)) : null}
                       </div>
+                      {renderAssigneeSelect(b)}
                     </li>
                   ))}
                 </ul>

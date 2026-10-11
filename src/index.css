@@ -1569,6 +1569,18 @@ textarea:focus {
   color: var(--text-muted);
 }
 
+/* Destaque do nome da banda: barra de acento da marca + negrito. */
+.band-name {
+  display: inline-block;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+  font-weight: 700;
+  font-size: 1.02rem;
+  line-height: 1.2;
+  color: var(--text-main);
+  letter-spacing: 0.01em;
+}
+
 .history-actions {
   display: flex;
   gap: 5px;
@@ -1589,6 +1601,37 @@ textarea:focus {
 /* Checkmark encostado a direita na mesma linha das acoes. */
 .history-actions .wa-optin {
   margin-left: auto;
+}
+
+/* Dropdown de responsavel pelo ensaio (so para admin). */
+.assignee-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.assignee-select-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.assignee-select {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  font-size: 0.76rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+}
+
+.assignee-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 
@@ -1632,6 +1675,21 @@ textarea:focus {
   color: #93c5fd;
   background: rgba(59, 130, 246, 0.16);
   border-color: rgba(96, 165, 250, 0.42);
+}
+
+/* Responsavel atribuido: badge com o tom do estado (herda color/border do tom,
+   mas com fundo mais subtil para competir menos com o chip principal). */
+.status-assignee-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  background: transparent;
 }
 
 .status-paid {

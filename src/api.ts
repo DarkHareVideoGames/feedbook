@@ -593,12 +593,12 @@ export async function adminBookings(
   token: string,
   period?: 'future' | 'past',
 ): Promise<{ bookings: ApiBooking[] }> {
-  const actor = await requireActor(token, ['superuser', 'admin', 'collaborator', 'technician']);
+  await requireActor(token, ['superuser', 'admin', 'collaborator', 'technician']);
 
-  const [{ data: rows, error }, profilesResult] = await Promise.all([
-    supabase.from('bookings').select('*').order('date', { ascending: true }),
-    supabase.from('profiles').select('id, name'),
-  ]);
+  const { data: rows, error } = await supabase
+    .from('bookings')
+    .select('*')
+    .order('date', { ascending: true });
 
   if (error) {
     throw toError(error.message, 'Could not load bookings', 400);
@@ -627,17 +627,11 @@ export async function adminBookings(
     });
   }
 
-  // Mock de atribuição para a UI (mesma lógica do antigo endpoint)
-  const profiles = (profilesResult.data ?? []) as Array<{ id: string; name: string }>;
-  const mockAssignee =
-    actor.role === 'admin' && profiles.length > 1
-      ? profiles.find((candidate) => candidate.id !== actor.id) ?? null
-      : null;
-
+  // A atribuicao real (assignedCollaborator) vem directamente da BD, definida
+  // na confirmacao: o admin escolhe o responsavel ou o colaborador assegura a si proprio.
   return {
     bookings: bookings.map((booking) => ({
       ...booking,
-      assignedCollaborator: mockAssignee ? { id: mockAssignee.id, name: mockAssignee.name } : null,
       paymentStatus: normalizePaymentStatus(booking.paymentStatus),
       amount: Number.isFinite(Number(booking.amount)) && booking.amount !== null
         ? Number(booking.amount)
@@ -652,7 +646,13 @@ export async function bookingAction(
   token: string,
   bookingId: string,
   action: BookingAction,
-  body?: { date?: string; time?: string; duration?: number; amount?: number },
+  body?: {
+    date?: string;
+    time?: string;
+    duration?: number;
+    amount?: number;
+    assignedCollaboratorId?: string;
+  },
 ): Promise<{ booking: ApiBooking }> {
   const actor = await requireActor(token, ['superuser', 'admin', 'collaborator', 'technician']);
 
@@ -686,14 +686,34 @@ export async function bookingAction(
   };
 
   if (action === 'confirm') {
+    // Responsavel pelo ensaio:
+    // - admin/superuser escolhe (via dropdown) — por defeito fica ele proprio;
+    // - colaborador que confirma assegura sempre ele proprio.
+    const isAdminLike = actor.role === 'admin' || actor.role === 'superuser';
+    const requestedAssigneeId = String(body?.assignedCollaboratorId || '').trim();
+    const assigneeId = isAdminLike && requestedAssigneeId ? requestedAssigneeId : actor.id;
+
+    let assigneeName = actor.name;
+    if (assigneeId !== actor.id) {
+      const { data: assigneeProfile } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .eq('id', assigneeId)
+        .maybeSingle();
+      if (!assigneeProfile) {
+        throw new ApiError('Responsavel atribuido nao encontrado.', 400);
+      }
+      assigneeName = String(assigneeProfile.name || '');
+    }
+
     patch.status = 'confirmed';
     patch.confirmedBy = actorStamp;
-    patch.assignedCollaborator = actor.role === 'admin' ? { id: actor.id, name: actor.name } : null;
+    patch.assignedCollaborator = { id: assigneeId, name: assigneeName };
     auditAction = 'booking-confirmed';
     auditDetails = {
       ...baseDetails,
       confirmadoPor: actor.name,
-      designado: actor.role === 'admin' ? actor.name : 'Nao designado',
+      designado: assigneeName,
     };
     notifyStatus = 'confirmed';
   } else if (action === 'reject') {
