@@ -89,20 +89,19 @@ function plainText(value, fallback = '-') {
 function buildDiscordEmbed(booking) {
   // Link direto para a página de gestão (sempre em produção — é um alerta para a equipa).
   const ADMIN_URL = 'https://feedbook-kappa.vercel.app/admin';
+  // Layout compacto na description (markdown) em vez de campos inline:
+  // no telemóvel os campos inline empilham-se um por linha e alongam o card,
+  // enquanto a description flui o texto e mantém-se curta.
+  const description = [
+    `**👉 [GERIR RESERVA!](${ADMIN_URL})**`,
+    `👤 ${plainText(booking.contactName)} · 🎸 ${plainText(booking.bandName, plainText(booking.contactName))}`,
+    `📅 ${plainText(formatDatePt(booking.date))} · 🕐 ${plainText(booking.time)}`,
+    `🚪 ${plainText(booking.roomName)} · 📞 ${plainText(booking.contactPhone)}`,
+  ].join('\n');
   return {
     color: 15548997,
     url: ADMIN_URL,
-    // CTA em destaque no topo do embed: a description renderiza markdown completo
-    // (negrito + link) e fica acima de todos os campos, ao contrário dos nomes de campo.
-    description: `**👉 [GERIR RESERVA!](${ADMIN_URL})**`,
-    fields: [
-      { inline: true, name: 'Utilizador', value: plainText(booking.contactName) },
-      { inline: true, name: 'Banda', value: plainText(booking.bandName, plainText(booking.contactName)) },
-      { inline: true, name: 'Data', value: plainText(formatDatePt(booking.date)) },
-      { inline: true, name: 'Hora', value: plainText(booking.time) },
-      { inline: true, name: 'Sala', value: plainText(booking.roomName) },
-      { inline: true, name: 'Telefone do cliente', value: plainText(booking.contactPhone) },
-    ],
+    description,
     timestamp: new Date().toISOString(),
     title: '🚨 Novo Pedido de Marcação!',
   };
