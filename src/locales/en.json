@@ -44,6 +44,13 @@
     "choose": "Choose this room",
     "priceFrom": "from"
   },
+  "cookies": {
+    "title": "This site uses cookies",
+    "message": "We use essential cookies to make the site work and, with your consent, cookies to improve your experience. You can accept all or only the essential ones.",
+    "accept": "Accept all",
+    "reject": "Essential only",
+    "privacy": "Privacy policy"
+  },
   "booking": {
     "title": "Book your rehearsal",
     "next": "Continue",

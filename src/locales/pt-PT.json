@@ -44,6 +44,13 @@
     "choose": "Escolher esta sala",
     "priceFrom": "desde"
   },
+  "cookies": {
+    "title": "Este site usa cookies",
+    "message": "Usamos cookies essenciais para o site funcionar e, com o teu consentimento, cookies para melhorar a tua experiencia. Podes aceitar todos ou apenas os essenciais.",
+    "accept": "Aceitar todos",
+    "reject": "Apenas essenciais",
+    "privacy": "Politica de privacidade"
+  },
   "booking": {
     "title": "Reserva o teu ensaio",
     "next": "Continuar",

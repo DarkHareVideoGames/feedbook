@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
 import { calculateRehearsalPrice, resolveRoomPricePerHour } from './helpers/rehearsalPricing';
+import CookieConsent from './components/ui/CookieConsent';
 
 type RoomDefinition = api.ApiRoom;
 
@@ -916,6 +917,8 @@ function App() {
           </section>
         ) : null}
       </main>
+
+      <CookieConsent />
     </div>
   );
 }
