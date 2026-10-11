@@ -1563,6 +1563,46 @@ export async function deleteUser(token: string, userId: string): Promise<{ messa
   return { message: 'User deleted successfully' };
 }
 
+// --- Limpeza total de ensaios (apenas superuser) ---------------
+
+// Apaga TODAS as marcacoes (independentemente do estado/data) para
+// permitir arrancar "do zero" antes do lancamento. Operacao irreversivel:
+// exige role 'superuser' e deve ser chamada apos dupla confirmacao na UI.
+export async function clearAllBookings(token: string): Promise<{ deletedCount: number; message: string }> {
+  const actor = await requireActor(token, ['superuser']);
+
+  let deletedCount = 0;
+  for (let page = 0; page < 50; page += 1) {
+    const { data: rows, error: listError } = await supabase
+      .from('bookings')
+      .select('id')
+      .limit(1000);
+
+    if (listError) {
+      throw toError(listError.message, 'Could not list bookings for cleanup', 400);
+    }
+
+    const ids = (rows ?? []).map((row) => String((row as Record<string, unknown>).id ?? '')).filter(Boolean);
+    if (ids.length === 0) break;
+
+    const { error: deleteError } = await supabase.from('bookings').delete().in('id', ids);
+    if (deleteError) {
+      throw toError(deleteError.message, 'Could not delete bookings', 400);
+    }
+    deletedCount += ids.length;
+    if (ids.length < 1000) break;
+  }
+
+  await recordAudit({
+    action: 'bookings-cleared',
+    actor: { id: actor.id, name: actor.name, role: actor.role },
+    target: 'bookings',
+    details: { apagados: deletedCount },
+  });
+
+  return { deletedCount, message: `Base de dados limpa: ${deletedCount} ensaio(s) apagado(s).` };
+}
+
 // --- Auditoria ----------------------------------------------
 
 export async function auditLogs(token: string): Promise<{ auditLogs: ApiAuditEntry[] }> {

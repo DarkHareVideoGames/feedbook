@@ -563,6 +563,7 @@ function AdminHistoryPage() {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [userActionLoading, setUserActionLoading] = useState(false);
+  const [clearBookingsLoading, setClearBookingsLoading] = useState(false);
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
     name: '',
     email: '',
@@ -988,6 +989,28 @@ function AdminHistoryPage() {
       setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel apagar utilizador.');
     } finally {
       setUserActionLoading(false);
+    }
+  };
+
+  const handleClearAllBookings = async () => {
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || currentUser?.role !== 'superuser' || clearBookingsLoading) return;
+    if (!window.confirm('Apagar TODOS os ensaios da base de dados? Esta acao e irreversivel.')) return;
+    if (!window.confirm('Confirmacao final: apagar mesmo todos os ensaios (teste + reais)?')) return;
+
+    setCatalogNotice('');
+    setError('');
+    setClearBookingsLoading(true);
+    try {
+      const payload = await api.clearAllBookings(sessionToken);
+      setBookings([]);
+      setFinanceData([]);
+      await loadHistory(sessionToken);
+      setCatalogNotice(payload.message || 'Base de dados de ensaios limpa.');
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel limpar os ensaios.');
+    } finally {
+      setClearBookingsLoading(false);
     }
   };
 
@@ -2912,6 +2935,27 @@ function AdminHistoryPage() {
                     </li>
                   ))}
                 </ul>
+              </div>
+            ) : null}
+            {filteredBookings.length === 0 && !loading ? (
+              <p className="summary-copy">Sem ensaios para os filtros atuais. A zona de perigo abaixo continua disponivel para o superuser.</p>
+            ) : null}
+
+            {currentUser?.role === 'superuser' ? (
+              <div className="mt-6 rounded-lg border border-red-500/40 bg-red-950/30 p-4">
+                <p className="eyebrow" style={{ color: '#fca5a5' }}>Zona de perigo · Superuser</p>
+                <h3 className="mt-1 text-lg font-semibold text-red-100">Limpar base de dados de ensaios</h3>
+                <p className="summary-copy mt-1">
+                  Apaga TODOS os ensaios (pendentes, confirmados, anulados e historico). Irreversivel — usa para remover os dados de teste antes do lancamento.
+                </p>
+                <button
+                  type="button"
+                  className="primary-button mt-3 bg-red-600 hover:bg-red-700 disabled:opacity-60"
+                  disabled={clearBookingsLoading}
+                  onClick={() => { void handleClearAllBookings(); }}
+                >
+                  {clearBookingsLoading ? 'A apagar ensaios...' : 'Apagar todos os ensaios'}
+                </button>
               </div>
             ) : null}
           </section>
