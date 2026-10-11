@@ -71,6 +71,11 @@
   font-style: italic;
 }
 
+.history-extras-value {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1719,6 +1724,29 @@ textarea:focus {
   vertical-align: middle;
   overflow-wrap: anywhere;
 }
+
+/* Larguras de coluna (table-layout: fixed): sem isto as 9 colunas ficam iguais
+   (~11%) e a coluna Acoes — que junta os botoes e o dropdown "Assegura:" — fica
+   espremida e cortada no PC. Da mais espaco a Banda, Estado (responsavel) e
+   Acoes; mantem curtas as de Data/Hora/Duracao. */
+.history-table th:nth-child(1),
+.history-table td:nth-child(1) { width: 10%; }
+.history-table th:nth-child(2),
+.history-table td:nth-child(2) { width: 6%; }
+.history-table th:nth-child(3),
+.history-table td:nth-child(3) { width: 9%; }
+.history-table th:nth-child(4),
+.history-table td:nth-child(4) { width: 17%; }
+.history-table th:nth-child(5),
+.history-table td:nth-child(5) { width: 11%; }
+.history-table th:nth-child(6),
+.history-table td:nth-child(6) { width: 6%; }
+.history-table th:nth-child(7),
+.history-table td:nth-child(7) { width: 10%; }
+.history-table th:nth-child(8),
+.history-table td:nth-child(8) { width: 12%; }
+.history-table th:nth-child(9),
+.history-table td:nth-child(9) { width: 19%; }
 
 /* Badges compactos e uniformes nas colunas Pagamento e Estado do desktop. */
 .history-table td:nth-child(7) .status-chip,

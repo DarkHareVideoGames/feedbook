@@ -227,6 +227,13 @@ type RescheduleDraft = {
   duration: string;
 };
 
+type PaymentDraft = {
+  bookingId: string;
+  // Valor esperado (string para edicao no input) e valor recebido confirmado.
+  expected: string;
+  received: string;
+};
+
 function isPastConfirmed(booking: PastBooking): boolean {
   if (booking.status !== 'confirmed') return false;
   const d = new Date(`${booking.date}T00:00:00`);
@@ -544,6 +551,9 @@ function AdminHistoryPage() {
   // acumular uma lista interminavel. O admin pode alargar ate "Tudo".
   const [periodScope, setPeriodScope] = useState<PeriodScope>('month');
   const [rescheduleDraft, setRescheduleDraft] = useState<RescheduleDraft | null>(null);
+  // Modal de confirmacao de pagamento (substitui o window.confirm nativo):
+  // mostra o valor esperado e deixa confirmar/ajustar o valor recebido.
+  const [paymentDraft, setPaymentDraft] = useState<PaymentDraft | null>(null);
   // Opt-in por marcacao: so abre o WhatsApp quando o checkmark esta ativo.
   const [whatsappOptIn, setWhatsappOptIn] = useState<Record<string, boolean>>({});
   // Escolha do responsavel pelo ensaio (apenas admin/superuser escolhe no dropdown).
@@ -1245,23 +1255,47 @@ function AdminHistoryPage() {
     });
   };
 
-  const handleConfirmPaymentReceipt = async (bookingId: string) => {
+  const handleConfirmPaymentReceipt = (bookingId: string) => {
+    const booking = bookings.find((item) => item.id === bookingId);
+    if (!booking) return;
+
+    // Abre o modal inline (em vez do window.confirm nativo) com o valor esperado
+    // pre-preenchido, para o colaborador/admin confirmar ou ajustar o recebido.
+    setError('');
+    setPaymentDraft({
+      bookingId,
+      expected: String(Number(booking.amount || 0).toFixed(2)),
+      received: String(Number(booking.amount || 0).toFixed(2)),
+    });
+  };
+
+  const closePaymentModal = () => {
+    setPaymentDraft(null);
+  };
+
+  const handleSubmitPayment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!paymentDraft) return;
+
     const token = window.localStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
-    const booking = bookings.find((item) => item.id === bookingId);
-    const shouldConfirm = window.confirm('Desejas confirmar que recebeste o pagamento deste ensaio?');
-    if (!shouldConfirm) return;
+    const received = Number(paymentDraft.received);
+    if (!Number.isFinite(received) || received < 0) {
+      setError('Indica um valor recebido valido.');
+      return;
+    }
 
-    await withActionLock(bookingId, async () => {
-      await api.bookingAction(token, bookingId, 'confirm-payment', {
-        amount: booking?.amount ?? 0,
+    await withActionLock(paymentDraft.bookingId, async () => {
+      await api.bookingAction(token, paymentDraft.bookingId, 'confirm-payment', {
+        amount: received,
       });
 
       await loadHistory(token);
       if (isPrivileged) {
         await loadFinance(token);
       }
+      closePaymentModal();
     });
   };
 
@@ -2869,6 +2903,16 @@ function AdminHistoryPage() {
                       <p>
                         Pagamento: <span className={paymentStatusTone(b)}>{paymentStatusLabel(b)}</span>
                       </p>
+                      <p>
+                        Extras:{' '}
+                        {(b.extras ?? []).length > 0 ? (
+                          <span className="history-extras-value">
+                            {(b.extras ?? []).map((extraId) => formatExtraLabel(extraId)).join(', ')}
+                          </span>
+                        ) : (
+                          <span className="history-extras-empty">Sem extras</span>
+                        )}
+                      </p>
 
                       <div className="history-log-lines">
                         {b.confirmedBy ? <p>Confirmado por {b.confirmedBy.name}</p> : null}
@@ -3133,6 +3177,51 @@ function AdminHistoryPage() {
                 </button>
                 <button type="submit" className="primary-button">
                   Guardar reagendamento
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
+      {paymentDraft ? (
+        <div className="admin-modal-backdrop" role="dialog" aria-modal="true" aria-label="Confirmar pagamento">
+          <section className="card admin-modal-card">
+            <div className="admin-modal-head">
+              <h3>Confirmar pagamento</h3>
+            </div>
+            <form className="admin-modal-form" onSubmit={handleSubmitPayment}>
+              <p className="admin-helper-note">
+                Confirma o valor recebido deste ensaio. O valor esperado esta pre-preenchido —
+                ajusta se o pagamento foi diferente.
+              </p>
+              <label>
+                Valor esperado
+                <input type="text" value={`${formatCurrency(Number(paymentDraft.expected) || 0)}`} readOnly disabled />
+              </label>
+              <label>
+                Valor recebido
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={paymentDraft.received}
+                  onChange={(event) =>
+                    setPaymentDraft((current) =>
+                      current ? { ...current, received: event.target.value } : current,
+                    )
+                  }
+                  autoFocus
+                  required
+                />
+              </label>
+
+              <div className="admin-modal-actions">
+                <button type="button" className="secondary-button" onClick={closePaymentModal}>
+                  Cancelar
+                </button>
+                <button type="submit" className="primary-button" disabled={Boolean(actionLoading[paymentDraft.bookingId])}>
+                  {actionLoading[paymentDraft.bookingId] ? 'A confirmar...' : 'Confirmar recebimento'}
                 </button>
               </div>
             </form>
