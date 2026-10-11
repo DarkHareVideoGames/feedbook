@@ -89,8 +89,10 @@ function buildDiscordEmbed(booking) {
   return {
     color: 15548997,
     url: ADMIN_URL,
+    // CTA em destaque no topo do embed: a description renderiza markdown completo
+    // (negrito + link) e fica acima de todos os campos, ao contrário dos nomes de campo.
+    description: `**👉 [GERIR RESERVA!](${ADMIN_URL})**`,
     fields: [
-      { name: 'Ação', value: `[GERIR RESERVA!](${ADMIN_URL})` },
       { inline: true, name: 'Utilizador', value: plainText(booking.contactName) },
       { inline: true, name: 'Banda', value: plainText(booking.bandName, plainText(booking.contactName)) },
       { inline: true, name: 'Data', value: plainText(formatDatePt(booking.date)) },
