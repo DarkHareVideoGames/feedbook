@@ -1377,7 +1377,7 @@ function AdminPage() {
               </label>
               <div className="field-row">
                 <label>
-                  Capacidade (musicos) *
+                  Capacidade (elementos) *
                   <input
                     type="number"
                     min={1}
@@ -1509,7 +1509,7 @@ function AdminPage() {
                   </div>
                   <span>{room.description || 'Sem descricao'}</span>
                   <span>
-                    Ate {room.maxMembers} musicos ·{' '}
+                    Ate {room.maxMembers} elementos ·{' '}
                     {room.pricePerMemberHour === null || room.pricePerMemberHour === undefined
                       ? `Preco global (${pricing.perMemberPerHour} EUR/h)`
                       : `${room.pricePerMemberHour} EUR/h proprio`}

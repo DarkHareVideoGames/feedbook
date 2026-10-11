@@ -31,13 +31,13 @@
     "sala-red": {
       "name": "SALA RED",
       "vibe": "High-impact room for full-band rehearsals and pressure-tested run-throughs.",
-      "capacity": "Up to 6 players",
+      "capacity": "Up to 6 members",
       "gear": ["Full drum kit", "2 guitar amps", "PA with monitors"]
     },
     "sala-grey": {
       "name": "SALA GREY",
       "vibe": "Balanced room for songwriting, vocals, and detail-focused arrangement work.",
-      "capacity": "Up to 5 players",
+      "capacity": "Up to 5 members",
       "gear": ["Compact drum kit", "Bass amp", "PA with vocal FX"]
     },
     "selected": "Selected room",

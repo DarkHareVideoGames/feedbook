@@ -293,8 +293,8 @@ function App() {
       capacity:
         room.maxMembers > 0
           ? isPt
-            ? `Ate ${room.maxMembers} musicos`
-            : `Up to ${room.maxMembers} players`
+            ? `Ate ${room.maxMembers} elementos`
+            : `Up to ${room.maxMembers} members`
           : legacy?.capacity || '',
       gear: ((isPt ? room.gear : room.gearEn).length > 0 ? (isPt ? room.gear : room.gearEn) : room.gear.length > 0 ? room.gear : legacy?.gear) || [],
     };
