@@ -1417,6 +1417,7 @@ function AdminPage() {
                   >
                     <option value="var(--room-red)">Vermelho</option>
                     <option value="var(--room-grey)">Cinzento</option>
+                    <option value="var(--room-purple)">Roxo</option>
                   </select>
                 </label>
                 <label className="extra-toggle">

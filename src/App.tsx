@@ -582,7 +582,7 @@ function App() {
                   aria-pressed={isSelected}
                   aria-label={`${room.name} — ${translations.rooms.choose}`}
                   className={`room-card card ${isSelected ? 'room-card-selected' : ''}`}
-                  style={{ borderColor: isSelected ? room.accent : 'transparent' }}
+                  style={{ borderColor: room.accent }}
                   onClick={() => {
                     setSelectedRoomId(room.id);
                     goToNextStep();
