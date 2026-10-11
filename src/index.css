@@ -1885,7 +1885,8 @@ textarea:focus {
 
 .status-chip.status-paid,
 .status-chip.status-pending,
-.status-chip.status-refunded {
+.status-chip.status-refunded,
+.status-chip.status-void {
   border-color: currentColor;
 }
 
@@ -1901,8 +1902,16 @@ textarea:focus {
   background: rgba(59, 130, 246, 0.16);
 }
 
+.status-chip.status-void {
+  background: rgba(148, 163, 184, 0.14);
+}
+
 .status-refunded {
   color: #93c5fd;
+}
+
+.status-void {
+  color: #cbd5e1;
 }
 
 .finance-panel {
