@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
+import { calculateRehearsalPrice } from './helpers/rehearsalPricing';
 
 type RoomDefinition = api.ApiRoom;
 
@@ -92,7 +93,7 @@ const defaultPricing: PricingConfig = {
   },
 };
 
-const durations = [2, 3, 4, 5, 6];
+const durations = [1, 2, 3, 4, 5, 6];
 
 function getToday(): string {
   return new Date().toISOString().split('T')[0];
@@ -601,8 +602,7 @@ function App() {
                       <h3>{room.name}</h3>
                     </div>
                     <strong>
-                      {currency.format(room.pricePerMemberHour === null || room.pricePerMemberHour === undefined ? pricing.perMemberPerHour : Number(room.pricePerMemberHour))}
-                      {translations.rooms.rate}
+                      {translations.rooms.priceFrom} {currency.format(calculateRehearsalPrice(1))}
                     </strong>
                   </div>
                   <p>{room.vibe}</p>
@@ -712,6 +712,8 @@ function App() {
                         disabled={!canSessionFit(selectedStartHour, value)}
                       >
                         {formatTemplate(translations.booking.durationOption, { count: value })}
+                        {' — '}
+                        {currency.format(calculateRehearsalPrice(value))}
                       </option>
                     ))}
                   </select>

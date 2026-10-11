@@ -42,7 +42,7 @@
     },
     "selected": "Sala selecionada",
     "choose": "Escolher esta sala",
-    "rate": "/hora por elemento"
+    "priceFrom": "desde"
   },
   "booking": {
     "title": "Reserva o teu ensaio",

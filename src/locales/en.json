@@ -42,7 +42,7 @@
     },
     "selected": "Selected room",
     "choose": "Choose this room",
-    "rate": "/hr per player"
+    "priceFrom": "from"
   },
   "booking": {
     "title": "Book your rehearsal",

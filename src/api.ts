@@ -1,5 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { calculateRehearsalPrice, MAX_REHEARSAL_HOURS } from './helpers/rehearsalPricing';
 
 // ============================================================
 // Camada de dados do Feedback - Ensaios sobre o Supabase.
@@ -292,16 +293,17 @@ export function estimateBookingAmount(
     return Number(booking.amount);
   }
 
-  const duration = Number(booking?.duration || 0);
-  const participants = Number(booking?.participants || 0);
-  const baseMembers = participants > 0 ? participants : 1;
-  const basePrice = duration * Number(pricingConfig?.perMemberPerHour || 0) * baseMembers;
+  // O preço da sala passou a ser por hora inteira (tabela acumulada com desconto
+  // progressivo) e já não depende do número de elementos. Limitamos ao máximo de
+  // 6h para nunca lançar erro ao estimar reservas antigas/legadas.
+  const hours = Math.min(Math.ceil(Number(booking?.duration || 0)), MAX_REHEARSAL_HOURS);
+  const roomPrice = calculateRehearsalPrice(hours);
   const extras = Array.isArray(booking?.extras) ? booking.extras : [];
   const extraValue = extras.reduce((sum, extraName) => {
     return sum + Number(pricingConfig?.extras?.[extraName] ?? 0);
   }, 0);
 
-  return Number((basePrice + extraValue).toFixed(2));
+  return Number((roomPrice + extraValue).toFixed(2));
 }
 
 async function loadPricingConfig(): Promise<PricingConfig> {

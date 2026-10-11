@@ -542,7 +542,6 @@ function AdminHistoryPage() {
   const [assigneeChoice, setAssigneeChoice] = useState<Record<string, string>>({});
   const [financeData, setFinanceData] = useState<FinanceMonthSummary[]>([]);
   const [financeExtrasCatalog, setFinanceExtrasCatalog] = useState<Record<string, number>>({});
-  const [selectedFinanceMonths, setSelectedFinanceMonths] = useState<string[]>([]);
   const [showFinance, setShowFinance] = useState(false);
   const [activePanel, setActivePanel] = useState<AdminPanel>('unified');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1336,21 +1335,20 @@ function AdminHistoryPage() {
     );
   }, [financeData]);
 
-  const selectedFinanceData = useMemo(
-    () => financeData.filter((month) => selectedFinanceMonths.includes(month.month)),
-    [financeData, selectedFinanceMonths],
-  );
+  const financeDataToShow = useMemo(() => {
+    if (periodScope === 'all') {
+      return financeData;
+    }
 
-  const toggleFinanceMonth = (monthKey: string) => {
-    setSelectedFinanceMonths((current) =>
-      current.includes(monthKey)
-        ? current.filter((value) => value !== monthKey)
-        : [...current, monthKey],
-    );
-  };
+    const scopeMonth = Number(periodScope.replace(/\D/g, ''));
+    return financeData.filter((month) => {
+      const monthNumber = Number(month.month.split('-')[1]);
+      return monthNumber >= scopeMonth;
+    });
+  }, [financeData, periodScope]);
 
   const handlePrintFinance = async () => {
-    if (selectedFinanceData.length === 0) {
+    if (financeDataToShow.length === 0) {
       setError('Seleciona pelo menos um mes para gerar o PDF.');
       return;
     }
@@ -1473,10 +1471,10 @@ function AdminHistoryPage() {
     const margin = 12;
     let cursorY = margin;
 
-    const receivedTotal = selectedFinanceData.reduce((sum, month) => sum + month.totalReceived, 0);
-    const refundedTotal = selectedFinanceData.reduce((sum, month) => sum + month.totalRefunded, 0);
-    const netTotal = selectedFinanceData.reduce((sum, month) => sum + month.netTotal, 0);
-    const periodLabel = selectedFinanceData.map((month) => formatFinanceMonthLabel(month.month)).join(', ');
+    const receivedTotal = financeDataToShow.reduce((sum, month) => sum + month.totalReceived, 0);
+    const refundedTotal = financeDataToShow.reduce((sum, month) => sum + month.totalRefunded, 0);
+    const netTotal = financeDataToShow.reduce((sum, month) => sum + month.netTotal, 0);
+    const periodLabel = financeDataToShow.map((month) => formatFinanceMonthLabel(month.month)).join(', ');
     const logoData = await loadImageAsDataUrl('/logo.png');
 
     doc.setFont('helvetica', 'bold');
@@ -1504,7 +1502,7 @@ function AdminHistoryPage() {
         formatCurrency(receivedTotal),
         formatCurrency(refundedTotal),
         formatCurrency(netTotal),
-        String(selectedFinanceData.reduce((sum, month) => sum + month.bookingCount, 0)),
+        String(financeDataToShow.reduce((sum, month) => sum + month.bookingCount, 0)),
       ]],
       styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 3, textColor: [17, 24, 39] },
       headStyles: { fillColor: [178, 223, 200], textColor: [27, 67, 50], fontStyle: 'bold', halign: 'center' },
@@ -1528,7 +1526,7 @@ function AdminHistoryPage() {
       }
     };
 
-    for (const month of selectedFinanceData) {
+    for (const month of financeDataToShow) {
       ensureRoom(16);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
@@ -1684,22 +1682,6 @@ function AdminHistoryPage() {
     const stamp = new Date().toISOString().slice(0, 10);
     doc.save(`feedback-ensaios-contas-${stamp}.pdf`);
   };
-
-  useEffect(() => {
-    if (financeData.length === 0) {
-      setSelectedFinanceMonths([]);
-      return;
-    }
-
-    setSelectedFinanceMonths((current) => {
-      const validMonths = financeData.map((month) => month.month);
-      const nextSelection = current.filter((month) => validMonths.includes(month));
-      if (nextSelection.length > 0) {
-        return nextSelection;
-      }
-      return validMonths;
-    });
-  }, [financeData]);
 
   useEffect(() => {
     if (!sidebarOpen) return;
@@ -2467,18 +2449,6 @@ function AdminHistoryPage() {
 
                 {financeData.length > 0 ? (
                   <div className="finance-export-bar">
-                    <div className="finance-month-picker">
-                      {financeData.map((month) => (
-                        <label key={month.month} className="finance-month-toggle">
-                          <input
-                            type="checkbox"
-                            checked={selectedFinanceMonths.includes(month.month)}
-                            onChange={() => toggleFinanceMonth(month.month)}
-                          />
-                          <span>{month.month}</span>
-                        </label>
-                      ))}
-                    </div>
                     <button type="button" className="primary-button finance-pdf-button" onClick={handlePrintFinance}>
                       Gerar PDF
                     </button>
@@ -2532,18 +2502,6 @@ function AdminHistoryPage() {
                                   </ul>
                                 </div>
                               </div>
-                              <ul className="finance-bookings-list">
-                                {receivedEntries.map((entry) => (
-                                  <li key={entry.id}>
-                                    <span>{entry.date}</span>
-                                    <span>{entry.bandName || 'Banda'}</span>
-                                    <span>{entry.roomName}</span>
-                                    <strong>{formatCurrency(entry.amount)}</strong>
-                                    <span>Recebido</span>
-                                    <span>{entry.confirmedBy?.name || '-'}</span>
-                                  </li>
-                                ))}
-                              </ul>
                             </div>
                           ) : null}
 
@@ -2574,18 +2532,6 @@ function AdminHistoryPage() {
                                   </ul>
                                 </div>
                               </div>
-                              <ul className="finance-bookings-list">
-                                {refundedEntries.map((entry) => (
-                                  <li key={entry.id}>
-                                    <span>{entry.date}</span>
-                                    <span>{entry.bandName || 'Banda'}</span>
-                                    <span>{entry.roomName}</span>
-                                    <strong>{formatCurrency(entry.amount)}</strong>
-                                    <span>Devolvido</span>
-                                    <span>{entry.confirmedBy?.name || '-'}</span>
-                                  </li>
-                                ))}
-                              </ul>
                             </div>
                           ) : null}
                         </article>
@@ -2598,35 +2544,35 @@ function AdminHistoryPage() {
                   <div className="finance-print-header">
                     <div className="finance-print-header-copy">
                       <h3>Feedback - Ensaios - Contas</h3>
-                      <p>{selectedFinanceData.length > 0 ? `${selectedFinanceData.length} mês(es) selecionado(s)` : 'Nenhum mes selecionado'}</p>
+                      <p>{financeDataToShow.length > 0 ? `${financeDataToShow.length} mês(es) selecionado(s)` : 'Nenhum mes selecionado'}</p>
                     </div>
                     <img className="finance-print-logo" src="/feedbook-logo.png" alt="Feedback - Ensaios" />
                   </div>
 
-                  {selectedFinanceData.length === 0 ? (
+                  {financeDataToShow.length === 0 ? (
                     <p className="finance-print-empty">Seleciona pelo menos um mes para exportar.</p>
                   ) : (
                     <>
                       <div className="finance-print-summary">
                         <div>
                           <span>Período</span>
-                          <strong>{selectedFinanceData.map((month) => month.month).join(', ')}</strong>
+                          <strong>{financeDataToShow.map((month) => month.month).join(', ')}</strong>
                         </div>
                         <div>
                           <span>Recebido</span>
-                          <strong>{formatCurrency(selectedFinanceData.reduce((sum, month) => sum + month.totalReceived, 0))}</strong>
+                          <strong>{formatCurrency(financeDataToShow.reduce((sum, month) => sum + month.totalReceived, 0))}</strong>
                         </div>
                         <div>
                           <span>Devolvido</span>
-                          <strong>{formatCurrency(selectedFinanceData.reduce((sum, month) => sum + month.totalRefunded, 0))}</strong>
+                          <strong>{formatCurrency(financeDataToShow.reduce((sum, month) => sum + month.totalRefunded, 0))}</strong>
                         </div>
                         <div>
                           <span>Líquido</span>
-                          <strong>{formatCurrency(selectedFinanceData.reduce((sum, month) => sum + month.netTotal, 0))}</strong>
+                          <strong>{formatCurrency(financeDataToShow.reduce((sum, month) => sum + month.netTotal, 0))}</strong>
                         </div>
                       </div>
 
-                      {selectedFinanceData.map((month) => {
+                      {financeDataToShow.map((month) => {
                         const receivedEntries = month.bookings.filter((entry) => entry.paymentStatus === 'received');
                         const refundedEntries = month.bookings.filter((entry) => entry.paymentStatus === 'refunded');
 
