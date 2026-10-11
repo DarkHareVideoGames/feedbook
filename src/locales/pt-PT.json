@@ -1,6 +1,8 @@
 {
   "meta": {
-    "brand": "Feedback - Ensaios"
+    "brand": "Feedback - Ensaios",
+    "title": "Feedback - Ensaios — reserva de salas de ensaio",
+    "description": "Feedback - Ensaios — reserva de salas de ensaio com preços à vista, planeamento de sessões e disponibilidade ao vivo."
   },
   "languages": {
     "pt-PT": "PT",

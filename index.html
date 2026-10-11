@@ -1,13 +1,76 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-PT">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#12141a" />
+
+    <!-- ============================================================
+         SEO BASE (PT = idioma por omissão)
+         A descrição abaixo é a que o Google lê. O React (i18n.tsx)
+         actualiza-a em runtime quando o utilizador troca de idioma.
+         ============================================================ -->
     <meta
       name="description"
-      content="Feedback - Ensaios is a music rehearsal booking website for studios, session planning, and live availability."
+      content="Feedback - Ensaios — reserva de salas de ensaio com preços à vista, planeamento de sessões e disponibilidade ao vivo."
     />
     <title>Feedback - Ensaios</title>
+
+    <!-- ============================================================
+         OPEN GRAPH (Facebook, WhatsApp, LinkedIn, Discord, ...)
+         IMPORTANTE: preenche as variáveis em baixo quando tiveres o
+         domínio final. Substitui "SEU-DOMINIO" pelo domínio real
+         (ex: https://www.feedbackensaios.pt) e "og-image.png" pelo
+         nome da imagem que colocares na pasta public/.
+         Recomendado: 1200x630 px, JPG/PNG, < 300 KB.
+         ============================================================ -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Feedback - Ensaios" />
+    <meta property="og:title" content="Feedback - Ensaios — reserva de salas de ensaio" />
+    <meta
+      property="og:description"
+      content="Reserva salas de ensaio com preços à vista, planeamento de sessões e disponibilidade ao vivo."
+    />
+    <!-- URL CANÓNICA DO SITE — substitui SEU-DOMINIO pelo domínio final -->
+    <meta property="og:url" content="https://SEU-DOMINIO/" />
+    <!-- IMAGEM DO CARD — substitui pelo ficheiro real dentro da pasta public/ -->
+    <meta property="og:image" content="https://SEU-DOMINIO/og-image.png" />
+    <meta property="og:image:alt" content="Feedback - Ensaios" />
+    <!-- Locale PT (formato Open Graph usa sublinhado) -->
+    <meta property="og:locale" content="pt_PT" />
+    <!-- Idiomas alternantes (preencher só se houver URLs distintas por idioma) -->
+    <!-- <meta property="og:locale:alternate" content="en_US" /> -->
+
+    <!-- ============================================================
+         TWITTER CARDS
+         Substitui SEU-DOMINIO e og-image.png tal como no Open Graph.
+         twitter:card usa "summary_large_image" para imagem grande.
+         ============================================================ -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Feedback - Ensaios — reserva de salas de ensaio" />
+    <meta
+      name="twitter:description"
+      content="Reserva salas de ensaio com preços à vista, planeamento de sessões e disponibilidade ao vivo."
+    />
+    <meta name="twitter:image" content="https://SEU-DOMINIO/og-image.png" />
+    <meta name="twitter:image:alt" content="Feedback - Ensaios" />
+
+    <!-- ============================================================
+         MULTILINGUE (PT / EN)
+         O React (src/i18n.tsx) actualiza dinamicamente:
+           - <html lang> (pt-PT / en)
+           - <title>
+           - <meta name="description">
+           - og:title, og:description, og:locale
+           - twitter:title, twitter:description
+         quando o utilizador troca de idioma. O estado acima é o
+         default (PT) que os crawlers veem sem executar JS.
+
+         NOTA: hreflang só é útil com URLs distintas por idioma
+         (ex: / e /en/). Como este site guarda o idioma em
+         localStorage (sem trocar a URL), omitimos hreflang de forma
+         intencional para não gerar URLs duplicadas no Google.
+         ============================================================ -->
   </head>
   <body>
     <div id="root"></div>

@@ -1,6 +1,8 @@
 {
   "meta": {
-    "brand": "Feedback - Ensaios"
+    "brand": "Feedback - Ensaios",
+    "title": "Feedback - Ensaios — rehearsal room booking",
+    "description": "Feedback - Ensaios — book rehearsal rooms with upfront pricing, session planning, and live availability."
   },
   "languages": {
     "pt-PT": "PT",
