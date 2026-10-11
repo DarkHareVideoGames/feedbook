@@ -155,6 +155,9 @@ function slotCollides(
 }
 
 // Um horário serve se cabe até ao fecho E não colide com marcações da sala nesse dia.
+// Antecedência mínima (em minutos) para poder marcar um ensaio.
+const MIN_LEAD_MINUTES = 60;
+
 function isSlotAvailable(
   slotLabel: string,
   duration: number,
@@ -163,6 +166,16 @@ function isSlotAvailable(
   bookings: TeamBooking[],
 ): boolean {
   if (!canSessionFit(hourLabelToNumber(slotLabel), duration)) return false;
+
+  // Exige 1 hora de antecedência sobre a hora atual (ex.: às 18:00 só é
+  // possível marcar a partir das 19:00). Compara timestamps reais, à prova de
+  // fuso: para dias futuros o instante do slot já fica naturalmente acima do limite.
+  const slotStart = new Date(`${date}T${slotLabel}:00`);
+  if (!Number.isNaN(slotStart.getTime())) {
+    const earliestStart = Date.now() + MIN_LEAD_MINUTES * 60 * 1000;
+    if (slotStart.getTime() < earliestStart) return false;
+  }
+
   const start = toMinutes(slotLabel);
   const end = start + duration * 60;
   return !slotCollides(start, end, roomBookingsOnDate(bookings, roomId, date));
