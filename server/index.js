@@ -87,9 +87,13 @@ function plainText(value, fallback = '-') {
 
 // Embed Discord para novas marcações pendentes (canal #marcação-de-ensaios).
 function buildDiscordEmbed(booking) {
+  // Link direto para a página de gestão (sempre em produção — é um alerta para a equipa).
+  const ADMIN_URL = 'https://feedbook-kappa.vercel.app/admin';
   return {
     color: 15548997,
+    url: ADMIN_URL,
     fields: [
+      { name: 'Ação', value: `[GERIR RESERVA!](${ADMIN_URL})` },
       { inline: true, name: 'Utilizador', value: plainText(booking.contactName) },
       { inline: true, name: 'Banda', value: plainText(booking.bandName, plainText(booking.contactName)) },
       { inline: true, name: 'Data', value: plainText(formatDatePt(booking.date)) },
