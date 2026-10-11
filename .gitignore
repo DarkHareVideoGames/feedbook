@@ -27,4 +27,5 @@ server/data/state.json.bak
 
 # logs de runtime e rascunhos temporários (não devem ser versionados)
 dev.log
+dev-server.log
 *.new

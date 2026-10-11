@@ -222,6 +222,19 @@ function canReschedule(booking: PastBooking): boolean {
   return booking.status !== 'cancelled' && booking.status !== 'rejected' && payment !== 'refunded';
 }
 
+// O checkmark de WhatsApp so faz sentido enquanto existir uma acao que notifica o
+// cliente (confirmar/desmarcar/reagendar/anular). Desaparece nos estados terminais:
+// desmarcado, anulado, devolvido ou pagamento ja recebido.
+function podeUsarCheckmarkWhatsApp(booking: PastBooking): boolean {
+  const payment = String(booking.paymentStatus || '').toLowerCase();
+  if (booking.status === 'cancelled') return false;
+  if (booking.status === 'rejected') return false;
+  if (payment === 'refunded') return false;
+  if (payment === 'received' || payment === 'paid') return false;
+  if (booking.status === 'pending') return true;
+  return isFutureOrTodayConfirmed(booking);
+}
+
 function bookingMainTag(booking: PastBooking): { label: string; tone: string } {
   if (booking.status === 'pending') return { label: 'Por confirmar', tone: 'state-pending' };
   if (booking.status === 'cancelled') return { label: 'Anulado', tone: 'state-cancelled' };
@@ -427,17 +440,6 @@ function consegueAbrirWhatsApp(booking: PastBooking): boolean {
   return normalizarNumeroWhatsApp(booking.contactPhone || '').length > 0;
 }
 
-function WhatsAppIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <path
-        d="M16 4.5C9.6 4.5 4.5 9.6 4.5 16c0 2 .5 3.9 1.4 5.6L4.5 27.5l5.9-1.4c1.7.9 3.6 1.4 5.6 1.4C22.4 27.5 27.5 22.4 27.5 16S22.4 4.5 16 4.5Zm0 2.7c5.1 0 9.3 4.2 9.3 9.3 0 5.1-4.2 9.3-9.3 9.3-1.7 0-3.3-.5-4.7-1.3l-4.1 1 1.1-4.1a9.2 9.2 0 0 1-1.3-4.8c0-5.1 4.2-9.3 9.3-9.3Zm-2.1 5.1h.1c.2 0 .4.1.5.3l.5 1.3c.1.1.1.3 0 .5l-.4.5c-.1.1-.1.3 0 .4.5.7 1.3 1.4 2.1 1.9.2.2.5.2.6 0l.6-.7c.1-.1.3-.1.5 0l1.3.7c.2.1.2.4.1.6l-.9 1.5c-.2.3-.6.4-1 .3-1.4-.5-2.9-1.7-3.9-3.1-.8-1.1-1.2-2.2-1.1-3.1.1-.5.3-.7.8-.8Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
 function AdminHistoryPage() {
   const [bookings, setBookings] = useState<PastBooking[]>([]);
   const [adminLogoVisible, setAdminLogoVisible] = useState(true);
@@ -451,6 +453,8 @@ function AdminHistoryPage() {
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [viewFilter, setViewFilter] = useState<HistoryFilter>('all');
   const [rescheduleDraft, setRescheduleDraft] = useState<RescheduleDraft | null>(null);
+  // Opt-in por marcacao: so abre o WhatsApp quando o checkmark esta ativo.
+  const [whatsappOptIn, setWhatsappOptIn] = useState<Record<string, boolean>>({});
   const [financeData, setFinanceData] = useState<FinanceMonthSummary[]>([]);
   const [financeExtrasCatalog, setFinanceExtrasCatalog] = useState<Record<string, number>>({});
   const [selectedFinanceMonths, setSelectedFinanceMonths] = useState<string[]>([]);
@@ -520,6 +524,31 @@ function AdminHistoryPage() {
     if (status === 'refunded') return 'status-refunded';
     if (status === 'paid' || status === 'received' || status === 'pay-on-site') return 'status-paid';
     return 'status-pending';
+  };
+
+  // Checkmark reutilizavel: ativa o envio de WhatsApp ao confirmar/desmarcar/reagendar.
+  const renderWhatsAppOptIn = (bookingId: string, canSend: boolean) => {
+    const active = Boolean(whatsappOptIn[bookingId]);
+    return (
+      <label
+        className={`wa-optin ${active ? 'wa-optin-active' : ''}`}
+        title={
+          canSend
+            ? 'Enviar tambem mensagem por WhatsApp ao confirmar/desmarcar/reagendar'
+            : 'Sem telemovel valido para WhatsApp'
+        }
+      >
+        <input
+          type="checkbox"
+          checked={active}
+          disabled={!canSend || Boolean(actionLoading[bookingId])}
+          onChange={(event) =>
+            setWhatsappOptIn((prev) => ({ ...prev, [bookingId]: event.target.checked }))
+          }
+        />
+        <span>WhatsApp</span>
+      </label>
+    );
   };
 
   const canConfirmPaymentReceipt = (booking: PastBooking) => {
@@ -998,11 +1027,12 @@ function AdminHistoryPage() {
     if (!token) return;
 
     const booking = bookings.find((item) => item.id === bookingId);
+    const sendWhatsApp = Boolean(whatsappOptIn[bookingId]);
 
     await withActionLock(bookingId, async () => {
       await api.bookingAction(token, bookingId, 'confirm');
 
-      if (booking && consegueAbrirWhatsApp(booking)) {
+      if (sendWhatsApp && booking && consegueAbrirWhatsApp(booking)) {
         abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'confirm');
       }
 
@@ -1038,11 +1068,12 @@ function AdminHistoryPage() {
     if (!token) return;
 
     const booking = bookings.find((item) => item.id === bookingId);
+    const sendWhatsApp = Boolean(whatsappOptIn[bookingId]);
 
     await withActionLock(bookingId, async () => {
       await api.bookingAction(token, bookingId, 'reject');
 
-      if (booking && consegueAbrirWhatsApp(booking)) {
+      if (sendWhatsApp && booking && consegueAbrirWhatsApp(booking)) {
         abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'cancel');
       }
 
@@ -1068,32 +1099,13 @@ function AdminHistoryPage() {
     if (!token) return;
 
     const booking = bookings.find((item) => item.id === bookingId);
+    const sendWhatsApp = Boolean(whatsappOptIn[bookingId]);
 
     await withActionLock(bookingId, async () => {
       await api.bookingAction(token, bookingId, 'cancel');
 
-      if (booking && consegueAbrirWhatsApp(booking)) {
+      if (sendWhatsApp && booking && consegueAbrirWhatsApp(booking)) {
         abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'cancel');
-      }
-
-      await loadHistory(token);
-      if (isPrivileged) {
-        await loadFinance(token);
-      }
-    });
-  };
-
-  const handleRefundBooking = async (bookingId: string) => {
-    const token = window.localStorage.getItem(TOKEN_KEY);
-    if (!token) return;
-
-    const booking = bookings.find((item) => item.id === bookingId);
-
-    await withActionLock(bookingId, async () => {
-      await api.bookingAction(token, bookingId, 'refund');
-
-      if (booking && consegueAbrirWhatsApp(booking)) {
-        abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'refund');
       }
 
       await loadHistory(token);
@@ -1131,6 +1143,8 @@ function AdminHistoryPage() {
     const token = window.localStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
+    const sendWhatsApp = Boolean(whatsappOptIn[booking.id]);
+
     const nextDuration = Number(rescheduleDraft.duration);
     if (!Number.isFinite(nextDuration) || nextDuration <= 0) {
       setError('Duracao invalida para reagendamento.');
@@ -1149,7 +1163,7 @@ function AdminHistoryPage() {
         duration: nextDuration,
       });
 
-      if (consegueAbrirWhatsApp(booking)) {
+      if (sendWhatsApp && consegueAbrirWhatsApp(booking)) {
         abrirWhatsAppMensagem(
           booking,
           currentUser?.name || 'Feedback - Ensaios',
@@ -1161,6 +1175,8 @@ function AdminHistoryPage() {
           },
         );
       }
+
+      setWhatsappOptIn((prev) => ({ ...prev, [booking.id]: false }));
 
       await loadHistory(token);
       if (isPrivileged) {
@@ -2777,31 +2793,7 @@ function AdminHistoryPage() {
                                 Confirmar pagamento
                               </button>
                             ) : null}
-                            {String(b.paymentStatus || '').toLowerCase() !== 'refunded' ? (
-                              <button
-                                type="button"
-                                className="secondary-button"
-                                disabled={Boolean(actionLoading[b.id])}
-                                onClick={() => {
-                                  void handleRefundBooking(b.id);
-                                }}
-                              >
-                                Devolver
-                              </button>
-                            ) : null}
-                            {consegueAbrirWhatsApp(b) ? (
-                              <button
-                                type="button"
-                                className="secondary-button whatsapp-icon-button"
-                                aria-label="Enviar mensagem por WhatsApp"
-                                title="Enviar mensagem por WhatsApp"
-                                onClick={() => {
-                                  abrirWhatsAppMensagem(b, currentUser?.name || 'Feedback - Ensaios', b.status === 'pending' ? 'confirm' : 'cancel');
-                                }}
-                              >
-                                <WhatsAppIcon />
-                              </button>
-                            ) : null}
+                            {podeUsarCheckmarkWhatsApp(b) ? renderWhatsAppOptIn(b.id, consegueAbrirWhatsApp(b)) : null}
                           </div>
                         </td>
                       </tr>
@@ -2911,31 +2903,7 @@ function AdminHistoryPage() {
                             Confirmar pagamento
                           </button>
                         ) : null}
-                        {String(b.paymentStatus || '').toLowerCase() !== 'refunded' ? (
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            disabled={Boolean(actionLoading[b.id])}
-                            onClick={() => {
-                              void handleRefundBooking(b.id);
-                            }}
-                          >
-                            Devolver
-                          </button>
-                        ) : null}
-                        {consegueAbrirWhatsApp(b) ? (
-                          <button
-                            type="button"
-                            className="secondary-button whatsapp-icon-button"
-                            aria-label="Enviar mensagem por WhatsApp"
-                            title="Enviar mensagem por WhatsApp"
-                            onClick={() => {
-                              abrirWhatsAppMensagem(b, currentUser?.name || 'Feedback - Ensaios', b.status === 'pending' ? 'confirm' : 'cancel');
-                            }}
-                          >
-                            <WhatsAppIcon />
-                          </button>
-                        ) : null}
+                        {podeUsarCheckmarkWhatsApp(b) ? renderWhatsAppOptIn(b.id, consegueAbrirWhatsApp(b)) : null}
                       </div>
                     </li>
                   ))}
@@ -3012,6 +2980,13 @@ function AdminHistoryPage() {
                   required
                 />
               </label>
+
+                <div className="admin-reschedule-wa">
+                  {renderWhatsAppOptIn(
+                    rescheduleDraft.bookingId,
+                    consegueAbrirWhatsApp(bookings.find((item) => item.id === rescheduleDraft.bookingId) || ({} as PastBooking)),
+                  )}
+                </div>
 
               <div className="admin-modal-actions">
                 <button type="button" className="secondary-button" onClick={closeRescheduleModal}>
