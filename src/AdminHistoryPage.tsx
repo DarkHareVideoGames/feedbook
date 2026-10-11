@@ -250,6 +250,10 @@ function canReschedule(booking: PastBooking): boolean {
   return booking.status !== 'cancelled' && booking.status !== 'rejected' && payment !== 'refunded';
 }
 
+function formatContactPhone(phone?: string): string {
+  return String(phone || '').trim().replace(/^(?:\+|00)351[\s.-]*/, '');
+}
+
 // O checkmark de WhatsApp so faz sentido enquanto existir uma acao que notifica o
 // cliente (confirmar/desmarcar/reagendar/anular). Desaparece nos estados terminais:
 // desmarcado, anulado, devolvido ou pagamento ja recebido.
@@ -563,6 +567,7 @@ function AdminHistoryPage() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [userActionLoading, setUserActionLoading] = useState(false);
   const [clearBookingsLoading, setClearBookingsLoading] = useState(false);
+  const [extrasVisible, setExtrasVisible] = useState<Record<string, boolean>>({});
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
     name: '',
     email: '',
@@ -676,6 +681,7 @@ function AdminHistoryPage() {
   const renderStatusWithAssignee = (booking: PastBooking) => {
     const tag = bookingMainTag(booking);
     const assignee = booking.assignedCollaborator?.name;
+
     return (
       <span className="status-stack">
         <span className={`status-chip ${tag.tone}`}>{tag.label}</span>
@@ -2683,20 +2689,49 @@ function AdminHistoryPage() {
                         <td>{b.roomName}</td>
                         <td>
                           <span className="band-name">{b.bandName || '-'}</span>
-                          {b.contactPhone ? (
-                            <span className="history-sub">{b.contactPhone}</span>
+                          {b.contactName || b.contactPhone ? (
+                            <span className="history-sub">
+                              {[b.contactName, formatContactPhone(b.contactPhone)].filter(Boolean).join(' · ')}
+                            </span>
                           ) : null}
                         </td>
-                        <td>
-                          {(b.extras ?? []).map((extraId) => (
-                            <span key={extraId} className="history-extra-chip">
-                              {extraId}
-                            </span>
-                          ))}
+                        <td className="history-extras-cell">
+                         {(b.extras ?? []).length > 0 ? (
+                           <div className="history-extras">
+                              <button
+                                type="button"
+                                className="history-extras-trigger"
+                                aria-expanded={extrasVisible[b.id] ? 'true' : 'false'}
+                                aria-label="Ver extras"
+                                onClick={() => {
+                                  setExtrasVisible((prev) => ({
+                                    ...prev,
+                                    [b.id]: !(prev[b.id] ?? false),
+                                  }));
+                                }}
+                              >
+                                <span className="history-extras-label">
+                                  {(() => { const c = b.extras?.length ?? 0; return c > 1 ? `${c} extras` : '1 extra'; })()}
+                                </span>
+                                <span className="history-extras-arrow" aria-hidden="true">▾</span>
+                              </button>
+                              {extrasVisible[b.id] ? (
+                                <ul className="history-extras-list">
+                                  {(b.extras ?? []).map((extraId) => (
+                                    <li key={extraId}>{extraId}</li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <span className="history-extras-empty">Sem extras</span>
+                          )}
                         </td>
                         <td>{b.duration}h</td>
                         <td>
-                          <span className={paymentStatusTone(b)}>{paymentStatusLabel(b)}</span>
+                          <span className={`status-chip ${paymentStatusTone(b)}`}>
+                            {paymentStatusLabel(b)}
+                          </span>
                         </td>
                         <td>{renderStatusWithAssignee(b)}</td>
                         <td>
@@ -2798,7 +2833,7 @@ function AdminHistoryPage() {
                         {formatDateWithWeekday(b.date)} · {b.time} · {b.duration}h
                       </p>
                       <p className="band-name">{b.bandName || '-'}</p>
-                      <p>Contacto: {b.contactPhone || '-'}</p>
+                      <p>{[b.contactName, formatContactPhone(b.contactPhone)].filter(Boolean).join(' · ') || '-'}</p>
                       <p>
                         Pagamento: <span className={paymentStatusTone(b)}>{paymentStatusLabel(b)}</span>
                       </p>

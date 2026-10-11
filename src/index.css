@@ -20,16 +20,55 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-.history-extra-chip {
-  display: inline-block;
-  padding: 2px 8px;
+.history-extras-cell {
+  min-width: 120px;
+}
+
+.history-extras {
+  display: grid;
+  gap: 8px;
+}
+
+.history-extras-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
   color: #d1fae5;
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+.history-extras-trigger:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.history-extras-trigger[aria-expanded='true'] .history-extras-arrow {
+  transform: rotate(180deg);
+}
+
+.history-extras-arrow {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.history-extras-list {
+  margin: 0;
+  padding: 0 0 0 18px;
+  list-style: disc;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.history-extras-empty {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-style: italic;
 }
 
 * {
@@ -1604,7 +1643,7 @@ textarea:focus {
 
 /* History table */
 .history-table-wrap {
-  overflow-x: auto;
+  overflow-x: visible;
 }
 
 /* Barra de filtros: chips de estado + seletor de periodo alinhado a direita. */
@@ -1668,6 +1707,7 @@ textarea:focus {
 
 .history-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.8rem;
 }
@@ -1684,6 +1724,15 @@ textarea:focus {
   padding: 5px 8px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
   vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+/* Badges compactos e uniformes nas colunas Pagamento e Estado do desktop. */
+.history-table td:nth-child(7) .status-chip,
+.history-table td:nth-child(8) .status-chip {
+  padding: 3px 8px;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
 }
 
 .history-table tr.room-tone-red td {
@@ -1723,7 +1772,7 @@ textarea:focus {
 .history-actions {
   display: flex;
   gap: 5px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
 }
 
@@ -1844,6 +1893,24 @@ textarea:focus {
 
 .status-pending {
   color: #fde68a;
+}
+
+.status-chip.status-paid,
+.status-chip.status-pending,
+.status-chip.status-refunded {
+  border-color: currentColor;
+}
+
+.status-chip.status-paid {
+  background: rgba(22, 163, 74, 0.14);
+}
+
+.status-chip.status-pending {
+  background: rgba(251, 191, 36, 0.14);
+}
+
+.status-chip.status-refunded {
+  background: rgba(59, 130, 246, 0.16);
 }
 
 .status-refunded {
@@ -2016,7 +2083,7 @@ textarea:focus {
 
 .finance-bookings-list li {
   display: grid;
-  grid-template-columns: 0.8fr 1.4fr 0.9fr 0.8fr 0.9fr 1fr;
+  grid-template-columns: 0.8fr 1.4fr 0.9fr 0.8fr 0.9fr 0.8fr;
   gap: 8px;
   align-items: center;
   font-size: 0.76rem;
