@@ -282,7 +282,6 @@ export function normalizePaymentStatus(value: unknown): string {
   if (!status) return 'pending';
   if (['received', 'paid', 'pago'].includes(status)) return 'received';
   if (['refunded', 'refund', 'devolvido', 'devolucao'].includes(status)) return 'refunded';
-  if (['void', 'sem-efeito', 'sem_efeito', 'sem efeito', 'no-effect', 'noeffect', 'cancelado'].includes(status)) return 'void';
   if (
     ['pending', 'pending_confirmation', 'pending-confirmation', 'pending_mbway', 'pending-mbway',
       'pay-on-site', 'pay_on_site', 'on-site'].includes(status)
@@ -762,11 +761,6 @@ export async function bookingAction(
   } else if (action === 'reject') {
     patch.status = 'rejected';
     patch.rejectedBy = actorStamp;
-    // Desmarcar implica que o pagamento deixa de se aplicar ("Sem efeito").
-    // Preserva "Devolvido" se já houve um reembolso efetivo (informação financeira real).
-    if (normalizePaymentStatus(booking.paymentStatus) !== 'refunded') {
-      patch.paymentStatus = 'void';
-    }
     auditAction = 'booking-rejected';
     auditDetails = { ...baseDetails, rejeitadoPor: actor.name };
     notifyStatus = 'rejected';

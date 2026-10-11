@@ -615,7 +615,10 @@ function AdminHistoryPage() {
   const paymentStatusLabel = (booking: PastBooking) => {
     const status = String(booking.paymentStatus || '').toLowerCase();
     if (status === 'refunded') return 'Devolvido';
-    if (status === 'void') return 'Sem efeito';
+    // Ensaio desmarcado/anulado sem pagamento recebido: o pagamento fica sem efeito.
+    if ((booking.status === 'rejected' || booking.status === 'cancelled') && status !== 'received') {
+      return 'Sem efeito';
+    }
     if (status === 'paid' || status === 'received') return 'Recebido';
     if (status === 'pay-on-site') return 'No local';
     if (status === 'pending_mbway' || status === 'pending-mbway' || status === 'pending_confirmation' || status === 'pending-confirmation' || status === 'pending') {
@@ -628,7 +631,9 @@ function AdminHistoryPage() {
   const paymentStatusTone = (booking: PastBooking) => {
     const status = String(booking.paymentStatus || '').toLowerCase();
     if (status === 'refunded') return 'status-refunded';
-    if (status === 'void') return 'status-void';
+    if ((booking.status === 'rejected' || booking.status === 'cancelled') && status !== 'received') {
+      return 'status-void';
+    }
     if (status === 'paid' || status === 'received' || status === 'pay-on-site') return 'status-paid';
     return 'status-pending';
   };
