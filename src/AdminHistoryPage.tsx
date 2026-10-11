@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { Wallet } from 'lucide-react';
 import * as api from './api';
 
 type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
@@ -64,6 +65,7 @@ type PastBooking = {
   rejectedBy?: { id: string; name: string; role: string; at: string };
   cancelledBy?: { id: string; name: string; role: string; at: string };
   refundedBy?: { id: string; name: string; role: string; at: string };
+  rescheduledBy?: { id: string; name: string; role: string; at: string };
   paymentConfirmedBy?: { id: string; name: string; role: string; at: string };
   paymentConfirmedAt?: string;
 };
@@ -98,7 +100,30 @@ const statusLabel: Record<BookingStatus, string> = {
   cancelled: 'Cancelado',
 };
 
-type HistoryFilter = 'all' | 'pending' | 'confirmed' | 'past' | 'cancelled' | 'refunded' | 'rejected';
+// Filtros da lista de historico, pela ordem apresentada na UI.
+const HISTORY_FILTER_OPTIONS: Array<{ value: HistoryFilter; label: string }> = [
+  { value: 'all', label: 'Todos' },
+  { value: 'pending', label: 'Por confirmar' },
+  { value: 'confirmed', label: 'Confirmados' },
+  { value: 'rejected', label: 'Desmarcados' },
+  { value: 'rescheduled', label: 'Reagendados' },
+  { value: 'cancelled', label: 'Anulados' },
+];
+
+// Escopos de arquivo: limitam registos passados; futuro/hoje fica sempre visivel.
+const PERIOD_SCOPE_OPTIONS: Array<{ value: PeriodScope; label: string }> = [
+  { value: 'month', label: 'Mes corrente' },
+  { value: '3m', label: 'Ultimos 3 meses' },
+  { value: '6m', label: 'Ultimos 6 meses' },
+  { value: 'year', label: 'Este ano' },
+  { value: 'all', label: 'Tudo' },
+];
+
+type HistoryFilter = 'all' | 'pending' | 'confirmed' | 'rescheduled' | 'cancelled' | 'rejected';
+
+// Escopo temporal: limita quantos registos passados sao mostrados.
+// Futuro/hoje fica sempre visivel; 'all' mostra o historico completo.
+type PeriodScope = 'month' | '3m' | '6m' | 'year' | 'all';
 
 type AdminPanel = 'unified' | 'users' | 'rooms' | 'services' | 'pricing';
 
@@ -256,6 +281,43 @@ function bookingSortRank(booking: PastBooking): number {
 function bookingDateTimeValue(booking: PastBooking): number {
   const dt = new Date(`${booking.date}T${booking.time || '00:00'}:00`);
   return Number.isNaN(dt.getTime()) ? Number.MAX_SAFE_INTEGER : dt.getTime();
+}
+
+// Inicio do escopo temporal: regimentos anteriores a esta data sao ocultados.
+// Registos futuros/hoje nunca sao ocultados por este escopo.
+function periodScopeStart(scope: PeriodScope): Date | null {
+  if (scope === 'all') return null;
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  if (scope === 'month') {
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+
+  if (scope === 'year') {
+    return new Date(now.getFullYear(), 0, 1);
+  }
+
+  const monthsBack = scope === '6m' ? 6 : 3;
+  const start = new Date(now);
+  start.setMonth(start.getMonth() - monthsBack);
+  return start;
+}
+
+function isWithinPeriodScope(booking: PastBooking, scope: PeriodScope): boolean {
+  const start = periodScopeStart(scope);
+  if (!start) return true;
+
+  const bookingDate = new Date(`${booking.date}T00:00:00`);
+  if (Number.isNaN(bookingDate.getTime())) return true;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // Futuro e hoje ficam sempre visiveis; so limitamos o passado.
+  if (bookingDate >= today) return true;
+
+  return bookingDate >= start;
 }
 
 function summarizeFinanceEntries(entries: FinanceBooking[], extractor: (entry: FinanceBooking) => string) {
@@ -470,6 +532,9 @@ function AdminHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [viewFilter, setViewFilter] = useState<HistoryFilter>('all');
+  // Escopo de arquivo: por defeito limita ao mes corrente para nao
+  // acumular uma lista interminavel. O admin pode alargar ate "Tudo".
+  const [periodScope, setPeriodScope] = useState<PeriodScope>('month');
   const [rescheduleDraft, setRescheduleDraft] = useState<RescheduleDraft | null>(null);
   // Opt-in por marcacao: so abre o WhatsApp quando o checkmark esta ativo.
   const [whatsappOptIn, setWhatsappOptIn] = useState<Record<string, boolean>>({});
@@ -608,12 +673,12 @@ function AdminHistoryPage() {
     const tag = bookingMainTag(booking);
     const assignee = booking.assignedCollaborator?.name;
     return (
-      <>
+      <span className="status-stack">
         <span className={`status-chip ${tag.tone}`}>{tag.label}</span>
         {assignee ? (
           <span className={`status-assignee-chip ${tag.tone}`}>{assignee}</span>
         ) : null}
-      </>
+      </span>
     );
   };
 
@@ -634,23 +699,25 @@ function AdminHistoryPage() {
   const filteredBookings = useMemo(() => {
     let scoped: PastBooking[];
 
-    if (viewFilter === 'all') {
-      scoped = bookings;
-    } else if (viewFilter === 'pending') {
+    if (viewFilter === 'pending') {
       scoped = bookings.filter((booking) => booking.status === 'pending');
     } else if (viewFilter === 'confirmed') {
       scoped = bookings.filter((booking) => isFutureOrTodayConfirmed(booking));
     } else if (viewFilter === 'rejected') {
       scoped = bookings.filter((booking) => booking.status === 'rejected');
+    } else if (viewFilter === 'rescheduled') {
+      scoped = bookings.filter((booking) => Boolean(booking.rescheduledBy));
     } else if (viewFilter === 'cancelled') {
       scoped = bookings.filter((booking) => booking.status === 'cancelled');
-    } else if (viewFilter === 'refunded') {
-      scoped = bookings.filter((booking) => String(booking.paymentStatus || '').toLowerCase() === 'refunded');
     } else {
-      scoped = bookings.filter((booking) => isPastConfirmed(booking));
+      scoped = bookings;
     }
 
-    return [...scoped].sort((a, b) => {
+    // Escopo de arquivo: oculta registos passados antigos para a lista nao
+    // ficar interminavel. Aplica-se a todos os filtros (inclusive "Todos").
+    const withinScope = scoped.filter((booking) => isWithinPeriodScope(booking, periodScope));
+
+    return [...withinScope].sort((a, b) => {
       const rankDiff = bookingSortRank(a) - bookingSortRank(b);
       if (rankDiff !== 0) return rankDiff;
 
@@ -659,7 +726,7 @@ function AdminHistoryPage() {
 
       return a.id.localeCompare(b.id);
     });
-  }, [bookings, viewFilter]);
+  }, [bookings, viewFilter, periodScope]);
 
   const historyCountLabel = filteredBookings.length === 1 ? '1 registo' : `${filteredBookings.length} registos`;
 
@@ -2364,8 +2431,15 @@ function AdminHistoryPage() {
                 <h2>{filteredBookings.length === 0 ? 'Sem ensaios neste filtro' : historyCountLabel}</h2>
               </div>
               {isPrivileged ? (
-                <button type="button" className="secondary-button" onClick={() => setShowFinance((value) => !value)}>
-                  {showFinance ? 'Esconder contas' : 'Ver contas'}
+                <button
+                  type="button"
+                  className="icon-button finance-toggle"
+                  aria-label={showFinance ? 'Esconder contas' : 'Ver contas'}
+                  aria-pressed={showFinance}
+                  title={showFinance ? 'Esconder contas' : 'Ver contas'}
+                  onClick={() => setShowFinance((value) => !value)}
+                >
+                  <Wallet size={20} aria-hidden="true" />
                 </button>
               ) : null}
             </div>
@@ -2691,56 +2765,34 @@ function AdminHistoryPage() {
               </div>
             ) : null}
 
-            <div className="history-filters" role="group" aria-label="Filtros de historico">
-              <button
-                type="button"
-                className={`secondary-button history-filter ${viewFilter === 'all' ? 'history-filter-active' : ''}`}
-                onClick={() => setViewFilter('all')}
-              >
-                Todos
-              </button>
-              <button
-                type="button"
-                className={`secondary-button history-filter ${viewFilter === 'pending' ? 'history-filter-active' : ''}`}
-                onClick={() => setViewFilter('pending')}
-              >
-                Por confirmar
-              </button>
-              <button
-                type="button"
-                className={`secondary-button history-filter ${viewFilter === 'confirmed' ? 'history-filter-active' : ''}`}
-                onClick={() => setViewFilter('confirmed')}
-              >
-                Confirmados
-              </button>
-              <button
-                type="button"
-                className={`secondary-button history-filter ${viewFilter === 'past' ? 'history-filter-active' : ''}`}
-                onClick={() => setViewFilter('past')}
-              >
-                Passados
-              </button>
-              <button
-                type="button"
-                className={`secondary-button history-filter ${viewFilter === 'cancelled' ? 'history-filter-active' : ''}`}
-                onClick={() => setViewFilter('cancelled')}
-              >
-                Anulados
-              </button>
-              <button
-                type="button"
-                className={`secondary-button history-filter ${viewFilter === 'refunded' ? 'history-filter-active' : ''}`}
-                onClick={() => setViewFilter('refunded')}
-              >
-                Devolvidos
-              </button>
-              <button
-                type="button"
-                className={`secondary-button history-filter ${viewFilter === 'rejected' ? 'history-filter-active' : ''}`}
-                onClick={() => setViewFilter('rejected')}
-              >
-                Desmarcados
-              </button>
+            <div className="history-toolbar">
+              <div className="history-filters" role="group" aria-label="Filtros de historico">
+                {HISTORY_FILTER_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`history-filter ${viewFilter === option.value ? 'history-filter-active' : ''}`}
+                    aria-pressed={viewFilter === option.value}
+                    onClick={() => setViewFilter(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              <label className="history-period" title="Limitar registos antigos (o futuro fica sempre visivel)">
+                <span>Periodo</span>
+                <select
+                  value={periodScope}
+                  onChange={(event) => setPeriodScope(event.target.value as PeriodScope)}
+                >
+                  {PERIOD_SCOPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             {filteredBookings.length > 0 ? (
@@ -2777,7 +2829,7 @@ function AdminHistoryPage() {
                         <td>
                           <span className={paymentStatusTone(b)}>{paymentStatusLabel(b)}</span>
                         </td>
-                        <td className="status-cell">{renderStatusWithAssignee(b)}</td>
+                        <td>{renderStatusWithAssignee(b)}</td>
                         <td>
                           <div className="history-actions">
                             {b.status === 'pending' ? (
@@ -2785,12 +2837,13 @@ function AdminHistoryPage() {
                                 <button
                                   type="button"
                                   className="secondary-button"
+                                  title="Confirmar marcacao"
                                   disabled={Boolean(actionLoading[b.id])}
                                   onClick={() => {
                                     void handleConfirmBooking(b.id);
                                   }}
                                 >
-                                  Confirmar
+                                  OK
                                 </button>
                                 <button
                                   type="button"
@@ -2846,12 +2899,13 @@ function AdminHistoryPage() {
                               <button
                                 type="button"
                                 className="secondary-button"
+                                title="Confirmar pagamento"
                                 disabled={Boolean(actionLoading[b.id])}
                                 onClick={() => {
                                   void handleConfirmPaymentReceipt(b.id);
                                 }}
                               >
-                                Confirmar pagamento
+                                Pagamento
                               </button>
                             ) : null}
                             {podeUsarCheckmarkWhatsApp(b) ? renderWhatsAppOptIn(b.id, consegueAbrirWhatsApp(b)) : null}
@@ -2893,12 +2947,13 @@ function AdminHistoryPage() {
                             <button
                               type="button"
                               className="secondary-button"
+                              title="Confirmar marcacao"
                               disabled={Boolean(actionLoading[b.id])}
                               onClick={() => {
                                 void handleConfirmBooking(b.id);
                               }}
                             >
-                              Confirmar
+                              OK
                             </button>
                             <button
                               type="button"
@@ -2954,12 +3009,13 @@ function AdminHistoryPage() {
                           <button
                             type="button"
                             className="secondary-button"
+                            title="Confirmar pagamento"
                             disabled={Boolean(actionLoading[b.id])}
                             onClick={() => {
                               void handleConfirmPaymentReceipt(b.id);
                             }}
                           >
-                            Confirmar pagamento
+                            Pagamento
                           </button>
                         ) : null}
                         {podeUsarCheckmarkWhatsApp(b) ? renderWhatsAppOptIn(b.id, consegueAbrirWhatsApp(b)) : null}

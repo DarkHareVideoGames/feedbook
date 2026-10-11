@@ -329,6 +329,33 @@ button {
   flex-wrap: wrap;
 }
 
+/* Botao pequeno so de icone (32px). */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.icon-button:hover {
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.icon-button[aria-pressed="true"] {
+  color: #fff;
+  background: rgba(209, 19, 35, 0.22);
+  border-color: rgba(209, 19, 35, 0.85);
+}
+
 .field-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1511,38 +1538,81 @@ textarea:focus {
   overflow-x: auto;
 }
 
-.history-filters {
+/* Barra de filtros: chips de estado + seletor de periodo alinhado a direita. */
+.history-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin: 8px 0 16px;
 }
 
+.history-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .history-filter {
-  min-width: 102px;
+  padding: 5px 11px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.history-filter:hover {
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 .history-filter-active {
+  color: #fff;
+  background: rgba(209, 19, 35, 0.22);
   border-color: rgba(209, 19, 35, 0.85);
-  background: rgba(209, 19, 35, 0.24);
+}
+
+.history-period {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.history-period select {
+  padding: 5px 8px;
+  font-size: 0.74rem;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 .history-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .history-table th {
   text-align: left;
-  padding: 7px 10px;
+  padding: 5px 8px;
   color: var(--text-muted);
   border-bottom: 1px solid rgba(255,255,255,0.08);
   white-space: nowrap;
 }
 
 .history-table td {
-  padding: 7px 10px;
+  padding: 5px 8px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
   vertical-align: middle;
 }
@@ -1679,10 +1749,17 @@ textarea:focus {
 
 /* Responsavel atribuido: badge com o tom do estado (herda color/border do tom,
    mas com fundo mais subtil para competir menos com o chip principal). */
+.status-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
 .status-assignee-chip {
   display: inline-flex;
   align-items: center;
-  margin-left: 6px;
+  margin-left: 0;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 0.74rem;
@@ -1950,6 +2027,10 @@ textarea:focus {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.history-mobile-card .status-stack {
+  flex-basis: 100%;
 }
 
 .history-log-lines {
@@ -2505,5 +2586,31 @@ textarea:focus {
 
   .history-table-wrap {
     overflow-x: visible;
+  }
+
+  /* Toolbar em telemovel: filtros em grelha 3x2 + periodo em linha cheia. */
+  .history-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .history-filters {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .history-filter {
+    text-align: center;
+    padding: 7px 6px;
+  }
+
+  .history-period {
+    justify-content: flex-start;
+  }
+
+  .history-period select {
+    flex: 1;
+    min-width: 0;
   }
 }

@@ -47,6 +47,7 @@ create table public.bookings (
   "cancelledBy"         jsonb,
   "refundedBy"          jsonb,
   "paymentConfirmedBy"  jsonb,
+  "rescheduledBy"       jsonb,
   "assignedCollaborator" jsonb,
 
   "createdAt"           timestamptz not null default now()

@@ -71,6 +71,7 @@ export type ApiBooking = {
   cancelledBy?: ActorStamp | null;
   refundedBy?: ActorStamp | null;
   paymentConfirmedBy?: ActorStamp | null;
+  rescheduledBy?: ActorStamp | null;
   assignedCollaborator?: { id: string; name: string } | null;
   createdAt?: string;
 };
@@ -771,6 +772,9 @@ export async function bookingAction(
     patch.cancelledBy = null;
     patch.rejectedBy = null;
     patch.assignedCollaborator = null;
+    // Marcador persistente de reagendamento (nao e limpo na reconfirmacao),
+    // usado pelo filtro "Reagendados" da administracao.
+    patch.rescheduledBy = actorStamp;
 
     auditAction = 'booking-rescheduled';
     auditDetails = {
