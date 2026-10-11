@@ -678,18 +678,20 @@ function App() {
                     {sameMonth(visibleMonth, startOfMonth(new Date())) ? null : (
                       <button
                         type="button"
-                        className="secondary-button calendar-nav calendar-nav-prev"
+                        className="calendar-nav calendar-nav-prev"
+                        aria-label={translations.booking.calendarPrev}
                         onClick={() => setVisibleMonth((current) => addMonths(current, -1))}
                       >
-                        {translations.booking.calendarPrev}
+                        <span aria-hidden="true">&#8249;</span>
                       </button>
                     )}
                     <button
                       type="button"
-                      className="secondary-button calendar-nav calendar-nav-next"
+                      className="calendar-nav calendar-nav-next"
+                      aria-label={translations.booking.calendarNext}
                       onClick={() => setVisibleMonth((current) => addMonths(current, 1))}
                     >
-                      {translations.booking.calendarNext}
+                      <span aria-hidden="true">&#8250;</span>
                     </button>
                   </div>
                 </div>
