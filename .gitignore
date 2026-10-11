@@ -15,8 +15,12 @@ pnpm-debug.log*
 
 # logs e artefactos de runtime do Vite
 vite-dev.log
+vite-dev-error.log
 vite-err.log
 *.tsbuildinfo
+
+# cópias locais de segurança antes de alterações visuais
+backups/
 
 # artefactos compilados do config (o fonte é vite.config.ts)
 vite.config.js
