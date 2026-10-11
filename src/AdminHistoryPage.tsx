@@ -530,6 +530,7 @@ function consegueAbrirWhatsApp(booking: PastBooking): boolean {
 function AdminHistoryPage() {
   const [bookings, setBookings] = useState<PastBooking[]>([]);
   const [adminLogoVisible, setAdminLogoVisible] = useState(true);
+  const [betaEnabled, setBetaEnabled] = useState(() => localStorage.getItem('feedbook-beta-enabled') !== 'false');
   const [token, setToken] = useState('');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [loginEmail, setLoginEmail] = useState('admin@feedbook.local');
@@ -582,6 +583,14 @@ function AdminHistoryPage() {
   // Superuser e admin têm acesso total (utilizadores, salas, serviços, preços, contas).
   const isPrivilegedRole = (role: Role | null | undefined) => role === 'admin' || role === 'superuser';
   const isPrivileged = isPrivilegedRole(currentUser?.role);
+  const isSuperuser = currentUser?.role === 'superuser';
+  const toggleBetaMode = () => {
+    setBetaEnabled((enabled) => {
+      const nextEnabled = !enabled;
+      localStorage.setItem('feedbook-beta-enabled', String(nextEnabled));
+      return nextEnabled;
+    });
+  };
   // Dropdown "Perfil": apenas Administradores e Colaboradores.
   // O superuser não é escolhível (é detetado pelo login) e "Técnico" passou para o campo Função.
   // Em edição, um perfil legado (technician/superuser) mantém-se como opção para não
@@ -1819,9 +1828,21 @@ function AdminHistoryPage() {
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
 
-      <div className="admin-beta-banner beta-only" role="note">
-        <span className="admin-beta-badge">Beta</span>
-      </div>
+      {(betaEnabled || isSuperuser) ? (
+        <div className="admin-beta-banner beta-only" role="note">
+          <span className="admin-beta-badge">{betaEnabled ? 'Beta' : 'Beta desativada'}</span>
+          {isSuperuser ? (
+            <button
+              type="button"
+              className="beta-mode-toggle"
+              aria-pressed={betaEnabled}
+              onClick={toggleBetaMode}
+            >
+              {betaEnabled ? 'Desativar' : 'Ativar'}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <header className="topbar admin-topbar">
         <div className="brand-wrap">

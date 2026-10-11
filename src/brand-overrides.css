@@ -15,8 +15,37 @@
   box-shadow: none;
 }
 
+.beta-mode-toggle {
+  padding: 3px 8px;
+  border: 1px solid rgba(209, 19, 35, 0.6);
+  border-radius: 3px;
+  background: transparent;
+  color: #fca5a5;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.beta-mode-toggle:hover {
+  border-color: #ef3444;
+  background: rgba(209, 19, 35, 0.16);
+  color: #fff;
+}
+
+@media (min-width: 901px) {
+  .admin-sidebar {
+    margin-top: 80px;
+  }
+}
+
 @media (max-width: 900px) {
   .admin-content {
     padding-top: 24px;
+  }
+
+  .admin-sidebar {
+    margin-top: 0;
   }
 }

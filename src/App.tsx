@@ -273,6 +273,7 @@ function App() {
   const [backendOffline, setBackendOffline] = useState(false);
   const [teamBookings, setTeamBookings] = useState<TeamBooking[]>([]);
   const [bookingStep, setBookingStep] = useState<BookingStep>('room');
+  const [betaEnabled, setBetaEnabled] = useState(() => localStorage.getItem('feedbook-beta-enabled') !== 'false');
   const confirmationRef = useRef<HTMLDivElement>(null);
 
   const currency = useMemo(
@@ -541,14 +542,22 @@ function App() {
     }
   }
 
+  useEffect(() => {
+    const syncBetaMode = () => setBetaEnabled(localStorage.getItem('feedbook-beta-enabled') !== 'false');
+    window.addEventListener('storage', syncBetaMode);
+    return () => window.removeEventListener('storage', syncBetaMode);
+  }, []);
+
   return (
     <div className="page-shell">
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
 
-      <div className="admin-beta-banner beta-only" role="note">
-        <span className="admin-beta-badge">Beta</span>
-      </div>
+      {betaEnabled ? (
+        <div className="admin-beta-banner beta-only" role="note">
+          <span className="admin-beta-badge">Beta</span>
+        </div>
+      ) : null}
 
       <header className="topbar">
         <div className="brand-wrap">
