@@ -58,8 +58,7 @@ begin
             + split_part(b."time", ':', 2)::int) < v_new_end + 30
   ) then
     raise exception
-      'Horário indisponível: esta sala já tem uma marcação que requer 30 minutos de intervalo (preparação/limpeza).',
-      using errcode = 'P0001';
+      'Horário indisponível: esta sala já tem uma marcação que requer 30 minutos de intervalo (preparação/limpeza).';
   end if;
 
   return NEW;
