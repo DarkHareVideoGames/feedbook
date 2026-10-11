@@ -153,6 +153,7 @@ type RoomFormDraft = {
   descriptionEn: string;
   maxMembers: string;
   pricePerMemberHour: string;
+  imageUrl: string;
   gear: string;
   gearEn: string;
   accent: string;
@@ -175,6 +176,7 @@ const emptyRoomForm: RoomFormDraft = {
   descriptionEn: '',
   maxMembers: '4',
   pricePerMemberHour: '',
+  imageUrl: '',
   gear: '',
   gearEn: '',
   accent: 'var(--room-red)',
@@ -199,6 +201,7 @@ function roomToForm(room: api.ApiRoom): RoomFormDraft {
     maxMembers: String(room.maxMembers),
     pricePerMemberHour:
       room.pricePerMemberHour === null || room.pricePerMemberHour === undefined ? '' : String(room.pricePerMemberHour),
+    imageUrl: room.imageUrl ?? '',
     gear: (room.gear ?? []).join('\n'),
     gearEn: (room.gearEn ?? []).join('\n'),
     accent: room.accent || 'var(--room-red)',
@@ -550,6 +553,8 @@ function AdminHistoryPage() {
   const [globalRate, setGlobalRate] = useState('');
   const [pricingDraft, setPricingDraft] = useState<Record<string, string>>({});
   const [roomForm, setRoomForm] = useState<RoomFormDraft>(emptyRoomForm);
+  const [roomImageFile, setRoomImageFile] = useState<File | null>(null);
+  const [roomImageUploading, setRoomImageUploading] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [serviceForm, setServiceForm] = useState<ServiceFormDraft>(emptyServiceForm);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
@@ -989,6 +994,7 @@ function AdminHistoryPage() {
   const startEditRoom = (room: api.ApiRoom) => {
     setEditingRoomId(room.id);
     setRoomForm(roomToForm(room));
+    setRoomImageFile(null);
     setCatalogNotice('');
     setError('');
   };
@@ -996,6 +1002,7 @@ function AdminHistoryPage() {
   const cancelEditRoom = () => {
     setEditingRoomId(null);
     setRoomForm(emptyRoomForm);
+    setRoomImageFile(null);
   };
 
   const handleSaveRoom = async (event: FormEvent<HTMLFormElement>) => {
@@ -1021,13 +1028,33 @@ function AdminHistoryPage() {
     setCatalogNotice('');
     setError('');
     try {
+      // Determina o id alvo (para novas salas, o id pode ser gerado a partir do nome).
+      const roomId = editingRoomId ?? (roomForm.id.trim() || undefined);
+
+      // Se há uma imagem nova, envia-a para o bucket e usa o URL público resultante.
+      let imageUrl: string | null = roomForm.imageUrl.trim() || null;
+      if (roomImageFile) {
+        setRoomImageUploading(true);
+        try {
+          const uploaded = await api.uploadRoomImage(
+            sessionToken,
+            roomId || `sala-${trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'nova'}`,
+            roomImageFile,
+          );
+          imageUrl = uploaded.url;
+        } finally {
+          setRoomImageUploading(false);
+        }
+      }
+
       const draft: api.RoomDraft = {
-        id: editingRoomId ?? (roomForm.id.trim() || undefined),
+        id: roomId,
         name: trimmedName,
         description: roomForm.description,
         descriptionEn: roomForm.descriptionEn,
         maxMembers: Math.floor(maxMembers),
         pricePerMemberHour,
+        imageUrl,
         gear: roomForm.gear,
         gearEn: roomForm.gearEn,
         accent: roomForm.accent,
@@ -2143,7 +2170,7 @@ function AdminHistoryPage() {
                   />
                 </label>
                 <label>
-                  Preco proprio EUR/hora/elemento (vazio = usa preco global)
+                  Preco por hora da sala (EUR) (vazio = usa preco global)
                   <input
                     type="number"
                     min={0}
@@ -2153,6 +2180,34 @@ function AdminHistoryPage() {
                     placeholder={globalRate}
                   />
                 </label>
+              </div>
+              <div className="field-row">
+                <label>
+                  Foto da sala (recomendado 1200 × 675 px, 16:9, max 5 MB)
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(event) => setRoomImageFile(event.target.files?.[0] ?? null)}
+                  />
+                </label>
+                {roomImageFile || roomForm.imageUrl ? (
+                  <div className="room-image-preview">
+                    <img
+                      src={roomImageFile ? URL.createObjectURL(roomImageFile) : roomForm.imageUrl}
+                      alt="Pre-visualizacao da foto da sala"
+                    />
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => {
+                        setRoomImageFile(null);
+                        setRoomForm((current) => ({ ...current, imageUrl: '' }));
+                      }}
+                    >
+                      Remover foto
+                    </button>
+                  </div>
+                ) : null}
               </div>
               <label>
                 Descricao (PT)
@@ -2210,8 +2265,12 @@ function AdminHistoryPage() {
                 </label>
               </div>
               <div className="admin-user-form-actions">
-                <button type="submit" className="primary-button">
-                  {editingRoomId ? 'Guardar sala' : 'Adicionar sala'}
+                <button type="submit" className="primary-button" disabled={roomImageUploading}>
+                  {roomImageUploading
+                    ? 'A enviar imagem...'
+                    : editingRoomId
+                      ? 'Guardar sala'
+                      : 'Adicionar sala'}
                 </button>
                 {editingRoomId ? (
                   <button type="button" className="secondary-button" onClick={cancelEditRoom}>
@@ -2361,7 +2420,7 @@ function AdminHistoryPage() {
             </div>
             <form className="admin-pricing-grid" onSubmit={handleSavePricing}>
               <label>
-                Preco por elemento/hora (EUR)
+                Preco por hora — global (EUR)
                 <input
                   type="number"
                   min={0}

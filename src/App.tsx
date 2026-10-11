@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
-import { calculateRehearsalPrice } from './helpers/rehearsalPricing';
+import { calculateRehearsalPrice, resolveRoomPricePerHour } from './helpers/rehearsalPricing';
 
 type RoomDefinition = api.ApiRoom;
 
@@ -300,6 +300,10 @@ function App() {
     };
   });
   const selectedRoom = localizedRooms.find((room) => room.id === selectedRoomId) ?? localizedRooms[0];
+  const selectedRoomPricePerHour = resolveRoomPricePerHour(
+    selectedRoom.pricePerMemberHour,
+    pricing.perMemberPerHour,
+  );
   const selectedStartHour = hourLabelToNumber(selectedSlot);
   const extras = useMemo<Extra[]>(
     () =>
@@ -596,13 +600,19 @@ function App() {
                     }
                   }}
                 >
+                  {room.imageUrl ? (
+                    <img className="room-card-image" src={room.imageUrl} alt={room.name} loading="lazy" />
+                  ) : null}
                   <div className="room-card-header">
                     <div>
                       <p className="eyebrow">{room.capacity}</p>
                       <h3>{room.name}</h3>
                     </div>
                     <strong>
-                      {translations.rooms.priceFrom} {currency.format(calculateRehearsalPrice(1))}
+                      {translations.rooms.priceFrom}{' '}
+                      {currency.format(
+                        resolveRoomPricePerHour(room.pricePerMemberHour, pricing.perMemberPerHour),
+                      )}
                     </strong>
                   </div>
                   <p>{room.vibe}</p>
@@ -713,7 +723,7 @@ function App() {
                       >
                         {formatTemplate(translations.booking.durationOption, { count: value })}
                         {' — '}
-                        {currency.format(calculateRehearsalPrice(value))}
+                        {currency.format(calculateRehearsalPrice(value, selectedRoomPricePerHour))}
                       </option>
                     ))}
                   </select>

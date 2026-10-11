@@ -1,6 +1,10 @@
 import type { User } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
-import { calculateRehearsalPrice, MAX_REHEARSAL_HOURS } from './helpers/rehearsalPricing';
+import {
+  calculateRehearsalPrice,
+  resolveRoomPricePerHour,
+  MAX_REHEARSAL_HOURS,
+} from './helpers/rehearsalPricing';
 
 // ============================================================
 // Camada de dados do Feedback - Ensaios sobre o Supabase.
@@ -91,6 +95,7 @@ export type ApiRoom = {
   descriptionEn: string;
   maxMembers: number;
   pricePerMemberHour: number | null;
+  imageUrl?: string | null;
   gear: string[];
   gearEn: string[];
   accent: string;
@@ -114,6 +119,7 @@ export type RoomDraft = {
   descriptionEn?: string;
   maxMembers: number;
   pricePerMemberHour?: number | null;
+  imageUrl?: string | null;
   gear?: string;
   gearEn?: string;
   accent?: string;
@@ -286,18 +292,26 @@ export function normalizePaymentStatus(value: unknown): string {
 }
 
 export function estimateBookingAmount(
-  booking: { duration?: number | null; participants?: number | null; extras?: string[] | null; amount?: number | null },
+  booking: {
+    duration?: number | null;
+    participants?: number | null;
+    extras?: string[] | null;
+    amount?: number | null;
+    roomPricePerHour?: number | null;
+  },
   pricingConfig: PricingConfig,
 ): number {
   if (Number.isFinite(Number(booking?.amount)) && booking?.amount !== null && booking?.amount !== undefined) {
     return Number(booking.amount);
   }
 
-  // O preço da sala passou a ser por hora inteira (tabela acumulada com desconto
-  // progressivo) e já não depende do número de elementos. Limitamos ao máximo de
-  // 6h para nunca lançar erro ao estimar reservas antigas/legadas.
+  // O preço da sala é por hora inteira, com desconto progressivo a partir do
+  // preço/hora base da sala (ou do preço global, se a sala não tiver preço
+  // próprio). Já não depende do número de elementos. Limitamos ao máximo de 6h
+  // para nunca lançar erro ao estimar reservas antigas/legadas.
   const hours = Math.min(Math.ceil(Number(booking?.duration || 0)), MAX_REHEARSAL_HOURS);
-  const roomPrice = calculateRehearsalPrice(hours);
+  const pricePerHour = resolveRoomPricePerHour(booking?.roomPricePerHour, pricingConfig?.perMemberPerHour);
+  const roomPrice = calculateRehearsalPrice(hours, pricePerHour);
   const extras = Array.isArray(booking?.extras) ? booking.extras : [];
   const extraValue = extras.reduce((sum, extraName) => {
     return sum + Number(pricingConfig?.extras?.[extraName] ?? 0);
@@ -329,6 +343,23 @@ async function loadPricingConfig(): Promise<PricingConfig> {
     perMemberPerHour: Number(pricingData?.perMemberPerHour ?? defaultPricing.perMemberPerHour),
     extras,
   };
+}
+
+// Mapa roomId -> preco proprio da sala (EUR/hora). Usado para calcular o valor
+// de cada reserva com o preco/hora base correto de cada sala.
+async function loadRoomPriceMap(): Promise<Record<string, number | null>> {
+  try {
+    const { rooms } = await listRooms({ includeInactive: true });
+    const map: Record<string, number | null> = {};
+    for (const room of rooms) {
+      map[room.id] = room.pricePerMemberHour === null || room.pricePerMemberHour === undefined
+        ? null
+        : Number(room.pricePerMemberHour);
+    }
+    return map;
+  } catch {
+    return {};
+  }
 }
 
 function mapBookingRow(row: Record<string, unknown>): ApiBooking {
@@ -516,13 +547,17 @@ export async function createBooking(draft: CreateBookingDraft): Promise<{ bookin
     }
 
     const pricing = await loadPricingConfig();
+    const roomPriceMap = await loadRoomPriceMap();
 
     const extras = Array.isArray(draft.extras) ? draft.extras.filter(Boolean) : [];
     const duration = Number(draft.duration);
     const participants = Number(draft.participants || 0);
     const amount = Number.isFinite(Number(draft.amount))
       ? Number(draft.amount)
-      : estimateBookingAmount({ duration, participants, extras }, pricing);
+      : estimateBookingAmount(
+          { duration, participants, extras, roomPricePerHour: roomId ? roomPriceMap[roomId] ?? null : null },
+          pricing,
+        );
 
     const row = {
       roomId,
@@ -608,6 +643,7 @@ export async function adminBookings(
   }
 
   const pricing = await loadPricingConfig();
+  const roomPriceMap = await loadRoomPriceMap();
 
   let bookings = (rows ?? []).map((row) => mapBookingRow(row as Record<string, unknown>));
 
@@ -638,7 +674,10 @@ export async function adminBookings(
       paymentStatus: normalizePaymentStatus(booking.paymentStatus),
       amount: Number.isFinite(Number(booking.amount)) && booking.amount !== null
         ? Number(booking.amount)
-        : estimateBookingAmount(booking, pricing),
+        : estimateBookingAmount(
+            { ...booking, roomPricePerHour: booking.roomId ? roomPriceMap[booking.roomId] ?? null : null },
+            pricing,
+          ),
     })),
   };
 }
@@ -797,13 +836,20 @@ export async function bookingAction(
     }
 
     const pricing = await loadPricingConfig();
+    const roomPriceMap = await loadRoomPriceMap();
 
     patch.paymentStatus = 'received';
     patch.paymentConfirmedBy = actorStamp;
     patch.paymentConfirmedAt = now;
     patch.amount = Number.isFinite(Number(body?.amount))
       ? Number(body?.amount)
-      : Number(booking.amount ?? estimateBookingAmount(booking, pricing));
+      : Number(
+          booking.amount ??
+            estimateBookingAmount(
+              { ...booking, roomPricePerHour: booking.roomId ? roomPriceMap[booking.roomId] ?? null : null },
+              pricing,
+            ),
+        );
 
     auditAction = 'payment-confirmed';
     auditDetails = {
@@ -939,6 +985,63 @@ function isMissingTableError(error: { code?: string; message?: string } | null |
   return code === '42P01' || message.includes('does not exist') || message.includes('could not find the table');
 }
 
+// --- Imagens das salas (Supabase Storage, bucket público) ------
+
+// Bucket público onde ficam as fotos das salas. A leitura é anónima
+// (o site carrega as fotos sem login); a escrita é restrita a autenticados.
+export const ROOM_IMAGES_BUCKET = 'images';
+const ROOM_IMAGES_FOLDER = 'rooms';
+const ROOM_IMAGE_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const ROOM_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+function normalizeRoomImageUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+function roomImageExtension(fileName: string, mimeType: string): string {
+  const fromName = fileName.includes('.') ? fileName.split('.').pop() : '';
+  if (fromName && /^[a-z0-9]+$/i.test(fromName)) return fromName.toLowerCase();
+  if (mimeType === 'image/png') return 'png';
+  if (mimeType === 'image/webp') return 'webp';
+  return 'jpg';
+}
+
+/**
+ * Envia a foto de uma sala para o bucket público e devolve o URL público.
+ * Exige um ator admin/superuser (o cliente está autenticado → role authenticated).
+ */
+export async function uploadRoomImage(
+  token: string,
+  roomId: string,
+  file: File,
+): Promise<{ url: string }> {
+  await requireActor(token, ['superuser', 'admin']);
+
+  if (!ROOM_IMAGE_TYPES.includes(file.type)) {
+    throw new ApiError('Formato de imagem inválido. Usa JPG, PNG ou WebP.', 400);
+  }
+  if (file.size > ROOM_IMAGE_MAX_BYTES) {
+    throw new ApiError('Imagem demasiado grande. O máximo é 5 MB.', 400);
+  }
+
+  const safeRoom = String(roomId || '').trim() || `sala-${randHex(3).toLowerCase()}`;
+  const ext = roomImageExtension(file.name, file.type);
+  const path = `${ROOM_IMAGES_FOLDER}/${safeRoom}-${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage.from(ROOM_IMAGES_BUCKET).upload(path, file, {
+    cacheControl: '31536000',
+    upsert: false,
+  });
+  if (error) {
+    throw toError(error.message, 'Could not upload room image', 400);
+  }
+
+  const { data } = supabase.storage.from(ROOM_IMAGES_BUCKET).getPublicUrl(path);
+  return { url: data.publicUrl };
+}
+
 function mapRoomRow(row: Record<string, unknown>): ApiRoom {
   const gear = Array.isArray(row.gear) ? (row.gear as unknown[]).map((item) => String(item)) : [];
   const gearEn = Array.isArray(row.gearEn)
@@ -954,6 +1057,7 @@ function mapRoomRow(row: Record<string, unknown>): ApiRoom {
     descriptionEn: String(row.descriptionEn ?? (row as Record<string, unknown>).description_en ?? ''),
     maxMembers: Number(row.maxMembers ?? (row as Record<string, unknown>).max_members ?? 4),
     pricePerMemberHour: rawPrice === null || rawPrice === undefined || rawPrice === '' ? null : Number(rawPrice),
+    imageUrl: normalizeRoomImageUrl(row.imageUrl ?? (row as Record<string, unknown>).image_url),
     gear,
     gearEn,
     accent: String(row.accent ?? 'var(--room-red)'),
@@ -1046,6 +1150,7 @@ export async function createRoom(token: string, draft: RoomDraft): Promise<{ roo
     descriptionEn: String(draft?.descriptionEn ?? ''),
     maxMembers: Math.floor(maxMembers),
     pricePerMemberHour,
+    imageUrl: normalizeRoomImageUrl(draft?.imageUrl),
     gear: splitLines(draft?.gear),
     gearEn: splitLines(draft?.gearEn),
     accent: String(draft?.accent || 'var(--room-red)'),
@@ -1084,6 +1189,7 @@ export async function updateRoom(token: string, roomId: string, draft: RoomDraft
     gearEn: splitLines(draft?.gearEn),
     accent: String(draft?.accent || 'var(--room-red)'),
     active: draft?.active !== false,
+    imageUrl: normalizeRoomImageUrl(draft?.imageUrl),
   };
   const { data, error } = await supabase.from('rooms').update(patch).eq('id', roomId).select().single();
   if (error || !data) throw toError(error?.message, 'Could not update room');

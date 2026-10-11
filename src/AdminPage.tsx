@@ -68,6 +68,7 @@ type RoomFormDraft = {
   descriptionEn: string;
   maxMembers: string;
   pricePerMemberHour: string;
+  imageUrl: string;
   gear: string;
   gearEn: string;
   accent: string;
@@ -90,6 +91,7 @@ const emptyRoomForm: RoomFormDraft = {
   descriptionEn: '',
   maxMembers: '4',
   pricePerMemberHour: '',
+  imageUrl: '',
   gear: '',
   gearEn: '',
   accent: 'var(--room-red)',
@@ -174,6 +176,7 @@ function roomToForm(room: AdminRoom): RoomFormDraft {
     descriptionEn: room.descriptionEn,
     maxMembers: String(room.maxMembers),
     pricePerMemberHour: room.pricePerMemberHour === null || room.pricePerMemberHour === undefined ? '' : String(room.pricePerMemberHour),
+    imageUrl: room.imageUrl ?? '',
     gear: (room.gear ?? []).join('\n'),
     gearEn: (room.gearEn ?? []).join('\n'),
     accent: room.accent || 'var(--room-red)',
@@ -262,6 +265,8 @@ function AdminPage() {
   const [rooms, setRooms] = useState<AdminRoom[]>([]);
   const [services, setServices] = useState<AdminService[]>([]);
   const [roomForm, setRoomForm] = useState<RoomFormDraft>(emptyRoomForm);
+  const [roomImageFile, setRoomImageFile] = useState<File | null>(null);
+  const [roomImageUploading, setRoomImageUploading] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [serviceForm, setServiceForm] = useState<ServiceFormDraft>(emptyServiceForm);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
@@ -592,6 +597,7 @@ function AdminPage() {
   function startEditRoom(room: AdminRoom) {
     setEditingRoomId(room.id);
     setRoomForm(roomToForm(room));
+    setRoomImageFile(null);
     setNotice('');
     setError('');
   }
@@ -599,6 +605,7 @@ function AdminPage() {
   function cancelEditRoom() {
     setEditingRoomId(null);
     setRoomForm(emptyRoomForm);
+    setRoomImageFile(null);
   }
 
   async function handleSaveRoom(event: FormEvent<HTMLFormElement>) {
@@ -623,13 +630,31 @@ function AdminPage() {
     setNotice('');
     setError('');
     try {
+      const roomId = editingRoomId ?? (roomForm.id.trim() || undefined);
+
+      let imageUrl: string | null = roomForm.imageUrl.trim() || null;
+      if (roomImageFile) {
+        setRoomImageUploading(true);
+        try {
+          const uploaded = await api.uploadRoomImage(
+            token,
+            roomId || `sala-${trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'nova'}`,
+            roomImageFile,
+          );
+          imageUrl = uploaded.url;
+        } finally {
+          setRoomImageUploading(false);
+        }
+      }
+
       const draft: api.RoomDraft = {
-        id: editingRoomId ?? (roomForm.id.trim() || undefined),
+        id: roomId,
         name: trimmedName,
         description: roomForm.description,
         descriptionEn: roomForm.descriptionEn,
         maxMembers: Math.floor(maxMembers),
         pricePerMemberHour,
+        imageUrl,
         gear: roomForm.gear,
         gearEn: roomForm.gearEn,
         accent: roomForm.accent,
@@ -1277,7 +1302,7 @@ function AdminPage() {
 
             <form className="admin-pricing-grid" onSubmit={handleSavePricing}>
               <label>
-                Preco por elemento/hora (EUR)
+                Preco por hora — global (EUR)
                 <input
                   type="number"
                   min={0}
@@ -1363,7 +1388,7 @@ function AdminPage() {
                   />
                 </label>
                 <label>
-                  Preco proprio EUR/hora/elemento (vazio = usa preco global)
+                  Preco por hora da sala (EUR) (vazio = usa preco global)
                   <input
                     type="number"
                     min={0}
@@ -1373,6 +1398,34 @@ function AdminPage() {
                     placeholder={`${pricing.perMemberPerHour}`}
                   />
                 </label>
+              </div>
+              <div className="field-row">
+                <label>
+                  Foto da sala (recomendado 1200 × 675 px, 16:9, max 5 MB)
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(event) => setRoomImageFile(event.target.files?.[0] ?? null)}
+                  />
+                </label>
+                {roomImageFile || roomForm.imageUrl ? (
+                  <div className="room-image-preview">
+                    <img
+                      src={roomImageFile ? URL.createObjectURL(roomImageFile) : roomForm.imageUrl}
+                      alt="Pre-visualizacao da foto da sala"
+                    />
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => {
+                        setRoomImageFile(null);
+                        setRoomForm((current) => ({ ...current, imageUrl: '' }));
+                      }}
+                    >
+                      Remover foto
+                    </button>
+                  </div>
+                ) : null}
               </div>
               <label>
                 Descricao (PT)
@@ -1430,8 +1483,12 @@ function AdminPage() {
                 </label>
               </div>
               <div className="admin-user-form-actions">
-                <button type="submit" className="primary-button">
-                  {editingRoomId ? 'Guardar sala' : 'Adicionar sala'}
+                <button type="submit" className="primary-button" disabled={roomImageUploading}>
+                  {roomImageUploading
+                    ? 'A enviar imagem...'
+                    : editingRoomId
+                      ? 'Guardar sala'
+                      : 'Adicionar sala'}
                 </button>
                 {editingRoomId ? (
                   <button type="button" className="secondary-button" onClick={cancelEditRoom}>

@@ -277,6 +277,32 @@ button {
   transform: translateY(-4px);
 }
 
+.room-card-image {
+  display: block;
+  width: calc(100% + 48px);
+  margin: -24px -24px 16px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px 12px 0 0;
+}
+
+.room-image-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.room-image-preview img {
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 .room-card-selected {
   background: rgba(255, 255, 255, 0.08);
 }
