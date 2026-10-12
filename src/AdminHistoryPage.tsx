@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, MessageCircle, Wallet } from 'lucide-react';
+import { AlertTriangle, Check, MessageCircle, Plus, Wallet } from 'lucide-react';
 import * as api from './api';
 
 type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
@@ -577,6 +577,9 @@ function AdminHistoryPage() {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [userActionLoading, setUserActionLoading] = useState(false);
+  const [showNewUserForm, setShowNewUserForm] = useState(false);
+  const [showNewRoomForm, setShowNewRoomForm] = useState(false);
+  const [showNewServiceForm, setShowNewServiceForm] = useState(false);
   const [clearBookingsLoading, setClearBookingsLoading] = useState(false);
   const [clearBookingsModalOpen, setClearBookingsModalOpen] = useState(false);
   const [clearBookingsConfirmation, setClearBookingsConfirmation] = useState('');
@@ -916,6 +919,9 @@ function AdminHistoryPage() {
     setUsers([]);
     setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null });
     setEditUserDraft(null);
+    setShowNewUserForm(false);
+    setShowNewRoomForm(false);
+    setShowNewServiceForm(false);
   };
 
   const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
@@ -943,6 +949,7 @@ function AdminHistoryPage() {
     try {
       await api.createUser(sessionToken, { name, email, password, phone, role: newUserDraft.role, function: newUserDraft.function });
       setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null });
+      setShowNewUserForm(false);
       await loadUsers(sessionToken);
       setCatalogNotice('Utilizador criado. Enviamos um convite por email para o utilizador definir a password.');
     } catch (err) {
@@ -953,6 +960,7 @@ function AdminHistoryPage() {
   };
 
   const startEditUser = (user: AuthUser) => {
+    setShowNewUserForm(false);
     setEditUserDraft({
       id: user.id,
       name: user.name,
@@ -968,6 +976,7 @@ function AdminHistoryPage() {
 
   const cancelEditUser = () => {
     setEditUserDraft(null);
+    setShowNewUserForm(false);
   };
 
   const handleEditUser = async (event: FormEvent<HTMLFormElement>) => {
@@ -1059,6 +1068,7 @@ function AdminHistoryPage() {
   };
 
   const startEditRoom = (room: api.ApiRoom) => {
+    setShowNewRoomForm(false);
     setEditingRoomId(room.id);
     setRoomForm(roomToForm(room));
     setRoomImageFile(null);
@@ -1070,6 +1080,7 @@ function AdminHistoryPage() {
     setEditingRoomId(null);
     setRoomForm(emptyRoomForm);
     setRoomImageFile(null);
+    setShowNewRoomForm(false);
   };
 
   const handleSaveRoom = async (event: FormEvent<HTMLFormElement>) => {
@@ -1158,6 +1169,7 @@ function AdminHistoryPage() {
   };
 
   const startEditService = (service: api.ApiService) => {
+    setShowNewServiceForm(false);
     setEditingServiceId(service.id);
     setServiceForm(serviceToForm(service));
     setCatalogNotice('');
@@ -1167,6 +1179,7 @@ function AdminHistoryPage() {
   const cancelEditService = () => {
     setEditingServiceId(null);
     setServiceForm(emptyServiceForm);
+    setShowNewServiceForm(false);
   };
 
   const handleSaveService = async (event: FormEvent<HTMLFormElement>) => {
@@ -2032,16 +2045,34 @@ function AdminHistoryPage() {
           {loading ? <p className="summary-copy">A carregar...</p> : null}
 
           {isPrivileged && activePanel === 'users' ? (
-            <section className="card admin-section">
-              <div className="section-heading">
-                <p className="eyebrow">Utilizadores</p>
-                <h2>Gestao de utilizadores</h2>
+            <section className="card admin-section catalog-management-section">
+              <div className="section-heading section-heading-row catalog-heading">
+                <div>
+                  <p className="eyebrow">Utilizadores</p>
+                  <h2>Gestao de utilizadores</h2>
+                </div>
+                <span className="catalog-count">{users.length} registados</span>
               </div>
 
-              <form
-                className="admin-create-user"
-                onSubmit={editUserDraft ? handleEditUser : handleCreateUser}
+              <button
+                type="button"
+                className="secondary-button catalog-create-action"
+                onClick={() => {
+                  setEditUserDraft(null);
+                  setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null });
+                  setShowNewUserForm(true);
+                }}
+                disabled={userActionLoading}
               >
+                <Plus size={16} aria-hidden="true" />
+                Criar utilizador
+              </button>
+
+              {showNewUserForm || editUserDraft ? (
+                <form
+                  className="admin-create-user catalog-form"
+                  onSubmit={editUserDraft ? handleEditUser : handleCreateUser}
+                >
                 <label>
                   Nome *
                   <input
@@ -2176,21 +2207,22 @@ function AdminHistoryPage() {
                         ? 'Guardar alteracoes'
                         : 'Criar utilizador'}
                   </button>
-                  {editUserDraft ? (
+                  {editUserDraft || showNewUserForm ? (
                     <button
                       type="button"
                       className="secondary-button"
                       onClick={cancelEditUser}
                       disabled={userActionLoading}
                     >
-                      Cancelar edicao
+                        Cancelar
                     </button>
                   ) : null}
                 </div>
-              </form>
+                </form>
+              ) : null}
 
               {usersLoading ? <p className="summary-copy">A carregar utilizadores...</p> : null}
-              <ul className="admin-user-list">
+              <ul className="admin-user-list catalog-list">
                 {users.map((user) => (
                   <li key={user.id}>
                     <div className="admin-user-card-head">
@@ -2241,12 +2273,15 @@ function AdminHistoryPage() {
           ) : null}
 
           {isPrivileged && activePanel === 'rooms' ? (
-          <section className="card admin-section">
-            <div className="section-heading">
-              <p className="eyebrow">Salas</p>
-              <h2>Gerir salas</h2>
+          <section className="card admin-section catalog-management-section">
+            <div className="section-heading section-heading-row catalog-heading">
+              <div>
+                <p className="eyebrow">Salas</p>
+                <h2>Gerir salas</h2>
+              </div>
+              <span className="catalog-count">{rooms.length} registadas</span>
             </div>
-            <form className="admin-pricing-grid" onSubmit={handleSaveGlobalRate}>
+            <form className="admin-pricing-grid catalog-pricing" onSubmit={handleSaveGlobalRate}>
               <label>
                 Preco por hora global — fallback (EUR)
                 <input
@@ -2262,7 +2297,19 @@ function AdminHistoryPage() {
                 Guardar preco global
               </button>
             </form>
-            <form className="admin-create-user" onSubmit={handleSaveRoom}>
+            <button
+              type="button"
+              className="secondary-button catalog-create-action"
+              onClick={() => {
+                cancelEditRoom();
+                setShowNewRoomForm(true);
+              }}
+            >
+              <Plus size={16} aria-hidden="true" />
+              Criar sala
+            </button>
+            {showNewRoomForm || editingRoomId ? (
+              <form className="admin-create-user catalog-form" onSubmit={handleSaveRoom}>
               {!editingRoomId ? (
                 <label>
                   ID (opcional, ex: sala-blue)
@@ -2399,16 +2446,17 @@ function AdminHistoryPage() {
                       ? 'Guardar sala'
                       : 'Adicionar sala'}
                 </button>
-                {editingRoomId ? (
+                {editingRoomId || showNewRoomForm ? (
                   <button type="button" className="secondary-button" onClick={cancelEditRoom}>
-                    Cancelar edicao
+                    Cancelar
                   </button>
                 ) : null}
               </div>
-            </form>
+              </form>
+            ) : null}
 
             {catalogLoading ? <p className="summary-copy">A carregar salas...</p> : null}
-            <ul className="admin-user-list">
+            <ul className="admin-user-list catalog-list">
               {rooms.map((room) => (
                 <li key={room.id}>
                   <div className="admin-user-card-head">
@@ -2437,12 +2485,27 @@ function AdminHistoryPage() {
         ) : null}
 
         {isPrivileged && activePanel === 'services' ? (
-          <section className="card admin-section">
-            <div className="section-heading">
-              <p className="eyebrow">Servicos</p>
-              <h2>Gerir servicos / extras</h2>
+          <section className="card admin-section catalog-management-section">
+            <div className="section-heading section-heading-row catalog-heading">
+              <div>
+                <p className="eyebrow">Servicos</p>
+                <h2>Gerir servicos / extras</h2>
+              </div>
+              <span className="catalog-count">{services.length} registados</span>
             </div>
-            <form className="admin-create-user" onSubmit={handleSaveService}>
+            <button
+              type="button"
+              className="secondary-button catalog-create-action"
+              onClick={() => {
+                cancelEditService();
+                setShowNewServiceForm(true);
+              }}
+            >
+              <Plus size={16} aria-hidden="true" />
+              Criar servico
+            </button>
+            {showNewServiceForm || editingServiceId ? (
+              <form className="admin-create-user catalog-form" onSubmit={handleSaveService}>
               {!editingServiceId ? (
                 <label>
                   ID (opcional, ex: mistura)
@@ -2505,16 +2568,17 @@ function AdminHistoryPage() {
                 <button type="submit" className="primary-button">
                   {editingServiceId ? 'Guardar servico' : 'Adicionar servico'}
                 </button>
-                {editingServiceId ? (
+                {editingServiceId || showNewServiceForm ? (
                   <button type="button" className="secondary-button" onClick={cancelEditService}>
-                    Cancelar edicao
+                    Cancelar
                   </button>
                 ) : null}
               </div>
-            </form>
+              </form>
+            ) : null}
 
             {catalogLoading ? <p className="summary-copy">A carregar servicos...</p> : null}
-            <ul className="admin-user-list">
+            <ul className="admin-user-list catalog-list">
               {services.map((service) => (
                 <li key={service.id}>
                   <div className="admin-user-card-head">
