@@ -1557,6 +1557,20 @@ export async function updateUser(
     throw new ApiError('Invalid user data provided. Nome, email e telemovel sao obrigatorios.', 400);
   }
 
+  const { data: target } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', draft.id)
+    .maybeSingle();
+
+  if (!target) {
+    throw new ApiError('User not found.', 404);
+  }
+
+  if (normalizeRole(target.role) === 'superuser' && actor.role !== 'superuser') {
+    throw new ApiError('A conta Superuser só pode ser alterada pelo próprio Superuser.', 403);
+  }
+
   const { data, error } = await supabase.rpc('admin_update_user', {
     p_actor: actor.id,
     p_id: draft.id,
@@ -1604,6 +1618,10 @@ export async function deleteUser(token: string, userId: string): Promise<{ messa
 
   if (!target) {
     throw new ApiError('User not found.', 404);
+  }
+
+  if (normalizeRole(target.role) === 'superuser') {
+    throw new ApiError('A conta Superuser está protegida e não pode ser apagada.', 403);
   }
 
   const { error } = await supabase.rpc('admin_delete_user', {

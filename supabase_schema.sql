@@ -182,6 +182,16 @@ begin
     raise exception 'User not found.';
   end if;
 
+  if v_profile.role = 'superuser' and not exists (
+    select 1 from public.profiles where id = p_actor and role = 'superuser'
+  ) then
+    raise exception 'Only the Superuser can update the protected Superuser account.';
+  end if;
+
+  if v_profile.role = 'superuser' and p_role <> 'superuser' then
+    raise exception 'Cannot change the protected Superuser role.';
+  end if;
+
   -- Protecção: não remover o último privilegiado (superuser/admin) do sistema.
   if v_profile.role in ('superuser', 'admin') and p_role not in ('superuser', 'admin') then
     if p_actor = p_id then
@@ -232,6 +242,10 @@ begin
   select * into v_profile from public.profiles where id = p_id;
   if not found then
     raise exception 'User not found.';
+  end if;
+
+  if v_profile.role = 'superuser' then
+    raise exception 'Cannot delete the protected Superuser account.';
   end if;
 
   if v_profile.role in ('superuser', 'admin')

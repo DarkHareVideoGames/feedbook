@@ -540,8 +540,8 @@ function AdminHistoryPage() {
   const [betaEnabled, setBetaEnabled] = useState(true);
   const [token, setToken] = useState('');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [loginEmail, setLoginEmail] = useState('admin@feedbook.local');
-  const [loginPassword, setLoginPassword] = useState('admin123');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -1011,17 +1011,21 @@ function AdminHistoryPage() {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = async (user: AuthUser) => {
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
     if (!sessionToken || !isPrivileged || userActionLoading) return;
+    if (user.role === 'superuser') {
+      setError('A conta Superuser está protegida e não pode ser apagada.');
+      return;
+    }
     if (!window.confirm('Apagar este utilizador?')) return;
 
     setCatalogNotice('');
     setError('');
     setUserActionLoading(true);
     try {
-      const payload = await api.deleteUser(sessionToken, userId);
-      if (editUserDraft?.id === userId) setEditUserDraft(null);
+      const payload = await api.deleteUser(sessionToken, user.id);
+      if (editUserDraft?.id === user.id) setEditUserDraft(null);
       await loadUsers(sessionToken);
       setCatalogNotice(payload.message || 'Utilizador apagado com sucesso.');
     } catch (err) {
@@ -2113,6 +2117,7 @@ function AdminHistoryPage() {
                   Perfil
                   <select
                     value={editUserDraft ? editUserDraft.role : newUserDraft.role}
+                    disabled={editUserDraft?.role === 'superuser'}
                     onChange={(event) =>
                       editUserDraft
                         ? setEditUserDraft((current) =>
@@ -2190,33 +2195,42 @@ function AdminHistoryPage() {
                   <li key={user.id}>
                     <div className="admin-user-card-head">
                       <strong>{user.name}</strong>
-                      <span className="booking-id-chip">{user.id}</span>
                     </div>
                     <span>{user.email}</span>
-                    <span>
-                      {roleLabel[user.role]}
-                      {user.function ? ` · ${staffFunctionLabels[user.function]}` : ''}
-                    </span>
-                    <div className="team-actions">
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() => startEditUser(user)}
-                        disabled={userActionLoading}
-                      >
-                        Editar
-                      </button>
-                      {currentUser?.id !== user.id ? (
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() => void handleDeleteUser(user.id)}
-                          disabled={userActionLoading}
-                        >
-                          Apagar
-                        </button>
+                    <div className="admin-user-badges" aria-label="Perfil e função">
+                      <span className={`admin-user-badge admin-user-role-${user.role}`}>
+                        {user.role === 'superuser' ? 'Superuser — conta protegida' : roleLabel[user.role]}
+                      </span>
+                      {user.function ? (
+                        <span className="admin-user-badge admin-user-function-badge">
+                          {staffFunctionLabels[user.function]}
+                        </span>
                       ) : null}
                     </div>
+                    {user.role === 'superuser' && currentUser?.role !== 'superuser' ? null : (
+                      <div className="team-actions">
+                        <>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => startEditUser(user)}
+                            disabled={userActionLoading}
+                          >
+                            Editar
+                          </button>
+                          {user.role !== 'superuser' && currentUser?.id !== user.id ? (
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => void handleDeleteUser(user)}
+                              disabled={userActionLoading}
+                            >
+                              Apagar
+                            </button>
+                          ) : null}
+                        </>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -2399,7 +2413,6 @@ function AdminHistoryPage() {
                 <li key={room.id}>
                   <div className="admin-user-card-head">
                     <strong>{room.name}</strong>
-                    <span className="booking-id-chip">{room.id}</span>
                     {!room.active ? <span className="booking-id-chip">inativa</span> : null}
                   </div>
                   <span>{room.description || 'Sem descricao'}</span>
@@ -2506,7 +2519,6 @@ function AdminHistoryPage() {
                 <li key={service.id}>
                   <div className="admin-user-card-head">
                     <strong>{service.name}</strong>
-                    <span className="booking-id-chip">{service.id}</span>
                     {!service.active ? <span className="booking-id-chip">inativo</span> : null}
                   </div>
                   <span>{service.nameEn || 'Sem nome EN'}</span>

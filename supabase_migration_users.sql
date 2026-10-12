@@ -90,6 +90,16 @@ begin
     raise exception 'User not found.';
   end if;
 
+  if v_profile.role = 'superuser' and not exists (
+    select 1 from public.profiles where id = p_actor and role = 'superuser'
+  ) then
+    raise exception 'Only the Superuser can update the protected Superuser account.';
+  end if;
+
+  if v_profile.role = 'superuser' and p_role <> 'superuser' then
+    raise exception 'Cannot change the protected Superuser role.';
+  end if;
+
   if v_profile.role in ('superuser', 'admin') and p_role not in ('superuser', 'admin') then
     if p_actor = p_id then
       raise exception 'Cannot remove admin role from your own account.';
@@ -128,7 +138,7 @@ end;
 $$;
 
 -- ------------------------------------------------------------
--- 5. admin_delete_user — protege o último privilegiado
+-- 5. admin_delete_user — protege a conta Superuser e o último privilegiado
 -- ------------------------------------------------------------
 create or replace function public.admin_delete_user(p_actor uuid, p_id uuid)
 returns void
@@ -142,6 +152,10 @@ begin
   select * into v_profile from public.profiles where id = p_id;
   if not found then
     raise exception 'User not found.';
+  end if;
+
+  if v_profile.role = 'superuser' then
+    raise exception 'Cannot delete the protected Superuser account.';
   end if;
 
   if v_profile.role in ('superuser', 'admin')
@@ -164,16 +178,15 @@ grant execute on function public.admin_update_user(uuid, uuid, text, text, text,
 grant execute on function public.admin_delete_user(uuid, uuid) to anon, authenticated;
 
 -- ============================================================
--- 6. (OPCIONAL) Promover o administrador root a SUPERUSER e
---    dar-lhe uma função. Ajusta o email se necessário.
+-- 6. Promover o administrador root a SUPERUSER e definir a função.
+--    Ajusta o email se necessário antes de executar a migração.
 --    Nota: o SUPERUSER também é reconhecido pelo email definido
 --    no código (SUPERUSER_EMAIL / VITE_SUPERUSER_EMAIL), com
 --    fallback no login — por isso este passo é só para deixar
 --    explícito na base de dados.
 -- ============================================================
--- update public.profiles set role = 'superuser'
---  where email = 'pedroveiga.box@gmail.com';
---
--- update public.profiles set "function" = 'produtor-executivo'
---  where email = 'pedroveiga.box@gmail.com';
+update public.profiles
+   set role = 'superuser',
+       "function" = 'diretor-tecnico'
+ where lower(email) = 'pedroveiga.box@gmail.com';
 
