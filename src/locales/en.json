@@ -90,6 +90,7 @@
     "submitting": "Submitting booking...",
     "apiError": "Could not reach the backend. Please try again.",
     "validationError": "Please fill in all required fields (marked with *).",
+    "slotUnavailableError": "The selected slot is no longer available (in the past or already booked). Please pick another date and time.",
     "bookingIdLabel": "Booking number:",
     "bookingIdNote": "Save this number for future reference.", "noExtras": "No extra services — rehearsal only.",
     "teamTitle": "Team confirmation",

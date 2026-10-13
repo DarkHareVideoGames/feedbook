@@ -322,6 +322,15 @@ function App() {
     pricing.perMemberPerHour,
   );
   const selectedStartHour = hourLabelToNumber(selectedSlot);
+  // O slot escolhido continua válido? (antecedência mínima, fecho e colisões).
+  // Usado para bloquear reservas em horários já passados. (Issue #15)
+  const selectedSlotAvailable = isSlotAvailable(
+    selectedSlot,
+    duration,
+    selectedDate,
+    selectedRoomId,
+    teamBookings,
+  );
   const extras = useMemo<Extra[]>(
     () =>
       Object.entries(pricing.extras ?? {}).map(([id, price]) => {
@@ -504,6 +513,14 @@ function App() {
       setErrorMessage(translations.booking.termsError ?? 'Tens de aceitar os Termos e Condicoes.');
       const termsEl = document.getElementById('field-terms');
       if (termsEl) termsEl.focus();
+      return;
+    }
+
+    // Bloqueia reservas em horários já passados (ou slots entretanto ocupados):
+    // garante que, mesmo sem mexer nos dropdowns, não se submete um slot inválido. (Issue #15)
+    if (!selectedSlotAvailable) {
+      setErrorMessage(translations.booking.slotUnavailableError);
+      setBookingStep('date');
       return;
     }
 
@@ -807,11 +824,22 @@ function App() {
               </div>
               </div>
 
+              {!selectedSlotAvailable ? (
+                <div className="offline-banner" role="alert">
+                  <span>⚠ {translations.booking.slotUnavailableError}</span>
+                </div>
+              ) : null}
+
               <div className="booking-nav">
                 <button type="button" className="secondary-button" onClick={goToPreviousStep}>
                   {translations.booking.back}
                 </button>
-                <button type="button" className="primary-button" onClick={goToNextStep}>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={goToNextStep}
+                  disabled={!selectedSlotAvailable}
+                >
                   {translations.booking.next}
                 </button>
               </div>
