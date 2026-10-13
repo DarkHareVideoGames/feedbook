@@ -733,6 +733,13 @@ textarea:focus {
   filter: brightness(1.08);
 }
 
+.primary-button:disabled {
+  background: rgba(255, 255, 255, 0.06);
+  color: #626975;
+  cursor: not-allowed;
+  filter: none;
+}
+
 .secondary-button {
   background: rgba(255, 255, 255, 0.07);
   color: var(--text-main);
@@ -788,6 +795,67 @@ textarea:focus {
 .error-message {
   margin: 0;
   color: #fca5a5;
+}
+
+.booking-terms {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.booking-terms-details {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  padding: 12px 16px;
+}
+
+.booking-terms-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.booking-terms-body {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.booking-terms-body p {
+  margin: 0 0 8px;
+}
+
+.booking-terms-body ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.booking-terms-subtitle {
+  margin: 0 0 8px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.booking-terms-footer {
+  margin: 10px 0 0;
+}
+
+.booking-terms-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.booking-terms-checkbox input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .required-star {
