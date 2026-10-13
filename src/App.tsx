@@ -669,7 +669,7 @@ function App() {
 
         {bookingStep === 'date' || bookingStep === 'extras' || bookingStep === 'details' ? (
           <section className="booking-grid">
-            <form className="card booking-form" onSubmit={handleSubmit} autoComplete="on">
+            <form className="card booking-form" onSubmit={handleSubmit} autoComplete="off">
               <div className="section-heading">
                 <h2>{translations.booking.title}</h2>
               </div>
@@ -846,7 +846,7 @@ function App() {
                   id="field-bandName"
                   name="bandName"
                   type="text"
-                  autoComplete="organization"
+                  autoComplete="off"
                   placeholder={translations.booking.bandNamePlaceholder}
                 />
               </label>
@@ -860,7 +860,7 @@ function App() {
                     type="text"
                     required
                     aria-required="true"
-                    autoComplete="name"
+                    autoComplete="off"
                     placeholder={translations.booking.contactNamePlaceholder}
                   />
                 </label>
@@ -873,7 +873,7 @@ function App() {
                     type="tel"
                     required
                     aria-required="true"
-                    autoComplete="tel"
+                    autoComplete="off"
                     inputMode="tel"
                     placeholder={translations.booking.contactPhonePlaceholder}
                   />
@@ -887,7 +887,7 @@ function App() {
                     type="email"
                     required
                     aria-required="true"
-                    autoComplete="email"
+                    autoComplete="off"
                     autoCapitalize="none"
                     spellCheck={false}
                     placeholder={translations.booking.emailPlaceholder}

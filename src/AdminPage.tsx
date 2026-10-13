@@ -872,6 +872,7 @@ function AdminPage() {
                 Email
                 <input
                   type="email"
+                  autoComplete="off"
                   value={loginEmail}
                   onChange={(event) => setLoginEmail(event.target.value)}
                 />
@@ -881,6 +882,7 @@ function AdminPage() {
                 Password
                 <input
                   type="password"
+                  autoComplete="off"
                   value={loginPassword}
                   onChange={(event) => setLoginPassword(event.target.value)}
                 />
@@ -974,6 +976,7 @@ function AdminPage() {
           <div className="admin-search-row">
             <input
               type="search"
+              autoComplete="off"
               placeholder="Pesquisar por n.º FB-, banda ou contacto..."
               value={bookingSearch}
               onChange={(e) => setBookingSearch(e.target.value)}
@@ -1175,6 +1178,7 @@ function AdminPage() {
                 Nome
                 <input
                   type="text"
+                  autoComplete="off"
                   value={editUserDraft ? editUserDraft.name : newUserDraft.name}
                   onChange={(event) =>
                     editUserDraft
@@ -1190,6 +1194,7 @@ function AdminPage() {
                 Email
                 <input
                   type="email"
+                  autoComplete="off"
                   value={editUserDraft ? editUserDraft.email : newUserDraft.email}
                   onChange={(event) =>
                     editUserDraft
@@ -1205,6 +1210,7 @@ function AdminPage() {
                 Telemovel
                 <input
                   type="tel"
+                  autoComplete="off"
                   placeholder="Ex: 912345678"
                   value={editUserDraft ? editUserDraft.phone : newUserDraft.phone}
                   onChange={(event) =>
@@ -1221,6 +1227,7 @@ function AdminPage() {
                 Password
                 <input
                   type="text"
+                  autoComplete="off"
                   placeholder={editUserDraft ? 'Deixar vazio para manter' : ''}
                   value={editUserDraft ? editUserDraft.password : newUserDraft.password}
                   onChange={(event) =>
@@ -1307,6 +1314,7 @@ function AdminPage() {
                   type="number"
                   min={0}
                   step="0.5"
+                  autoComplete="off"
                   value={pricingDraft.perMemberPerHour}
                   onChange={(event) =>
                     setPricingDraft((current) => ({ ...current, perMemberPerHour: event.target.value }))
@@ -1324,6 +1332,7 @@ function AdminPage() {
                       type="number"
                       min={0}
                       step="1"
+                      autoComplete="off"
                       value={rawValue}
                       onChange={(event) =>
                         setPricingDraft((current) => ({
@@ -1359,6 +1368,7 @@ function AdminPage() {
                   ID (opcional, ex: sala-blue)
                   <input
                     type="text"
+                    autoComplete="off"
                     value={roomForm.id}
                     onChange={(event) => setRoomForm((current) => ({ ...current, id: event.target.value }))}
                     placeholder="gerado a partir do nome"
@@ -1370,6 +1380,7 @@ function AdminPage() {
                 <input
                   type="text"
                   required
+                  autoComplete="off"
                   value={roomForm.name}
                   onChange={(event) => setRoomForm((current) => ({ ...current, name: event.target.value }))}
                   placeholder="SALA BLUE"
@@ -1383,6 +1394,7 @@ function AdminPage() {
                     min={1}
                     max={30}
                     step={1}
+                    autoComplete="off"
                     value={roomForm.maxMembers}
                     onChange={(event) => setRoomForm((current) => ({ ...current, maxMembers: event.target.value }))}
                   />
@@ -1393,6 +1405,7 @@ function AdminPage() {
                     type="number"
                     min={0}
                     step="0.5"
+                    autoComplete="off"
                     value={roomForm.pricePerMemberHour}
                     onChange={(event) => setRoomForm((current) => ({ ...current, pricePerMemberHour: event.target.value }))}
                     placeholder={`${pricing.perMemberPerHour}`}
@@ -1542,6 +1555,7 @@ function AdminPage() {
                   ID (opcional, ex: mistura)
                   <input
                     type="text"
+                    autoComplete="off"
                     value={serviceForm.id}
                     onChange={(event) => setServiceForm((current) => ({ ...current, id: event.target.value }))}
                     placeholder="gerado a partir do nome"
@@ -1554,6 +1568,7 @@ function AdminPage() {
                   <input
                     type="text"
                     required
+                    autoComplete="off"
                     value={serviceForm.name}
                     onChange={(event) => setServiceForm((current) => ({ ...current, name: event.target.value }))}
                   />
@@ -1562,6 +1577,7 @@ function AdminPage() {
                   Nome (EN)
                   <input
                     type="text"
+                    autoComplete="off"
                     value={serviceForm.nameEn}
                     onChange={(event) => setServiceForm((current) => ({ ...current, nameEn: event.target.value }))}
                   />
@@ -1582,6 +1598,7 @@ function AdminPage() {
                     type="number"
                     min={0}
                     step="1"
+                    autoComplete="off"
                     value={serviceForm.price}
                     onChange={(event) => setServiceForm((current) => ({ ...current, price: event.target.value }))}
                   />
