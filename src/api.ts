@@ -78,6 +78,14 @@ export type ApiBooking = {
   paymentConfirmedBy?: ActorStamp | null;
   rescheduledBy?: ActorStamp | null;
   assignedCollaborator?: { id: string; name: string } | null;
+  // Pessoa que assegura o ensaio, congelada no momento em que o pagamento
+  // foi confirmado (Issue #8). Espelha assignedCollaborator; nao e limpo
+  // quando o ensaio muda de responsavel, preservando o vinculo do pagamento.
+  paymentAssignee?: { id: string; name: string } | null;
+  // Pessoa que RECEBEU o pagamento, escolhida no modal de confirmacao
+  // (omissao: quem confirma no sistema). Distinta de paymentConfirmedBy,
+  // que regista apenas quem executou a acao (auditoria).
+  paymentReceivedBy?: { id: string; name: string } | null;
   createdAt?: string;
 };
 
@@ -155,6 +163,8 @@ export type FinanceBooking = {
   extras?: string[];
   extrasBreakdown?: Array<{ key: string; amount: number }>;
   confirmedBy?: ActorStamp | null;
+  paymentAssignee?: { id: string; name: string } | null;
+  paymentReceivedBy?: { id: string; name: string } | null;
 };
 
 export type FinanceMonthSummary = {
@@ -694,6 +704,7 @@ export async function bookingAction(
     duration?: number;
     amount?: number;
     assignedCollaboratorId?: string;
+    paymentReceivedById?: string;
   },
 ): Promise<{ booking: ApiBooking }> {
   const actor = await requireActor(token, ['superuser', 'admin', 'collaborator', 'technician']);
@@ -841,6 +852,29 @@ export async function bookingAction(
     patch.paymentStatus = 'received';
     patch.paymentConfirmedBy = actorStamp;
     patch.paymentConfirmedAt = now;
+    // Issue #8: o pagamento fica vinculado a pessoa que assegura o ensaio
+    // (responsavel escolhido no dropdown "Assegura:" na confirmacao do
+    // ensaio), e nao a quem clicou em confirmar o pagamento.
+    patch.paymentAssignee = booking.assignedCollaborator ?? null;
+
+    // Quem RECEBEU o pagamento: por omissao quem confirma no sistema, mas
+    // pode ser outra pessoa escolhida no dropdown do modal de pagamento.
+    const requestedReceiverId = String(body?.paymentReceivedById || '').trim();
+    const receiverId = requestedReceiverId || actor.id;
+    let receiverName = actor.name;
+    if (receiverId !== actor.id) {
+      const { data: receiverProfile } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .eq('id', receiverId)
+        .maybeSingle();
+      if (!receiverProfile) {
+        throw new ApiError('Quem recebeu o pagamento nao encontrado.', 400);
+      }
+      receiverName = String(receiverProfile.name || '');
+    }
+    patch.paymentReceivedBy = { id: receiverId, name: receiverName };
+
     patch.amount = Number.isFinite(Number(body?.amount))
       ? Number(body?.amount)
       : Number(
@@ -856,6 +890,8 @@ export async function bookingAction(
       ...baseDetails,
       montante: patch.amount,
       confirmadoPor: actor.name,
+      assegura: booking.assignedCollaborator?.name || '-',
+      recebidoPor: receiverName,
     };
   } else {
     throw new ApiError('Unknown booking action.', 400);
@@ -944,6 +980,8 @@ export async function adminFinance(token: string): Promise<{
         extras,
         extrasBreakdown,
         confirmedBy: booking.paymentConfirmedBy,
+        paymentAssignee: booking.paymentAssignee ?? null,
+        paymentReceivedBy: booking.paymentReceivedBy ?? null,
       };
 
       if (paymentStatus === 'received') {

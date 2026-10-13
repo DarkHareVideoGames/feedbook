@@ -80,6 +80,8 @@ type FinanceBooking = {
   extras?: string[];
   extrasBreakdown?: Array<{ key: string; amount: number }>;
   confirmedBy?: { id: string; name: string; role: string; at: string };
+  paymentAssignee?: { id: string; name: string } | null;
+  paymentReceivedBy?: { id: string; name: string } | null;
 };
 
 type FinanceMonthSummary = {
@@ -232,6 +234,8 @@ type PaymentDraft = {
   // Valor esperado (string para edicao no input) e valor recebido confirmado.
   expected: string;
   received: string;
+  // Quem recebeu o pagamento (id do utilizador). Omissao: quem confirma.
+  receivedById: string;
 };
 
 function isPastConfirmed(booking: PastBooking): boolean {
@@ -1293,6 +1297,8 @@ function AdminHistoryPage() {
       bookingId,
       expected: String(Number(booking.amount || 0).toFixed(2)),
       received: String(Number(booking.amount || 0).toFixed(2)),
+      // Por omissao, quem confirma o recebimento e quem recebeu.
+      receivedById: currentUser?.id || '',
     });
   };
 
@@ -1316,6 +1322,7 @@ function AdminHistoryPage() {
     await withActionLock(paymentDraft.bookingId, async () => {
       await api.bookingAction(token, paymentDraft.bookingId, 'confirm-payment', {
         amount: received,
+        paymentReceivedById: paymentDraft.receivedById || undefined,
       });
 
       await loadHistory(token);
@@ -1669,7 +1676,7 @@ function AdminHistoryPage() {
         entry.paymentStatus === 'refunded' ? 'Devolvido' : 'Recebido',
         entry.bandName || 'Banda',
         formatCurrency(entry.amount),
-        entry.confirmedBy?.name || '-',
+        entry.paymentReceivedBy?.name || '-',
       ]);
 
       autoTable(doc, {
@@ -1705,7 +1712,7 @@ function AdminHistoryPage() {
       cursorY = ((doc as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY) ?? cursorY;
       cursorY += 5;
 
-      const collaboratorSummaryRows = summarizeFinanceEntries(month.bookings, (entry) => entry.confirmedBy?.name || 'Sem colaborador')
+      const collaboratorSummaryRows = summarizeFinanceEntries(month.bookings, (entry) => entry.paymentReceivedBy?.name || 'Sem colaborador')
         .map((item) => [item.name, String(item.count), formatCurrency(item.total)]);
       const bandSummaryRows = summarizeFinanceEntries(month.bookings, (entry) => entry.bandName || 'Sem banda')
         .map((item) => [item.name, String(item.count), formatCurrency(item.total)]);
@@ -2678,7 +2685,7 @@ function AdminHistoryPage() {
                                 <div className="finance-breakdown-card">
                                   <span className="finance-breakdown-label">Por colaborador</span>
                                   <ul className="finance-breakdown-list">
-                                    {summarizeFinanceEntries(receivedEntries, (entry) => entry.confirmedBy?.name || 'Sem colaborador').map((item) => (
+                                    {summarizeFinanceEntries(receivedEntries, (entry) => entry.paymentReceivedBy?.name || 'Sem colaborador').map((item) => (
                                       <li key={`received-collaborator-${item.name}`}>
                                         <span>{item.name}</span>
                                         <strong>{formatCurrency(item.total)}</strong>
@@ -2753,7 +2760,7 @@ function AdminHistoryPage() {
                                   <div className="finance-print-breakdown-card">
                                     <span>Por colaborador</span>
                                     <ul>
-                                      {summarizeFinanceEntries(receivedEntries, (entry) => entry.confirmedBy?.name || 'Sem colaborador').map((item) => (
+                                      {summarizeFinanceEntries(receivedEntries, (entry) => entry.paymentReceivedBy?.name || 'Sem colaborador').map((item) => (
                                         <li key={`print-received-collaborator-${item.name}`}>
                                           <span>{item.name}</span>
                                           <strong>{formatCurrency(item.total)}</strong>
@@ -2789,7 +2796,7 @@ function AdminHistoryPage() {
                                             <div className="finance-print-payment-field"><span>Estado</span><strong>Recebido</strong></div>
                                             <div className="finance-print-payment-field"><span>Banda</span><strong>{entry.bandName || 'Banda'}</strong></div>
                                             <div className="finance-print-payment-field"><span>Valor</span><strong>{formatCurrency(entry.amount)}</strong></div>
-                                            <div className="finance-print-payment-field"><span>Recebido por</span><strong>{entry.confirmedBy?.name || '-'}</strong></div>
+                                            <div className="finance-print-payment-field"><span>Recebido por</span><strong>{entry.paymentReceivedBy?.name || '-'}</strong></div>
                                           </div>
                                         ))}
                                       </div>
@@ -3327,6 +3334,27 @@ function AdminHistoryPage() {
                   autoFocus
                   required
                 />
+              </label>
+              <label>
+                Quem recebeu
+                <select
+                  className="assignee-select"
+                  value={paymentDraft.receivedById}
+                  onChange={(event) =>
+                    setPaymentDraft((current) =>
+                      current ? { ...current, receivedById: event.target.value } : current,
+                    )
+                  }
+                >
+                  {!users.some((user) => user.id === paymentDraft.receivedById) ? (
+                    <option value={currentUser?.id || ''}>{currentUser?.name || 'Eu'}</option>
+                  ) : null}
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <div className="admin-modal-actions">
