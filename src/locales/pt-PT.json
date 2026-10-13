@@ -97,7 +97,21 @@
     "teamLoading": "A carregar...",
     "teamEmpty": "Sem reservas pendentes neste momento.",
     "teamConfirm": "Confirmar",
-    "teamReject": "Rejeitar"
+    "teamReject": "Rejeitar",
+    "termsTitle": "Termos e Condições",
+    "termsSubtitle": "Feedback — Reserva de Ensaios",
+    "termsIntro": "Ao confirmar uma reserva, declaro que:",
+    "termsItems": [
+      { "term": "Compromisso", "text": "A reserva corresponde a um horário que me comprometo a respeitar." },
+      { "term": "Pontualidade", "text": "Comprometo-me a cumprir os horários reservados, incluindo o início e o fim da sessão." },
+      { "term": "Cancelamentos", "text": "Se não puder comparecer, devo cancelar a reserva com a antecedência prevista pelas regras do espaço." },
+      { "term": "Responsabilidade", "text": "Comprometo-me a utilizar o espaço e o equipamento de forma responsável e a reportar qualquer dano ou anomalia." },
+      { "term": "Pagamento", "text": "Aceito as condições de pagamento aplicáveis à reserva, apresentadas antes da sua confirmação." },
+      { "term": "Utilização do espaço", "text": "Comprometo-me a respeitar as regras do espaço, os restantes utilizadores e os limites de utilização estabelecidos." }
+    ],
+    "termsFooter": "Ao aceitar estes termos, confirmo que li e compreendi as condições aplicáveis à minha reserva.",
+    "termsAcceptLabel": "Li e aceito os Termos e Condições.",
+    "termsError": "Tens de aceitar os Termos e Condições para pedir a marcação."
   },
   "slots": {
     "open": "Livre",

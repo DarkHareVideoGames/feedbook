@@ -287,6 +287,7 @@ function App() {
   const [teamBookings, setTeamBookings] = useState<TeamBooking[]>([]);
   const [bookingStep, setBookingStep] = useState<BookingStep>('room');
   const [betaEnabled, setBetaEnabled] = useState(true);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const confirmationRef = useRef<HTMLDivElement>(null);
 
   const currency = useMemo(
@@ -496,6 +497,13 @@ function App() {
       // Focus the first missing field
       const firstEl = document.getElementById(`field-${missing[0]}`);
       if (firstEl) firstEl.focus();
+      return;
+    }
+
+    if (!acceptedTerms) {
+      setErrorMessage(translations.booking.termsError ?? 'Tens de aceitar os Termos e Condicoes.');
+      const termsEl = document.getElementById('field-terms');
+      if (termsEl) termsEl.focus();
       return;
     }
 
@@ -906,6 +914,40 @@ function App() {
                 />
               </label>
 
+              <div className="booking-terms">
+                <details className="booking-terms-details">
+                  <summary>{translations.booking.termsTitle}</summary>
+                  <div className="booking-terms-body">
+                    <p className="booking-terms-subtitle">{translations.booking.termsSubtitle}</p>
+                    <p>{translations.booking.termsIntro}</p>
+                    <ul>
+                      {translations.booking.termsItems.map((item, index) => (
+                        <li key={index}>
+                          <strong>{item.term}</strong> — {item.text}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="booking-terms-footer">{translations.booking.termsFooter}</p>
+                  </div>
+                </details>
+                <label className="booking-terms-checkbox">
+                  <input
+                    id="field-terms"
+                    name="terms"
+                    type="checkbox"
+                    required
+                    aria-required="true"
+                    autoComplete="off"
+                    checked={acceptedTerms}
+                    onChange={(event) => setAcceptedTerms(event.target.checked)}
+                  />
+                  <span>
+                    {translations.booking.termsAcceptLabel}{' '}
+                    <span className="required-star">*</span>
+                  </span>
+                </label>
+              </div>
+
               {backendOffline ? (
                 <div className="offline-banner" role="alert">
                   <span>⚠ Servico temporariamente indisponivel.</span>
@@ -923,7 +965,7 @@ function App() {
                 <button type="button" className="secondary-button" onClick={goToPreviousStep}>
                   {translations.booking.back}
                 </button>
-                <button className="primary-button" type="submit" disabled={isSubmitting || backendOffline}>
+                <button className="primary-button" type="submit" disabled={isSubmitting || backendOffline || !acceptedTerms}>
                   {isSubmitting ? translations.booking.submitting : translations.booking.submit}
                 </button>
               </div>

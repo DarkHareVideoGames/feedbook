@@ -97,7 +97,21 @@
     "teamLoading": "Loading...",
     "teamEmpty": "No pending bookings right now.",
     "teamConfirm": "Confirm",
-    "teamReject": "Reject"
+    "teamReject": "Reject",
+    "termsTitle": "Terms and Conditions",
+    "termsSubtitle": "Feedback — Rehearsal Booking",
+    "termsIntro": "By confirming a booking, I declare that:",
+    "termsItems": [
+      { "term": "Commitment", "text": "The booking corresponds to a time slot that I commit to respecting." },
+      { "term": "Punctuality", "text": "I commit to meeting the reserved times, including the start and end of the session." },
+      { "term": "Cancellations", "text": "If I cannot attend, I must cancel the booking within the notice period set by the venue's rules." },
+      { "term": "Responsibility", "text": "I commit to using the space and equipment responsibly and to reporting any damage or anomaly." },
+      { "term": "Payment", "text": "I accept the payment terms applicable to the booking, presented before its confirmation." },
+      { "term": "Use of the space", "text": "I commit to respecting the venue's rules, other users, and the established usage limits." }
+    ],
+    "termsFooter": "By accepting these terms, I confirm that I have read and understood the conditions applicable to my booking.",
+    "termsAcceptLabel": "I have read and accept the Terms and Conditions.",
+    "termsError": "You must accept the Terms and Conditions to request the booking."
   },
   "slots": {
     "open": "Open",
