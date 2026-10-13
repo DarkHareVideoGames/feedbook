@@ -675,7 +675,31 @@ function App() {
               </div>
 
             {bookingStep === 'date' ? (
-              <div className="field-row booking-step">
+              <div className="booking-step">
+              <div className="duration-lead">
+                <label>
+                  {translations.booking.durationLabel}
+                  <select
+                    value={duration}
+                    onChange={(event) => setDuration(Number(event.target.value))}
+                    className="duration-select"
+                  >
+                    {durations.map((value) => (
+                      <option
+                        key={value}
+                        value={value}
+                        disabled={!canSessionFit(selectedStartHour, value)}
+                      >
+                        {formatTemplate(translations.booking.durationOption, { count: value })}
+                        {' — '}
+                        {currency.format(calculateRehearsalPrice(value, selectedRoomPricePerHour))}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="field-row booking-datetime-row">
               <div className="calendar-field">
                 <div className="calendar-picker">
                   <div className="calendar-toolbar">
@@ -747,54 +771,32 @@ function App() {
                 </div>
               </div>
 
-              <div className="duration-field">
+              <div className="starttime-field">
                 <label>
-                  {translations.booking.durationLabel}
+                  {translations.booking.startTimeLabel}
                   <select
-                    value={duration}
-                    onChange={(event) => setDuration(Number(event.target.value))}
-                    className="duration-select"
+                    value={selectedSlot}
+                    onChange={(event) => setSelectedSlot(event.target.value)}
+                    className="starttime-select"
                   >
-                    {durations.map((value) => (
-                      <option
-                        key={value}
-                        value={value}
-                        disabled={!canSessionFit(selectedStartHour, value)}
-                      >
-                        {formatTemplate(translations.booking.durationOption, { count: value })}
-                        {' — '}
-                        {currency.format(calculateRehearsalPrice(value, selectedRoomPricePerHour))}
-                      </option>
-                    ))}
+                    {startSlotLabels.map((slotLabel) => {
+                      const isUnavailable = !isSlotAvailable(
+                        slotLabel,
+                        duration,
+                        selectedDate,
+                        selectedRoomId,
+                        teamBookings,
+                      );
+                      return (
+                        <option key={slotLabel} value={slotLabel} disabled={isUnavailable}>
+                          {slotLabel}
+                          {isUnavailable ? ` — ${translations.slots.unavailable}` : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </label>
-
-                <div className="starttime-field">
-                  <label>
-                    {translations.booking.startTimeLabel}
-                    <select
-                      value={selectedSlot}
-                      onChange={(event) => setSelectedSlot(event.target.value)}
-                      className="starttime-select"
-                    >
-                      {startSlotLabels.map((slotLabel) => {
-                        const isUnavailable = !isSlotAvailable(
-                          slotLabel,
-                          duration,
-                          selectedDate,
-                          selectedRoomId,
-                          teamBookings,
-                        );
-                        return (
-                          <option key={slotLabel} value={slotLabel} disabled={isUnavailable}>
-                            {slotLabel}
-                            {isUnavailable ? ` — ${translations.slots.unavailable}` : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </label>
-                </div>
+              </div>
               </div>
 
               <div className="booking-nav">

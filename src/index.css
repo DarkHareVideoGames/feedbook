@@ -466,6 +466,17 @@ button {
   gap: 8px;
 }
 
+.duration-lead {
+  display: grid;
+  gap: 8px;
+  max-width: 320px;
+}
+
+.booking-datetime-row {
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.85fr);
+  align-items: start;
+}
+
 .duration-select,
 .starttime-select {
   width: 100%;
