@@ -116,7 +116,7 @@ export default function SetPasswordModal() {
                 type="password"
                 required
                 minLength={6}
-                autoComplete="new-password"
+                autoComplete="off"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
@@ -127,7 +127,7 @@ export default function SetPasswordModal() {
                 type="password"
                 required
                 minLength={6}
-                autoComplete="new-password"
+                autoComplete="off"
                 value={confirm}
                 onChange={(event) => setConfirm(event.target.value)}
               />

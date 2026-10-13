@@ -1866,6 +1866,7 @@ function AdminHistoryPage() {
                 Email
                 <input
                   type="email"
+                  autoComplete="off"
                   value={loginEmail}
                   onChange={(event) => setLoginEmail(event.target.value)}
                 />
@@ -1875,6 +1876,7 @@ function AdminHistoryPage() {
                 Password
                 <input
                   type="password"
+                  autoComplete="off"
                   value={loginPassword}
                   onChange={(event) => setLoginPassword(event.target.value)}
                 />
@@ -2078,7 +2080,7 @@ function AdminHistoryPage() {
                   <input
                     type="text"
                     required
-                    autoComplete="name"
+                    autoComplete="off"
                     value={editUserDraft ? editUserDraft.name : newUserDraft.name}
                     onChange={(event) =>
                       editUserDraft
@@ -2095,7 +2097,7 @@ function AdminHistoryPage() {
                   <input
                     type="email"
                     required
-                    autoComplete="email"
+                    autoComplete="off"
                     autoCapitalize="none"
                     spellCheck={false}
                     value={editUserDraft ? editUserDraft.email : newUserDraft.email}
@@ -2114,7 +2116,7 @@ function AdminHistoryPage() {
                   <input
                     type="tel"
                     required
-                    autoComplete="tel"
+                    autoComplete="off"
                     inputMode="tel"
                     value={editUserDraft ? editUserDraft.phone : newUserDraft.phone}
                     onChange={(event) =>
@@ -2131,7 +2133,7 @@ function AdminHistoryPage() {
                   Password {editUserDraft ? '(vazio = manter atual)' : '(opcional)'}
                   <input
                     type="password"
-                    autoComplete="new-password"
+                    autoComplete="off"
                     placeholder={editUserDraft ? 'Deixar vazio para manter' : 'Em branco: enviaremos convite por email'}
                     value={editUserDraft ? editUserDraft.password : newUserDraft.password}
                     onChange={(event) =>
@@ -2288,6 +2290,7 @@ function AdminHistoryPage() {
                   type="number"
                   min={0}
                   step="0.5"
+                  autoComplete="off"
                   value={globalRate}
                   onChange={(event) => setGlobalRate(event.target.value)}
                 />
@@ -2315,6 +2318,7 @@ function AdminHistoryPage() {
                   ID (opcional, ex: sala-blue)
                   <input
                     type="text"
+                    autoComplete="off"
                     value={roomForm.id}
                     onChange={(event) => setRoomForm((current) => ({ ...current, id: event.target.value }))}
                     placeholder="gerado a partir do nome"
@@ -2326,6 +2330,7 @@ function AdminHistoryPage() {
                 <input
                   type="text"
                   required
+                  autoComplete="off"
                   value={roomForm.name}
                   onChange={(event) => setRoomForm((current) => ({ ...current, name: event.target.value }))}
                   placeholder="SALA BLUE"
@@ -2339,6 +2344,7 @@ function AdminHistoryPage() {
                     min={1}
                     max={30}
                     step={1}
+                    autoComplete="off"
                     value={roomForm.maxMembers}
                     onChange={(event) => setRoomForm((current) => ({ ...current, maxMembers: event.target.value }))}
                   />
@@ -2349,6 +2355,7 @@ function AdminHistoryPage() {
                     type="number"
                     min={0}
                     step="0.5"
+                    autoComplete="off"
                     value={roomForm.pricePerMemberHour}
                     onChange={(event) => setRoomForm((current) => ({ ...current, pricePerMemberHour: event.target.value }))}
                     placeholder={globalRate}
@@ -2511,6 +2518,7 @@ function AdminHistoryPage() {
                   ID (opcional, ex: mistura)
                   <input
                     type="text"
+                    autoComplete="off"
                     value={serviceForm.id}
                     onChange={(event) => setServiceForm((current) => ({ ...current, id: event.target.value }))}
                     placeholder="gerado a partir do nome"
@@ -2523,6 +2531,7 @@ function AdminHistoryPage() {
                   <input
                     type="text"
                     required
+                    autoComplete="off"
                     value={serviceForm.name}
                     onChange={(event) => setServiceForm((current) => ({ ...current, name: event.target.value }))}
                   />
@@ -2531,6 +2540,7 @@ function AdminHistoryPage() {
                   Nome (EN)
                   <input
                     type="text"
+                    autoComplete="off"
                     value={serviceForm.nameEn}
                     onChange={(event) => setServiceForm((current) => ({ ...current, nameEn: event.target.value }))}
                   />
@@ -2551,6 +2561,7 @@ function AdminHistoryPage() {
                     type="number"
                     min={0}
                     step="1"
+                    autoComplete="off"
                     value={serviceForm.price}
                     onChange={(event) => setServiceForm((current) => ({ ...current, price: event.target.value }))}
                   />
@@ -3206,6 +3217,7 @@ function AdminHistoryPage() {
                 Data
                 <input
                   type="date"
+                  autoComplete="off"
                   value={rescheduleDraft.date}
                   onChange={(event) =>
                     setRescheduleDraft((current) =>
@@ -3225,6 +3237,7 @@ function AdminHistoryPage() {
                 Hora
                 <input
                   type="time"
+                  autoComplete="off"
                   value={rescheduleDraft.time}
                   onChange={(event) =>
                     setRescheduleDraft((current) =>
@@ -3247,6 +3260,7 @@ function AdminHistoryPage() {
                   min={1}
                   max={8}
                   step={1}
+                  autoComplete="off"
                   value={rescheduleDraft.duration}
                   onChange={(event) =>
                     setRescheduleDraft((current) =>
@@ -3303,6 +3317,7 @@ function AdminHistoryPage() {
                   type="number"
                   min={0}
                   step="0.01"
+                  autoComplete="off"
                   value={paymentDraft.received}
                   onChange={(event) =>
                     setPaymentDraft((current) =>
