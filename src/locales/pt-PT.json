@@ -90,6 +90,7 @@
     "submitting": "A enviar reserva...",
     "apiError": "Nao foi possivel comunicar com o backend. Tenta novamente.",
     "validationError": "Preenche os campos obrigatorios (marcados com *).",
+    "slotUnavailableError": "O horario escolhido ja nao esta disponivel (passado ou ocupado). Escolhe outra data e hora.",
     "bookingIdLabel": "N.\u00ba da reserva:",
     "bookingIdNote": "Guarda este numero para futuras referencias.", "noExtras": "Sem servicos extra — so o ensaio.",
     "teamTitle": "Confirmacao da equipa",
