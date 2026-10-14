@@ -1507,6 +1507,44 @@ textarea:focus {
   color: var(--text-main);
 }
 
+/* Estado da sala (painel Salas): mesmo badge dos utilizadores. */
+.admin-room-badge-active {
+  background: rgba(22, 163, 74, 0.18);
+  border-color: rgba(74, 222, 128, 0.65);
+  color: #86efac;
+}
+
+.admin-room-badge-inactive {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
+}
+
+/* Nome da sala: badge preenchido com a cor de destaque da sala (room.accent). */
+.admin-room-name-badge {
+  font-size: 0.78rem;
+  padding: 4px 12px;
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+
+/* Cinzento (#8e949f) tem luminancia alta: texto escuro para contraste. */
+.admin-room-name-badge-grey {
+  color: #0b0c0f;
+  text-shadow: none;
+}
+
+/* Nome do servico extra: badge preenchido laranja (cor ainda nao usada no painel).
+   Servicos nao tem cor propria (ApiService sem accent), por isso e fixa. */
+.admin-service-name-badge {
+  background: #f97316;
+  border-color: #f97316;
+  color: #0b0c0f;
+  font-size: 0.78rem;
+  padding: 4px 12px;
+  text-shadow: none;
+}
+
 .admin-user-form-actions {
   display: flex;
   gap: 10px;
@@ -2055,6 +2093,44 @@ textarea:focus {
   line-height: 1.2;
   color: var(--text-main);
   letter-spacing: 0.01em;
+}
+
+/* --- Botões minimalistas do backend (issue #25) ---
+   Referência: estrutura e tamanho dos botões da secção Ensaios
+   (.history-actions .secondary-button). Aplica-se a todos os menus do
+   backend (painéis, login, modais e modal de password) para manter
+   dimensões e aspeto consistentes; o site público não é afetado. */
+.admin-auth-card .primary-button,
+.admin-auth-card .secondary-button,
+.admin-section .primary-button,
+.admin-section .secondary-button,
+.admin-sidebar .primary-button,
+.admin-sidebar .secondary-button,
+.admin-modal-backdrop .primary-button,
+.admin-modal-backdrop .secondary-button,
+.set-password-card .primary-button,
+.set-password-card .secondary-button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* Ações em linha (Editar/Apagar/Reenviar...): mesma estrutura e
+   tamanho exato dos botões de Ensaios. */
+.admin-section .team-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.admin-section .team-actions .secondary-button {
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  font-size: 0.72rem;
 }
 
 .history-actions {
