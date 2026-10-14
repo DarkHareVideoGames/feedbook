@@ -843,6 +843,59 @@ textarea:focus {
   margin: 10px 0 0;
 }
 
+/* --- Rodapé público: links minimalistas Feedback Productions (Issue #10) --- */
+.site-footer {
+  margin-top: 40px;
+  padding: 24px 16px 28px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+
+.site-footer-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 18px;
+}
+
+.site-footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.92rem;
+  transition: color 0.2s ease;
+}
+
+.site-footer-link:hover {
+  color: var(--text-main);
+}
+
+.site-footer-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.site-footer-credit {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
 .booking-terms-checkbox {
   display: flex;
   align-items: flex-start;

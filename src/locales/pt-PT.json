@@ -4,6 +4,13 @@
     "title": "Feedback - Ensaios — reserva de salas de ensaio",
     "description": "Feedback - Ensaios — reserva de salas de ensaio com preços à vista, planeamento de sessões e disponibilidade ao vivo."
   },
+  "footer": {
+    "linksLabel": "Links da Feedback Productions",
+    "site": "Site",
+    "instagram": "Instagram",
+    "youtube": "YouTube",
+    "credit": "©DNAI - Workstation 2026"
+  },
   "languages": {
     "pt-PT": "PT",
     "en": "EN"
