@@ -1024,6 +1024,30 @@ function AdminHistoryPage() {
     }
   };
 
+  // Reenvia o link de redefinição de password (Issue #9) — ação reservada ao superuser.
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+
+  const handleResendResetLink = async (user: AuthUser) => {
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || currentUser?.role !== 'superuser' || userActionLoading || resetUserId) return;
+
+    setCatalogNotice('');
+    setError('');
+    setResetUserId(user.id);
+    try {
+      const payload = await api.resendPasswordReset(sessionToken, user.email, user.name);
+      setCatalogNotice(`Link de redefinicao de password reenviado para ${user.email}.`);
+      // payload.message pode variar (ex.: email desativado no servidor).
+      if (payload.message && /disabled/i.test(payload.message)) {
+        setCatalogNotice('Link gerado, mas o envio de email esta desativado no servidor.');
+      }
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel reenviar o link de redefinicao.');
+    } finally {
+      setResetUserId(null);
+    }
+  };
+
   const handleDeleteUser = async (user: AuthUser) => {
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
     if (!sessionToken || !isPrivileged || userActionLoading) return;
@@ -2267,6 +2291,17 @@ function AdminHistoryPage() {
                               disabled={userActionLoading}
                             >
                               Apagar
+                            </button>
+                          ) : null}
+                          {currentUser?.role === 'superuser' ? (
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => void handleResendResetLink(user)}
+                              disabled={userActionLoading || resetUserId !== null}
+                              title="Reenviar por email o link para o utilizador redefinir a password"
+                            >
+                              {resetUserId === user.id ? 'A reenviar...' : 'Reenviar link de password'}
                             </button>
                           ) : null}
                         </>

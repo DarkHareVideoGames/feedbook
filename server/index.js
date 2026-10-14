@@ -267,6 +267,8 @@ app.post('/api/notify', (req, res) => {
 // POST /api/user-invite — chamado pelo front (src/api.ts) após criar um utilizador.
 // Gera um link único "define a tua password" via Supabase Admin API (o Supabase
 // NÃO envia email nenhum — só gera o link) e envia-o pelo nosso SMTP.
+// Body: { email, name?, mode? } — mode 'reset' = reenvio de link de redefinição
+// (Issue #9), reservado APENAS ao superuser; default 'invite' (admin|superuser).
 app.post('/api/user-invite', async (req, res) => {
   try {
     if (!supabaseAuth || !supabaseService) {
@@ -290,8 +292,11 @@ app.post('/api/user-invite', async (req, res) => {
       .eq('id', actorData.user.id)
       .limit(1);
     const actorRole = String(profileRows?.[0]?.role || '');
-    if (!['admin', 'superuser'].includes(actorRole)) {
-      return res.status(403).json({ message: 'Only admins can send invites.' });
+    // mode 'reset' (Issue #9): reenvio de link de redefinição — APENAS superuser.
+    const mode = String(req.body?.mode || 'invite') === 'reset' ? 'reset' : 'invite';
+    const allowedRoles = mode === 'reset' ? ['superuser'] : ['admin', 'superuser'];
+    if (!allowedRoles.includes(actorRole)) {
+      return res.status(403).json({ message: mode === 'reset' ? 'Only the superuser can resend reset links.' : 'Only admins can send invites.' });
     }
 
     const email = String(req.body?.email || '').trim().toLowerCase();
@@ -315,17 +320,26 @@ app.post('/api/user-invite', async (req, res) => {
       return res.status(502).json({ message: 'Could not generate invite link.' });
     }
 
-    const subject = '📩 A tua conta foi criada — define a tua password';
-    let bodyHTML = '<h1 style="font-size: 24px;">Feedback - Ensaios — Conta criada</h1>';
+    const isReset = mode === 'reset';
+    const subject = isReset ? '🔐 Link para redefinir a tua password' : '📩 A tua conta foi criada — define a tua password';
+    let bodyHTML = isReset
+      ? '<h1 style="font-size: 24px;">Feedback - Ensaios — Redefinir password</h1>'
+      : '<h1 style="font-size: 24px;">Feedback - Ensaios — Conta criada</h1>';
     bodyHTML += `<p>Olá ${escapeHtml(name || email)},</p>`;
-    bodyHTML += '<p>A tua conta foi criada na plataforma de marcações. Para entrares, define a tua password:</p>';
-    bodyHTML += `<p style="margin:16px 0;"><a href="${escapeHtml(inviteUrl)}" style="display:inline-block;padding:10px 20px;background-color:#222222;color:#ffffff !important;font-size:14px;font-family:Arial,sans-serif;text-decoration:none;border-radius:20px;">🔑 Definir password</a></p>`;
-    bodyHTML += '<p style="color:#999999;font-size:12px;">O link é único e expira dentro de 1 hora. Se não foste tu a criar esta conta, ignora este email.</p>';
+    if (isReset) {
+      bodyHTML += '<p>Foi pedido o reenvio do link para redefinir a tua password na plataforma de marcações:</p>';
+      bodyHTML += `<p style="margin:16px 0;"><a href="${escapeHtml(inviteUrl)}" style="display:inline-block;padding:10px 20px;background-color:#222222;color:#ffffff !important;font-size:14px;font-family:Arial,sans-serif;text-decoration:none;border-radius:20px;">🔑 Redefinir password</a></p>`;
+      bodyHTML += '<p style="color:#999999;font-size:12px;">O link é único e expira dentro de 1 hora. Se não foste tu a pedir este reenvio, ignora este email.</p>';
+    } else {
+      bodyHTML += '<p>A tua conta foi criada na plataforma de marcações. Para entrares, define a tua password:</p>';
+      bodyHTML += `<p style="margin:16px 0;"><a href="${escapeHtml(inviteUrl)}" style="display:inline-block;padding:10px 20px;background-color:#222222;color:#ffffff !important;font-size:14px;font-family:Arial,sans-serif;text-decoration:none;border-radius:20px;">🔑 Definir password</a></p>`;
+      bodyHTML += '<p style="color:#999999;font-size:12px;">O link é único e expira dentro de 1 hora. Se não foste tu a criar esta conta, ignora este email.</p>';
+    }
     bodyHTML += emailSignature();
 
     // Disparo em segundo plano: a resposta nunca bloqueia no envio.
     void sendEmail(email, subject, bodyHTML);
-    return res.status(202).json({ message: 'Invite queued.' });
+    return res.status(202).json({ message: isReset ? 'Reset link queued.' : 'Invite queued.' });
   } catch (e) {
     console.error('Erro em /api/user-invite:', e);
     return res.status(500).json({ message: 'Unexpected error.' });
