@@ -930,7 +930,6 @@ function App() {
                   name="bandName"
                   type="text"
                   autoComplete="off"
-                  placeholder={translations.booking.bandNamePlaceholder}
                 />
               </label>
 
@@ -944,7 +943,6 @@ function App() {
                     required
                     aria-required="true"
                     autoComplete="off"
-                    placeholder={translations.booking.contactNamePlaceholder}
                     value={contactName}
                     onChange={(event) => setContactName(event.target.value)}
                     onBlur={() => setShowContactErrors(true)}
@@ -968,7 +966,6 @@ function App() {
                     aria-required="true"
                     autoComplete="off"
                     inputMode="tel"
-                    placeholder={translations.booking.contactPhonePlaceholder}
                     value={contactPhone}
                     onChange={(event) => setContactPhone(event.target.value)}
                     onBlur={() => setShowContactErrors(true)}
@@ -995,7 +992,6 @@ function App() {
                     autoComplete="off"
                     autoCapitalize="none"
                     spellCheck={false}
-                    placeholder={translations.booking.emailPlaceholder}
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     onBlur={() => setShowContactErrors(true)}
@@ -1019,7 +1015,6 @@ function App() {
                   name="focus"
                   rows={4}
                   autoComplete="off"
-                  placeholder={translations.booking.focusPlaceholder}
                 />
               </label>
 
