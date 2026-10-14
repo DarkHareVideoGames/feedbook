@@ -9,6 +9,11 @@ import { createClient } from '@supabase/supabase-js';
 // pelo nosso SMTP, com a identidade Feedback Productions.
 // Espelho de server/index.js (mesmo comportamento em dev e produção).
 //
+// Body: { email, name?, mode? }
+//   mode 'invite' (default) — convite de conta nova; requer role admin|superuser.
+//   mode 'reset'            — reenvio de link de redefinição de password;
+//                             APENAS superuser (Issue #9).
+//
 // Variáveis de ambiente (Vercel → Settings → Environment Variables):
 //   SUPABASE_URL / SUPABASE_ANON_KEY (ou as VITE_ do projeto)
 //   SUPABASE_SERVICE_ROLE_KEY (obrigatória; NUNCA com prefixo VITE_)
@@ -96,6 +101,23 @@ function buildInviteMessage(nameOrEmail, inviteUrl) {
   );
 }
 
+// Email de reenvio do link de redefinição de password (mode 'reset', Issue #9).
+function buildResetMessage(nameOrEmail, resetUrl) {
+  const head = '<h1 style="font-size: 24px;">Feedback - Ensaios — Redefinir password</h1>';
+  const user = escapeHtml(nameOrEmail);
+  const button =
+    `<p style="margin:16px 0;"><a href="${escapeHtml(resetUrl)}" style="display:inline-block;padding:10px 20px;background-color:#222222;color:#ffffff !important;font-size:14px;font-family:Arial,sans-serif;text-decoration:none;border-radius:20px;">🔑 Redefinir password</a></p>`;
+  const note = '<p style="color:#999999;font-size:12px;">O link é único e expira dentro de 1 hora. Se não foste tu a pedir este reenvio, ignora este email.</p>';
+  return (
+    head +
+    `<p>Olá ${user},</p>` +
+    '<p>Foi pedido o reenvio do link para redefinir a tua password na plataforma de marcações:</p>' +
+    button +
+    note +
+    emailSignature()
+  );
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed.' });
@@ -122,8 +144,11 @@ export default async function handler(req, res) {
     .eq('id', actorData.user.id)
     .limit(1);
   const actorRole = String(profileRows?.[0]?.role || '');
-  if (!['admin', 'superuser'].includes(actorRole)) {
-    return res.status(403).json({ message: 'Only admins can send invites.' });
+  // mode 'reset' (Issue #9): reenvio de link de redefinição — APENAS superuser.
+  const mode = String(req.body?.mode || 'invite') === 'reset' ? 'reset' : 'invite';
+  const allowedRoles = mode === 'reset' ? ['superuser'] : ['admin', 'superuser'];
+  if (!allowedRoles.includes(actorRole)) {
+    return res.status(403).json({ message: mode === 'reset' ? 'Only the superuser can resend reset links.' : 'Only admins can send invites.' });
   }
 
   const email = String(req.body?.email || '').trim().toLowerCase();
@@ -154,14 +179,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    const isReset = mode === 'reset';
     await transport.sendMail({
       from: SMTP_FROM,
       to: email,
-      subject: '📩 A tua conta foi criada — define a tua password',
-      html: buildInviteMessage(name || email, inviteUrl),
+      subject: isReset ? '🔐 Link para redefinir a tua password' : '📩 A tua conta foi criada — define a tua password',
+      html: isReset ? buildResetMessage(name || email, inviteUrl) : buildInviteMessage(name || email, inviteUrl),
     });
-    console.log(`Invite email sent to ${email}`);
-    return res.status(202).json({ message: 'Invite sent.' });
+    console.log(`${isReset ? 'Reset' : 'Invite'} email sent to ${email}`);
+    return res.status(202).json({ message: isReset ? 'Reset link sent.' : 'Invite sent.' });
   } catch (e) {
     console.error('Erro ao enviar e-mail:', e);
     return res.status(502).json({ message: 'Failed to send email.' });

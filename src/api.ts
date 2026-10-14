@@ -1782,6 +1782,23 @@ export function sendUserInvite(token: string, email: string, name: string): void
   }).catch((err) => console.error('Erro ao enviar convite de utilizador:', err));
 }
 
+// Reenvia o link de redefinição de password a um utilizador existente (Issue #9).
+// Reservado ao superuser — o servidor valida o role e devolve 403 caso contrário.
+// Ao contrário de sendUserInvite, aguarda a resposta para a UI mostrar feedback.
+export async function resendPasswordReset(token: string, email: string, name: string): Promise<{ message: string }> {
+  const response = await fetch('/api/user-invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ email, name, mode: 'reset' }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as { message?: string };
+  if (!response.ok) {
+    throw new ApiError(payload.message || 'Nao foi possivel reenviar o link de redefinicao.', response.status);
+  }
+  return { message: payload.message || 'Link de redefinicao reenviado.' };
+}
+
 function notifyBooking(booking: ApiBooking, status: 'pending' | 'confirmed' | 'rejected' | 'cancelled'): void {
   void fetch('/api/notify', {
     method: 'POST',
