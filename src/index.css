@@ -797,6 +797,18 @@ textarea:focus {
   color: #fca5a5;
 }
 
+/* Validação dos campos obrigatórios de contacto (Issue #5) */
+.field-error {
+  border-color: #f87171 !important;
+}
+
+.field-error-text {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #fca5a5;
+}
+
 .booking-terms {
   display: grid;
   gap: 12px;
