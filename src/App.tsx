@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { Camera, Globe, PlayCircle } from 'lucide-react';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
 import { calculateRehearsalPrice, resolveRoomPricePerHour } from './helpers/rehearsalPricing';
@@ -48,6 +49,16 @@ type TeamBooking = {
   paymentMethod?: PaymentMethod;
   paymentStatus?: string;
 };
+
+// Links do rodapé (Issue #10). O texto visível é minimalista — nunca mostra
+// o endereço completo; só o ícone + label curta.
+// Nota: o lucide-react (nesta versão) já não inclui ícones de marcas
+// (Instagram/YouTube), por isso usamos equivalentes genéricos.
+const FOOTER_LINKS = [
+  { id: 'site', href: 'https://www.feedbackproductions.pt/', labelKey: 'site' as const, Icon: Globe },
+  { id: 'instagram', href: 'https://www.instagram.com/feedbackproductions/', labelKey: 'instagram' as const, Icon: Camera },
+  { id: 'youtube', href: 'https://www.youtube.com/playlist?list=PLaTuYjte7L3UDZq7x0etlaHAkDmO7LXAX', labelKey: 'youtube' as const, Icon: PlayCircle },
+];
 
 const fallbackRooms: RoomDefinition[] = [
   {
@@ -1040,6 +1051,26 @@ function App() {
           </section>
         ) : null}
       </main>
+
+      <footer className="site-footer">
+        <div className="site-footer-inner">
+          <nav className="site-footer-links" aria-label={translations.footer.linksLabel}>
+            {FOOTER_LINKS.map(({ id, href, labelKey, Icon }) => (
+              <a
+                key={id}
+                className="site-footer-link"
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Icon size={18} aria-hidden="true" />
+                <span>{translations.footer[labelKey]}</span>
+              </a>
+            ))}
+          </nav>
+          <p className="site-footer-credit">{translations.footer.credit}</p>
+        </div>
+      </footer>
 
       <CookieConsent />
     </div>

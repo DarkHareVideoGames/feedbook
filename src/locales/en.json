@@ -4,6 +4,13 @@
     "title": "Feedback - Ensaios — rehearsal room booking",
     "description": "Feedback - Ensaios — book rehearsal rooms with upfront pricing, session planning, and live availability."
   },
+  "footer": {
+    "linksLabel": "Feedback Productions links",
+    "site": "Website",
+    "instagram": "Instagram",
+    "youtube": "YouTube",
+    "credit": "©DNAI - Workstation 2026"
+  },
   "languages": {
     "pt-PT": "PT",
     "en": "EN"
