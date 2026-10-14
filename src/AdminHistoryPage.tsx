@@ -2509,16 +2509,29 @@ function AdminHistoryPage() {
               {rooms.map((room) => (
                 <li key={room.id}>
                   <div className="admin-user-card-head">
-                    <strong>{room.name}</strong>
-                    {!room.active ? <span className="booking-id-chip">inativa</span> : null}
+                    <strong
+                      className={`admin-user-badge admin-room-name-badge${room.accent.includes('grey') ? ' admin-room-name-badge-grey' : ''}`}
+                      style={{ backgroundColor: room.accent, borderColor: room.accent }}
+                    >
+                      {room.name}
+                    </strong>
                   </div>
                   <span>{room.description || 'Sem descricao'}</span>
-                  <span>
-                    Ate {room.maxMembers} elementos ·{' '}
-                    {room.pricePerMemberHour === null || room.pricePerMemberHour === undefined
-                      ? `Preco global (${globalRate || '?'} EUR/h)`
-                      : `${room.pricePerMemberHour} EUR/h proprio`}
-                  </span>
+                  <div className="admin-user-badges" aria-label="Estado, capacidade e preco">
+                    <span
+                      className={`admin-user-badge ${room.active ? 'admin-room-badge-active' : 'admin-room-badge-inactive'}`}
+                    >
+                      {room.active ? 'Ativa no site' : 'Inativa'}
+                    </span>
+                    <span className="admin-user-badge admin-user-function-badge">
+                      Ate {room.maxMembers} elementos
+                    </span>
+                    <span className="admin-user-badge admin-user-function-badge">
+                      {room.pricePerMemberHour === null || room.pricePerMemberHour === undefined
+                        ? `Preco global (${globalRate || '?'} EUR/h)`
+                        : `${room.pricePerMemberHour} EUR/h`}
+                    </span>
+                  </div>
                   <div className="team-actions">
                     <button type="button" className="secondary-button" onClick={() => startEditRoom(room)}>
                       Editar
@@ -2635,7 +2648,7 @@ function AdminHistoryPage() {
               {services.map((service) => (
                 <li key={service.id}>
                   <div className="admin-user-card-head">
-                    <strong>{service.name}</strong>
+                    <strong className="admin-user-badge admin-service-name-badge">{service.name}</strong>
                     {!service.active ? <span className="booking-id-chip">inativo</span> : null}
                   </div>
                   <span>{service.nameEn || 'Sem nome EN'}</span>
