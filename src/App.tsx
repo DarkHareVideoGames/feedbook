@@ -111,6 +111,28 @@ function getToday(): string {
   return new Date().toISOString().split('T')[0];
 }
 
+// === Validação dos campos obrigatórios do contacto (Issue #5) ===
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function isValidEmail(value: string): boolean {
+  return EMAIL_RE.test(value.trim());
+}
+
+// Telemóvel: 9 a 15 dígitos, ignorando espaços, parênteses e travessões.
+function isValidPhone(value: string): boolean {
+  const digits = value.replace(/\D/g, '');
+  return digits.length >= 9 && digits.length <= 15;
+}
+
+type ContactField = 'contactName' | 'email' | 'contactPhone';
+
+function contactFieldError(field: ContactField, value: string): string | null {
+  if (field === 'contactName' && !value.trim()) return 'required';
+  if (field === 'email' && !isValidEmail(value)) return 'email';
+  if (field === 'contactPhone' && !isValidPhone(value)) return 'phone';
+  return null;
+}
+
 function toHourLabel(hour: number): string {
   const wholeHours = Math.floor(hour);
   const minutes = Math.round((hour - wholeHours) * 60);
@@ -299,6 +321,12 @@ function App() {
   const [bookingStep, setBookingStep] = useState<BookingStep>('room');
   const [betaEnabled, setBetaEnabled] = useState(true);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  // Campos de contacto controlados para validação em tempo real (Issue #5).
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [email, setEmail] = useState('');
+  // Só mostra erro de um campo depois de interagir/submeter (evita "vermelho" inicial).
+  const [showContactErrors, setShowContactErrors] = useState(false);
   const confirmationRef = useRef<HTMLDivElement>(null);
 
   const currency = useMemo(
@@ -342,6 +370,11 @@ function App() {
     selectedRoomId,
     teamBookings,
   );
+  // Todos os campos de contacto obrigatórios são válidos? (Issue #5)
+  const contactValid =
+    contactFieldError('contactName', contactName) === null &&
+    contactFieldError('email', email) === null &&
+    contactFieldError('contactPhone', contactPhone) === null;
   const extras = useMemo<Extra[]>(
     () =>
       Object.entries(pricing.extras ?? {}).map(([id, price]) => {
@@ -500,25 +533,28 @@ function App() {
     const rawData = new FormData(event.currentTarget);
     const draftForm: BookingForm = {
       bandName: String(rawData.get('bandName') || ''),
-      contactName: String(rawData.get('name') || ''),
-      contactPhone: String(rawData.get('tel') || ''),
-      email: String(rawData.get('email') || ''),
+      contactName,
+      contactPhone,
+      email,
       focus: String(rawData.get('focus') || ''),
     };
 
-    // Client-side validation before hitting the network
-    const missing: string[] = [];
-    if (!draftForm.contactName.trim()) missing.push('contactName');
-    if (!draftForm.email.trim()) missing.push('email');
-    if (!draftForm.contactPhone.trim()) missing.push('contactPhone');
+    // Client-side validation before hitting the network (Issue #5)
+    // Valida obrigatoriedade + formato de todos os campos críticos de contacto.
+    const invalidFields: ContactField[] = (
+      ['contactName', 'email', 'contactPhone'] as ContactField[]
+    ).filter((field) => contactFieldError(field, draftForm[field]) !== null);
 
-    if (missing.length > 0) {
+    if (invalidFields.length > 0) {
+      // Revela os erros por campo e faz foco no primeiro inválido.
+      setShowContactErrors(true);
       setErrorMessage(translations.booking.validationError ?? 'Preenche os campos obrigatorios.');
-      // Focus the first missing field
-      const firstEl = document.getElementById(`field-${missing[0]}`);
+      const firstEl = document.getElementById(`field-${invalidFields[0]}`);
       if (firstEl) firstEl.focus();
       return;
     }
+
+    setShowContactErrors(false);
 
     if (!acceptedTerms) {
       setErrorMessage(translations.booking.termsError ?? 'Tens de aceitar os Termos e Condicoes.');
@@ -909,7 +945,17 @@ function App() {
                     aria-required="true"
                     autoComplete="off"
                     placeholder={translations.booking.contactNamePlaceholder}
+                    value={contactName}
+                    onChange={(event) => setContactName(event.target.value)}
+                    onBlur={() => setShowContactErrors(true)}
+                    className={showContactErrors && contactFieldError('contactName', contactName) ? 'field-error' : undefined}
+                    aria-invalid={showContactErrors && contactFieldError('contactName', contactName) ? true : undefined}
                   />
+                  {showContactErrors && contactFieldError('contactName', contactName) ? (
+                    <span className="field-error-text" role="alert">
+                      {translations.booking.requiredError}
+                    </span>
+                  ) : null}
                 </label>
 
                 <label>
@@ -923,7 +969,19 @@ function App() {
                     autoComplete="off"
                     inputMode="tel"
                     placeholder={translations.booking.contactPhonePlaceholder}
+                    value={contactPhone}
+                    onChange={(event) => setContactPhone(event.target.value)}
+                    onBlur={() => setShowContactErrors(true)}
+                    className={showContactErrors && contactFieldError('contactPhone', contactPhone) ? 'field-error' : undefined}
+                    aria-invalid={showContactErrors && contactFieldError('contactPhone', contactPhone) ? true : undefined}
                   />
+                  {showContactErrors && contactFieldError('contactPhone', contactPhone) ? (
+                    <span className="field-error-text" role="alert">
+                      {contactPhone.trim()
+                        ? translations.booking.contactPhoneError
+                        : translations.booking.requiredError}
+                    </span>
+                  ) : null}
                 </label>
 
                 <label>
@@ -938,7 +996,19 @@ function App() {
                     autoCapitalize="none"
                     spellCheck={false}
                     placeholder={translations.booking.emailPlaceholder}
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    onBlur={() => setShowContactErrors(true)}
+                    className={showContactErrors && contactFieldError('email', email) ? 'field-error' : undefined}
+                    aria-invalid={showContactErrors && contactFieldError('email', email) ? true : undefined}
                   />
+                  {showContactErrors && contactFieldError('email', email) ? (
+                    <span className="field-error-text" role="alert">
+                      {email.trim()
+                        ? translations.booking.contactEmailError
+                        : translations.booking.requiredError}
+                    </span>
+                  ) : null}
                 </label>
               </div>
 
@@ -1004,7 +1074,7 @@ function App() {
                 <button type="button" className="secondary-button" onClick={goToPreviousStep}>
                   {translations.booking.back}
                 </button>
-                <button className="primary-button" type="submit" disabled={isSubmitting || backendOffline || !acceptedTerms}>
+                <button className="primary-button" type="submit" disabled={isSubmitting || backendOffline || !acceptedTerms || !contactValid}>
                   {isSubmitting ? translations.booking.submitting : translations.booking.submit}
                 </button>
               </div>
