@@ -1,6 +1,6 @@
 // src/helpers/rehearsalPricing.test.ts
 import { describe, it, expect } from 'vitest';
-import { calculateRehearsalPrice, MAX_REHEARSAL_HOURS, DEFAULT_PRICE_PER_HOUR } from './rehearsalPricing';
+import { calculateRehearsalPrice, resolveRoomPricePerHour, MAX_REHEARSAL_HOURS, DEFAULT_PRICE_PER_HOUR } from './rehearsalPricing';
 
 describe('calculateRehearsalPrice', () => {
   it('calcula a tabela acumulada de referência (base 7€)', () => {
@@ -47,5 +47,20 @@ describe('calculateRehearsalPrice', () => {
 
   it('usa o limite máximo de 6 horas', () => {
     expect(MAX_REHEARSAL_HOURS).toBe(6);
+  });
+});
+
+describe('resolveRoomPricePerHour', () => {
+  it('usa o preço da sala quando está definido', () => {
+    expect(resolveRoomPricePerHour(10)).toBe(10);
+    expect(resolveRoomPricePerHour(0.5)).toBe(0.5);
+  });
+
+  it('cai no preço de referência sem preço global (Issue #26)', () => {
+    expect(resolveRoomPricePerHour(null)).toBe(DEFAULT_PRICE_PER_HOUR);
+    expect(resolveRoomPricePerHour(undefined)).toBe(DEFAULT_PRICE_PER_HOUR);
+    expect(resolveRoomPricePerHour(0)).toBe(DEFAULT_PRICE_PER_HOUR);
+    expect(resolveRoomPricePerHour(-4)).toBe(DEFAULT_PRICE_PER_HOUR);
+    expect(resolveRoomPricePerHour(Number.NaN)).toBe(DEFAULT_PRICE_PER_HOUR);
   });
 });

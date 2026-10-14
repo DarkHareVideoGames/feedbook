@@ -90,13 +90,12 @@ alter table public.profiles add constraint profiles_function_check
 -- ------------------------------------------------------------
 create table if not exists public.pricing (
   id                 int         primary key check (id = 1),
-  "perMemberPerHour" numeric     not null default 3,
   extras             jsonb       not null default '{"engineer":24,"recording":18,"backline":12}'::jsonb,
   "updatedAt"        timestamptz not null default now()
 );
 
-insert into public.pricing (id, "perMemberPerHour")
-values (1, 3.5)
+insert into public.pricing (id)
+values (1)
 on conflict (id) do nothing;
 
 -- ------------------------------------------------------------

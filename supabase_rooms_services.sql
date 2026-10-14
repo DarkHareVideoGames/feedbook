@@ -14,7 +14,7 @@ create table if not exists public.rooms (
   description text not null default '',
   "descriptionEn" text not null default '',
   "maxMembers" integer not null default 4 check ("maxMembers" > 0),
-  "pricePerMemberHour" numeric(10,2),
+  "pricePerMemberHour" numeric(10,2) not null default 7 check ("pricePerMemberHour" >= 0),
   gear text[] not null default '{}',
   "gearEn" text[] not null default '{}',
   accent text not null default 'var(--room-red)',
@@ -24,7 +24,8 @@ create table if not exists public.rooms (
 );
 
 -- Seed com as 2 salas que já existem no site.
--- pricePerMemberHour a NULL = usa o preçário global (pricing.perMemberPerHour).
+-- pricePerMemberHour: preço da sala em EUR/hora (obrigatório — não existe
+-- noção de "preço global"; ver supabase_migration_remove_global_price.sql).
 insert into public.rooms (id, name, description, "descriptionEn", "maxMembers", "pricePerMemberHour", gear, "gearEn", accent, active)
 values
   (
@@ -33,7 +34,7 @@ values
     'Sala de impacto forte para ensaios completos e passagens de alinhamento com pressao real.',
     'High-impact room for full-band rehearsals and pressure-tested run-throughs.',
     6,
-    null,
+    7,
     array['Bateria completa', '2 amps de guitarra', 'PA com monitores'],
     array['Full drum kit', '2 guitar amps', 'PA with monitors'],
     'var(--room-red)',
@@ -45,7 +46,7 @@ values
     'Sala equilibrada para composicao, vozes e trabalho de detalhe com mais controlo dinamico.',
     'Balanced room for songwriting, vocals, and detail-focused arrangement work.',
     5,
-    null,
+    7,
     array['Bateria compacta', 'Amp de baixo', 'PA com efeitos de voz'],
     array['Compact drum kit', 'Bass amp', 'PA with vocal FX'],
     'var(--room-grey)',

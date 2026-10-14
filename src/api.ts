@@ -90,7 +90,6 @@ export type ApiBooking = {
 };
 
 export type PricingConfig = {
-  perMemberPerHour: number;
   extras: Record<string, number>;
 };
 
@@ -226,7 +225,6 @@ const roomsById: Record<string, string> = {
 };
 
 const defaultPricing: PricingConfig = {
-  perMemberPerHour: 3,
   extras: { engineer: 24, recording: 18, backline: 12 },
 };
 
@@ -316,11 +314,11 @@ export function estimateBookingAmount(
   }
 
   // O preço da sala é por hora inteira, com desconto progressivo a partir do
-  // preço/hora base da sala (ou do preço global, se a sala não tiver preço
-  // próprio). Já não depende do número de elementos. Limitamos ao máximo de 6h
+  // preço/hora base da própria sala (já não há preço global — Issue #26).
+  // Já não depende do número de elementos. Limitamos ao máximo de 6h
   // para nunca lançar erro ao estimar reservas antigas/legadas.
   const hours = Math.min(Math.ceil(Number(booking?.duration || 0)), MAX_REHEARSAL_HOURS);
-  const pricePerHour = resolveRoomPricePerHour(booking?.roomPricePerHour, pricingConfig?.perMemberPerHour);
+  const pricePerHour = resolveRoomPricePerHour(booking?.roomPricePerHour);
   const roomPrice = calculateRehearsalPrice(hours, pricePerHour);
   const extras = Array.isArray(booking?.extras) ? booking.extras : [];
   const extraValue = extras.reduce((sum, extraName) => {
@@ -349,14 +347,11 @@ async function loadPricingConfig(): Promise<PricingConfig> {
       extras[fallback.id] = Number.isFinite(Number(legacyValue)) ? Number(legacyValue) : fallback.price;
     }
   }
-  return {
-    perMemberPerHour: Number(pricingData?.perMemberPerHour ?? defaultPricing.perMemberPerHour),
-    extras,
-  };
+  return { extras };
 }
 
-// Mapa roomId -> preco proprio da sala (EUR/hora). Usado para calcular o valor
-// de cada reserva com o preco/hora base correto de cada sala.
+// Mapa roomId -> preço da sala (EUR/hora). Usado para calcular o valor
+// de cada reserva com o preço/hora base correto de cada sala.
 async function loadRoomPriceMap(): Promise<Record<string, number | null>> {
   try {
     const { rooms } = await listRooms({ includeInactive: true });
@@ -1380,17 +1375,12 @@ export async function pricing(): Promise<{ pricing: PricingConfig }> {
     return { pricing: { ...defaultPricing, extras } };
   }
 
-  return {
-    pricing: {
-      perMemberPerHour: Number(data.perMemberPerHour ?? defaultPricing.perMemberPerHour),
-      extras,
-    },
-  };
+  return { pricing: { extras } };
 }
 
 export async function updatePricing(
   token: string,
-  updates: { perMemberPerHour?: number; extras?: Record<string, number | string> },
+  updates: { extras?: Record<string, number | string> },
 ): Promise<{ pricing: PricingConfig }> {
   const actor = await requireActor(token, ['admin', 'superuser']);
   const { data: current } = await supabase.from('pricing').select('*').eq('id', 1).maybeSingle();
@@ -1418,9 +1408,6 @@ export async function updatePricing(
   }
 
   const merged: PricingConfig = {
-    perMemberPerHour: Number.isFinite(Number(updates.perMemberPerHour))
-      ? Number(updates.perMemberPerHour)
-      : Number(current?.perMemberPerHour ?? defaultPricing.perMemberPerHour),
     extras: mergedExtras,
   };
 
@@ -1429,7 +1416,6 @@ export async function updatePricing(
     .upsert(
       {
         id: 1,
-        perMemberPerHour: merged.perMemberPerHour,
         extras: merged.extras,
         updatedAt: new Date().toISOString(),
       },

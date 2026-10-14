@@ -18,8 +18,8 @@
 
 export const MAX_REHEARSAL_HOURS = 6;
 
-// Preço/hora de referência usado quando uma sala não define o seu preço
-// (nem o preço global está configurado). Corresponde à tabela 7/14/20/25/29/32.
+// Preço/hora de referência usado quando uma sala não define o seu preço.
+// Corresponde à tabela 7/14/20/25/29/32.
 export const DEFAULT_PRICE_PER_HOUR = 7;
 
 /**
@@ -61,18 +61,12 @@ export function calculateRehearsalPrice(
 }
 
 /**
- * Resolve o preço de UMA hora de uma sala: usa o preço próprio da sala quando
- * definido; caso contrário cai no preço global (por hora). Garante sempre um
- * valor positivo e finito, recorrendo a DEFAULT_PRICE_PER_HOUR como último
- * fallback.
+ * Resolve o preço de UMA hora de uma sala: usa o preço definido na sala;
+ * caso contrário cai em DEFAULT_PRICE_PER_HOUR. Garante sempre um valor
+ * positivo e finito. Já não existe noção de preço global (Issue #26).
  */
-export function resolveRoomPricePerHour(
-  roomPricePerHour: number | null | undefined,
-  globalPricePerHour?: number | null,
-): number {
+export function resolveRoomPricePerHour(roomPricePerHour: number | null | undefined): number {
   const own = Number(roomPricePerHour);
   if (Number.isFinite(own) && own > 0) return own;
-  const global = Number(globalPricePerHour);
-  if (Number.isFinite(global) && global > 0) return global;
   return DEFAULT_PRICE_PER_HOUR;
 }

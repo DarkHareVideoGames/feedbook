@@ -14,7 +14,6 @@ type Extra = {
 };
 
 type PricingConfig = {
-  perMemberPerHour: number;
   extras: Record<string, number>;
 };
 
@@ -97,7 +96,6 @@ const startSlotHours = Array.from(
 
 
 const defaultPricing: PricingConfig = {
-  perMemberPerHour: 3,
   extras: {
     engineer: 24,
     recording: 18,
@@ -356,10 +354,7 @@ function App() {
     };
   });
   const selectedRoom = localizedRooms.find((room) => room.id === selectedRoomId) ?? localizedRooms[0];
-  const selectedRoomPricePerHour = resolveRoomPricePerHour(
-    selectedRoom.pricePerMemberHour,
-    pricing.perMemberPerHour,
-  );
+  const selectedRoomPricePerHour = resolveRoomPricePerHour(selectedRoom.pricePerMemberHour);
   const selectedStartHour = hourLabelToNumber(selectedSlot);
   // O slot escolhido continua válido? (antecedência mínima, fecho e colisões).
   // Usado para bloquear reservas em horários já passados. (Issue #15)
@@ -722,9 +717,7 @@ function App() {
                     </div>
                     <strong>
                       {translations.rooms.priceFrom}{' '}
-                      {currency.format(
-                        resolveRoomPricePerHour(room.pricePerMemberHour, pricing.perMemberPerHour),
-                      )}
+                      {currency.format(resolveRoomPricePerHour(room.pricePerMemberHour))}
                     </strong>
                   </div>
                   <p>{room.vibe}</p>
