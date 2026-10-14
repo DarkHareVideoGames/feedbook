@@ -95,6 +95,53 @@ type FinanceMonthSummary = {
 
 const TOKEN_KEY = 'feedbook-admin-token';
 
+// --- Issue #29: throttling de tentativas de login (dissuasor no frontend) ---
+// Guarda em localStorage: nº de falhas recentes e até quando o login está bloqueado.
+const LOGIN_ATTEMPTS_KEY = 'feedbook-admin-login-attempts';
+const MAX_LOGIN_ATTEMPTS = 5;
+const ATTEMPT_WINDOW_MS = 10 * 60 * 1000; // janela de 10 min para contar as falhas
+const LOCKOUT_MS = 15 * 60 * 1000; // bloqueio de 15 min após esgotar as tentativas
+
+type LoginAttemptState = {
+  failures: number[];
+  lockoutUntil: number;
+};
+
+function readLoginAttempts(): LoginAttemptState {
+  try {
+    const raw = window.localStorage.getItem(LOGIN_ATTEMPTS_KEY);
+    if (!raw) return { failures: [], lockoutUntil: 0 };
+    const parsed = JSON.parse(raw) as Partial<LoginAttemptState>;
+    return {
+      failures: Array.isArray(parsed.failures) ? parsed.failures.filter((t) => typeof t === 'number') : [],
+      lockoutUntil: typeof parsed.lockoutUntil === 'number' ? parsed.lockoutUntil : 0,
+    };
+  } catch {
+    return { failures: [], lockoutUntil: 0 };
+  }
+}
+
+function writeLoginAttempts(state: LoginAttemptState): void {
+  try {
+    window.localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(state));
+  } catch {
+    // localStorage indisponível (modo privado): o bloqueio não persiste, mas o login continua a funcionar.
+  }
+}
+
+function lockoutRemainingMs(): number {
+  const state = readLoginAttempts();
+  return Math.max(0, state.lockoutUntil - Date.now());
+}
+
+function formatLockoutRemaining(remainingMs: number): string {
+  const totalSeconds = Math.ceil(remainingMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes <= 0) return `${seconds}s`;
+  return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+}
+
 const statusLabel: Record<BookingStatus, string> = {
   pending: 'Pendente',
   confirmed: 'Confirmado',
@@ -546,6 +593,7 @@ function AdminHistoryPage() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
   const [authError, setAuthError] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -881,24 +929,51 @@ function AdminHistoryPage() {
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (loginLoading) return;
+
+    // Issue #29: recusa imediata durante o bloqueio temporário.
+    const remaining = lockoutRemainingMs();
+    if (remaining > 0) {
+      setAuthError(`Demasiadas tentativas. Tenta novamente em ${formatLockoutRemaining(remaining)}.`);
+      return;
+    }
+
     setAuthError('');
     setError('');
+    setLoginLoading(true);
 
     try {
       const payload = await api.login(loginEmail, loginPassword);
+      // Sucesso: limpa o contador de falhas.
+      writeLoginAttempts({ failures: [], lockoutUntil: 0 });
       window.localStorage.setItem(TOKEN_KEY, payload.token);
       setToken(payload.token);
       setCurrentUser(payload.user);
+      setLoginPassword('');
       await loadHistory(payload.token);
       if (isPrivilegedRole(payload.user.role)) {
         await Promise.all([loadFinance(payload.token), loadCatalogs(), loadUsers(payload.token)]);
       }
     } catch (authErr) {
-      if (authErr instanceof Error && authErr.message) {
-        setAuthError(authErr.message);
+      // Falha: regista a tentativa; ao fim de MAX_LOGIN_ATTEMPTS bloqueia por LOCKOUT_MS.
+      // Mensagem genérica de propósito (não revela se o email existe).
+      const now = Date.now();
+      const state = readLoginAttempts();
+      const recent = [...state.failures, now].filter((t) => now - t < ATTEMPT_WINDOW_MS);
+      if (recent.length >= MAX_LOGIN_ATTEMPTS) {
+        const lockoutUntil = now + LOCKOUT_MS;
+        writeLoginAttempts({ failures: [], lockoutUntil });
+        setAuthError(`Demasiadas tentativas. Tenta novamente em ${formatLockoutRemaining(LOCKOUT_MS)}.`);
       } else {
-        setAuthError('Credenciais invalidas.');
+        writeLoginAttempts({ failures: recent, lockoutUntil: 0 });
+        setAuthError('Credenciais invalidas. Verifica email e password.');
       }
+      setLoginPassword('');
+      if (authErr instanceof TypeError && authErr.message === 'Failed to fetch') {
+        setError('Sem ligacao ao servidor. Verifica a tua ligacao e tenta novamente.');
+      }
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -1875,6 +1950,7 @@ function AdminHistoryPage() {
                   type="email"
                   autoComplete="off"
                   value={loginEmail}
+                  disabled={loginLoading}
                   onChange={(event) => setLoginEmail(event.target.value)}
                 />
               </label>
@@ -1885,12 +1961,13 @@ function AdminHistoryPage() {
                   type="password"
                   autoComplete="off"
                   value={loginPassword}
+                  disabled={loginLoading}
                   onChange={(event) => setLoginPassword(event.target.value)}
                 />
               </label>
 
-              <button type="submit" className="primary-button">
-                Entrar
+              <button type="submit" className="primary-button" disabled={loginLoading}>
+                {loginLoading ? 'A entrar...' : 'Entrar'}
               </button>
 
               {authError ? <p className="admin-message-error">{authError}</p> : null}
