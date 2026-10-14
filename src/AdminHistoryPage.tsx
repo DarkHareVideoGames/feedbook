@@ -569,7 +569,6 @@ function AdminHistoryPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [rooms, setRooms] = useState<api.ApiRoom[]>([]);
   const [services, setServices] = useState<api.ApiService[]>([]);
-  const [globalRate, setGlobalRate] = useState('');
   const [roomForm, setRoomForm] = useState<RoomFormDraft>(emptyRoomForm);
   const [roomImageFile, setRoomImageFile] = useState<File | null>(null);
   const [roomImageUploading, setRoomImageUploading] = useState(false);
@@ -836,16 +835,12 @@ function AdminHistoryPage() {
   const loadCatalogs = async () => {
     setCatalogLoading(true);
     try {
-      const [roomsPayload, servicesPayload, pricingPayload] = await Promise.all([
+      const [roomsPayload, servicesPayload] = await Promise.all([
         api.listRooms({ includeInactive: true }),
         api.listServices({ includeInactive: true }),
-        api.pricing().catch(() => null),
       ]);
       setRooms(roomsPayload.rooms);
       setServices(servicesPayload.services);
-      if (pricingPayload?.pricing) {
-        setGlobalRate(String(pricingPayload.pricing.perMemberPerHour));
-      }
     } catch {
       setError('Nao foi possivel carregar salas e servicos. Confirma que correste o supabase_rooms_services.sql.');
     } finally {
@@ -1126,9 +1121,10 @@ function AdminHistoryPage() {
       return;
     }
     const trimmedPrice = roomForm.pricePerMemberHour.trim();
-    const pricePerMemberHour = trimmedPrice === '' ? null : Number(trimmedPrice);
-    if (pricePerMemberHour !== null && (!Number.isFinite(pricePerMemberHour) || pricePerMemberHour < 0)) {
-      setError('Preco da sala invalido.');
+    const pricePerMemberHour = Number(trimmedPrice);
+    // Sem noção de "preco global" (Issue #26): o preco da sala e obrigatorio.
+    if (trimmedPrice === '' || !Number.isFinite(pricePerMemberHour) || pricePerMemberHour < 0) {
+      setError('Preco da sala invalido. Indica um valor (>= 0).');
       return;
     }
     setCatalogNotice('');
@@ -1262,26 +1258,6 @@ function AdminHistoryPage() {
       setCatalogNotice(payload.message || 'Servico removido.');
     } catch {
       setError('Nao foi possivel apagar o servico.');
-    }
-  };
-
-  const handleSaveGlobalRate = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isPrivileged) return;
-    const parsedRate = Number(globalRate);
-    if (!Number.isFinite(parsedRate) || parsedRate < 0) {
-      setError('Valor invalido. Usa um numero valido.');
-      return;
-    }
-    setCatalogNotice('');
-    setError('');
-    try {
-      await api.updatePricing(sessionToken, { perMemberPerHour: parsedRate });
-      await loadCatalogs();
-      setCatalogNotice('Preco global atualizado com sucesso.');
-    } catch {
-      setError('Nao foi possivel guardar o preco global.');
     }
   };
 
@@ -2325,23 +2301,6 @@ function AdminHistoryPage() {
               </div>
               <span className="catalog-count">{rooms.length} registadas</span>
             </div>
-            <form className="admin-pricing-grid catalog-pricing" onSubmit={handleSaveGlobalRate}>
-              <label>
-                Preco por hora global — fallback (EUR)
-                <input
-                  type="number"
-                  min={0}
-                  step="0.5"
-                  autoComplete="off"
-                  value={globalRate}
-                  onChange={(event) => setGlobalRate(event.target.value)}
-                />
-              </label>
-              <p className="admin-helper-note">Usado quando a sala nao tem preco proprio. Os precos dos extras definem-se em Servicos.</p>
-              <button type="submit" className="primary-button">
-                Guardar preco global
-              </button>
-            </form>
             <button
               type="button"
               className="secondary-button catalog-create-action"
@@ -2392,15 +2351,15 @@ function AdminHistoryPage() {
                   />
                 </label>
                 <label>
-                  Preco por hora da sala (EUR) (vazio = usa preco global)
+                  Preco por hora da sala (EUR) *
                   <input
                     type="number"
                     min={0}
                     step="0.5"
+                    required
                     autoComplete="off"
                     value={roomForm.pricePerMemberHour}
                     onChange={(event) => setRoomForm((current) => ({ ...current, pricePerMemberHour: event.target.value }))}
-                    placeholder={globalRate}
                   />
                 </label>
               </div>
@@ -2526,11 +2485,11 @@ function AdminHistoryPage() {
                     <span className="admin-user-badge admin-user-function-badge">
                       Ate {room.maxMembers} elementos
                     </span>
-                    <span className="admin-user-badge admin-user-function-badge">
-                      {room.pricePerMemberHour === null || room.pricePerMemberHour === undefined
-                        ? `Preco global (${globalRate || '?'} EUR/h)`
-                        : `${room.pricePerMemberHour} EUR/h`}
-                    </span>
+                    {room.pricePerMemberHour !== null && room.pricePerMemberHour !== undefined ? (
+                      <span className="admin-user-badge admin-user-function-badge">
+                        {room.pricePerMemberHour} EUR/h
+                      </span>
+                    ) : null}
                   </div>
                   <div className="team-actions">
                     <button type="button" className="secondary-button" onClick={() => startEditRoom(room)}>

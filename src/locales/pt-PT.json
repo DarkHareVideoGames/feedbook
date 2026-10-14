@@ -159,7 +159,6 @@
   },
   "admin": {
     "title": "Painel de administracao",
-    "perMemberPerHour": "Preco por elemento por hora (EUR)",
     "engineerPrice": "Extra: Tecnico de sessao (EUR)",
     "recordingPrice": "Extra: Captacao stereo (EUR)",
     "backlinePrice": "Extra: Backline (EUR)",

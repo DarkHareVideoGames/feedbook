@@ -159,7 +159,6 @@
   },
   "admin": {
     "title": "Admin panel",
-    "perMemberPerHour": "Price per player per hour (EUR)",
     "engineerPrice": "Extra: Session engineer (EUR)",
     "recordingPrice": "Extra: Stereo capture (EUR)",
     "backlinePrice": "Extra: Backline (EUR)",
