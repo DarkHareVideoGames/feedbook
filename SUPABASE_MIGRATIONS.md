@@ -1,0 +1,43 @@
+# Migrações da base de dados (Supabase)
+
+Estes ficheiros **são versionados no Git de propósito**. São a única
+forma de recriar e evoluir a base de dados de forma reprodutível.
+
+## Ficheiros
+
+| Ficheiro | Ordem | Descrição |
+|---|---|---|
+| `supabase_schema.sql` | 1 | Schema base (tabelas `bookings`, `profiles`, `pricing`, `audit_logs`, funções e RLS). **Atenção:** faz `drop table if exists public.bookings cascade`. |
+| `supabase_migration_users.sql` | 2 | Coluna `function`, trigger de perfil, funções `admin_update_user` / `admin_delete_user`. Idempotente. |
+| `supabase_rooms_services.sql` | 3 | Tabelas `rooms` e `services` + seed das salas. |
+| `supabase_migration_*.sql` | 4+ | Migrações incrementais (idempotentes). Aplicar por ordem cronológica. |
+| `supabase_migration_security_rls.sql` | 5+ | Endurecimento de RLS (Issue #38): remove escrita `anon`, limita PII de `bookings`, restringe `profiles`/`audit_logs` a admin/superuser, deriva ator de `auth.uid()` nas funções admin. Idempotente. |
+| `supabase_seed_audit.sql` | — | Seed opcional do histórico de `audit_logs`. **Sem** hashes de password. |
+
+## Como aplicar
+
+1. Abrir **Supabase → SQL Editor → New query**.
+2. Colar o conteúdo do ficheiro.
+3. Executar (`Run`).
+
+## Regras de segurança
+
+- **Nunca adicionar `*.sql` ao `.gitignore`.** As migrações são código.
+- Nenhum ficheiro desta pasta pode conter credenciais, chaves de API,
+  tokens ou hashes de password. Valores específicos de ambiente
+  são parametrizados por variáveis de ambiente / pelo painel do Supabase.
+- `supabase_seed_audit.sql` foi saneado: os campos `passwordHash` e
+  `passwordSalt` foram removidos porque são credenciais derivadas e o
+  repositório é público. O registo de auditoria mantém-se integralmente.
+- Os hashes/salts do utilizador `admin@feedbook.local` continuaram
+  presentes no histórico do Git. Como o `passwordSalt` é publicado ao
+  lado do `passwordHash`, qualquer pessoa pode tentar quebrar esse
+  hash por força bruta. **Se essa conta for usada em produção, defina
+  uma nova password.**
+
+## Nota sobre RLS
+
+Os scripts de schema criam políticas públicas para `anon` com o objetivo
+de facilitar os testes. **Antes de produção, restringe o `anon`** —
+ver a secção 7 de `supabase_schema.sql`, que assinala explicitamente
+essa limitação.

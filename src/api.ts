@@ -23,13 +23,8 @@ export type StaffFunction =
   | 'gestor-manutencao'
   | 'tecnico';
 
-// Email do SUPERUSER (administrador root). Fallback de login: se as credenciais
-// do Supabase Auth são válidas e este email coincide, entra sempre como superuser,
-// mesmo que o perfil/roles falhem. Configurável por VITE_SUPERUSER_EMAIL.
-export const SUPERUSER_EMAIL = String(
-  (import.meta.env.VITE_SUPERUSER_EMAIL as string | undefined) || 'pedroveiga.box@gmail.com',
-).trim().toLowerCase();
-
+// O role privilegiado (superuser) é determinado apenas na base de dados
+// (tabela profiles.role). O front-end não aplica qualquer fallback por email.
 export const staffFunctionLabels: Record<StaffFunction, string> = {
   'diretor-producao': 'Diretor de Produção',
   'diretor-tecnico': 'Diretor Técnico',
@@ -276,15 +271,6 @@ function normalizeFunction(value: unknown): StaffFunction | null {
   return allowedFunctions.includes(fn as StaffFunction) ? (fn as StaffFunction) : null;
 }
 
-// Aplica o fallback de SUPERUSER: se o email coincide com o administrador root,
-// força role 'superuser' (independentemente do que a BD/perfil devolva).
-function withSuperuserFallback(user: ApiUser): ApiUser {
-  if (String(user.email ?? '').trim().toLowerCase() === SUPERUSER_EMAIL) {
-    return { ...user, role: 'superuser' };
-  }
-  return user;
-}
-
 export function normalizePaymentStatus(value: unknown): string {
   const status = String(value ?? '').trim().toLowerCase();
   if (!status) return 'pending';
@@ -370,10 +356,19 @@ async function loadRoomPriceMap(): Promise<Record<string, number | null>> {
 function mapBookingRow(row: Record<string, unknown>): ApiBooking {
   return {
     ...(row as unknown as ApiBooking),
+    id: String(row.id ?? ''),
+    roomId: (row.roomId ?? row.room_id ?? null) as string | null,
+    roomName: String(row.roomName ?? row.room_name ?? ''),
+    status: (row.status ?? 'pending') as ApiBooking['status'],
+    date: String(row.date ?? ''),
+    time: String(row.time ?? ''),
     duration: Number(row.duration ?? 0),
+    bandName: row.bandName === undefined ? null : (row.bandName as string | null),
+    contactName: String(row.contactName ?? row.contact_name ?? ''),
+    contactPhone: row.contactPhone === undefined ? null : (row.contactPhone as string | null),
+    email: String(row.email ?? ''),
+    participants: row.participants === null || row.participants === undefined ? null : Number(row.participants),
     amount: row.amount === null || row.amount === undefined ? null : Number(row.amount),
-    participants:
-      row.participants === null || row.participants === undefined ? null : Number(row.participants),
     extras: Array.isArray(row.extras) ? (row.extras as string[]) : [],
     paymentStatus: normalizePaymentStatus(row.paymentStatus),
   };
@@ -402,7 +397,7 @@ async function profileFor(user: User): Promise<ApiUser> {
 
   if (!data) {
     const metadata = (user.user_metadata ?? {}) as { name?: string; role?: string; function?: string };
-    return withSuperuserFallback({
+    return {
       id: user.id,
       name: metadata.name || String(user.email ?? '').split('@')[0],
       email: String(user.email ?? ''),
@@ -410,10 +405,10 @@ async function profileFor(user: User): Promise<ApiUser> {
       function: normalizeFunction(metadata.function),
       phone: '',
       createdAt: user.created_at ?? new Date().toISOString(),
-    });
+    };
   }
 
-  return withSuperuserFallback({
+  return {
     id: String(data.id),
     name: String(data.name ?? ''),
     email: String(data.email ?? ''),
@@ -421,7 +416,7 @@ async function profileFor(user: User): Promise<ApiUser> {
     function: normalizeFunction(data.function),
     phone: String(data.phone ?? ''),
     createdAt: String(data.createdAt ?? ''),
-  });
+  };
 }
 
 async function requireActor(token: string, roles: Role[]): Promise<ApiUser> {
@@ -454,31 +449,8 @@ export async function login(
   }
 
   const authUser = data.user;
-  try {
-    const profile = await profileFor(authUser);
-    return { token: data.session.access_token, user: profile };
-  } catch (profileError) {
-    // Fallback do SUPERUSER: credenciais Auth válidas + email do root.
-    // Mesmo que o perfil/roles falhem (ex.: falha de rede na tabela profiles),
-    // concede acesso como superuser — "pode logar sempre".
-    const authEmail = String(authUser?.email ?? '').trim().toLowerCase();
-    if (authEmail === SUPERUSER_EMAIL) {
-      const metadata = (authUser.user_metadata ?? {}) as { name?: string };
-      return {
-        token: data.session.access_token,
-        user: {
-          id: authUser.id,
-          name: metadata.name || authEmail.split('@')[0],
-          email: authEmail,
-          phone: '',
-          role: 'superuser',
-          function: null,
-          createdAt: authUser.created_at ?? new Date().toISOString(),
-        },
-      };
-    }
-    throw profileError;
-  }
+  const profile = await profileFor(authUser);
+  return { token: data.session.access_token, user: profile };
 }
 
 export async function me(token: string): Promise<{ user: ApiUser }> {
@@ -503,7 +475,7 @@ export async function listBookings(): Promise<{ bookings: ApiBooking[] }> {
   }
   const { data, error } = await supabase
     .from('bookings')
-    .select('*')
+    .select('id, roomId, roomName, status, date, time, duration')
     .order('createdAt', { ascending: true });
 
   if (error) {
@@ -1596,7 +1568,6 @@ export async function updateUser(
   }
 
   const { data, error } = await supabase.rpc('admin_update_user', {
-    p_actor: actor.id,
     p_id: draft.id,
     p_email: email,
     p_name: draft.name,
@@ -1649,7 +1620,6 @@ export async function deleteUser(token: string, userId: string): Promise<{ messa
   }
 
   const { error } = await supabase.rpc('admin_delete_user', {
-    p_actor: actor.id,
     p_id: userId,
   });
 

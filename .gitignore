@@ -26,7 +26,13 @@ backups/
 vite.config.js
 vite.config.d.ts
 
-# dados de execução do servidor (mantém o state.json do repositório)
+# NOTA: os ficheiros supabase_*.sql (schema + migrações) são versionados DE
+# PROPÓSITO — são necessários para recriar e evoluir a base de dados.
+# NÃO adicionar "*.sql" a este ficheiro. Se uma migração tiver de conter
+# segredos, parametrizar por ambiente (env vars) em vez de a excluir.
+
+# dados de execução do servidor (contêm hashes de password e dados pessoais)
+server/data/state.json
 server/data/state.json.bak
 
 # logs de runtime e rascunhos temporários (não devem ser versionados)
@@ -34,3 +40,4 @@ dev.log
 dev-server.log
 api-dev.log
 *.new
+v.txt
