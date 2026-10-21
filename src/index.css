@@ -153,6 +153,7 @@ button {
 .topbar h1,
 .hero h2,
 .section-heading h2,
+.booking-heading h1,
 .room-card h3 {
   font-family: Georgia, "Times New Roman", serif;
   letter-spacing: 0.01em;
@@ -999,37 +1000,78 @@ textarea:focus {
   line-height: 1.5;
 }
 
-/* --- Fluxo de marcacao: wizard por etapas --- */
-.booking-stepper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/* --- Fluxo de marcacao: titulo do wizard --- */
+.booking-heading {
   margin-bottom: 20px;
-  font-size: 0.82rem;
-  color: var(--text-muted, #b3b3b3);
 }
 
-.booking-stepper-dot {
-  width: 28px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  transition: background-color 0.25s ease;
-}
-
-.booking-stepper-dot-done {
-  background: var(--accent, #d11223);
-}
-
-.booking-stepper-label {
-  margin-left: 4px;
-  letter-spacing: 0.02em;
+.booking-heading h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.9rem, 3.4vw, 2.9rem);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  max-width: 18ch;
 }
 
 .booking-step {
   display: grid;
   gap: 18px;
   animation: booking-step-in 0.28s ease;
+}
+
+/* Coluna direita do passo de data: hora seguida de duração (Issue #4). */
+.booking-schedule-column {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.booking-schedule-column .duration-lead {
+  max-width: none;
+}
+
+/* Extras no mesmo passo da data/hora/duração (Issue #37). */
+.booking-extras-block {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+/* Recapitulação da escolha no passo de dados. */
+.booking-summary {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.booking-summary-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.booking-summary-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 12px;
+  align-items: baseline;
+}
+
+.booking-summary-list dt {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.booking-summary-list dd {
+  margin: 0;
+  color: var(--text-main);
+  font-weight: 600;
+  text-align: right;
 }
 
 @keyframes booking-step-in {
