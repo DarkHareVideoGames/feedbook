@@ -41,9 +41,9 @@ type TeamBooking = {
   date: string;
   time: string;
   duration: number;
-  bandName: string;
-  contactName: string;
-  email: string;
+  bandName?: string | null;
+  contactName?: string;
+  email?: string;
   participants?: number;
   paymentMethod?: PaymentMethod;
   paymentStatus?: string;
