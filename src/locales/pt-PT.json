@@ -61,10 +61,9 @@
     "privacy": "Politica de privacidade"
   },
   "booking": {
-    "title": "Reserva o teu ensaio",
+    "title": "Reserva agora!",
     "next": "Continuar",
     "back": "Voltar",
-    "stepIndicator": "Passo {{current}} de {{total}}",
     "stepRoom": "Sala",
     "stepDate": "Data",
     "stepExtras": "Extras",

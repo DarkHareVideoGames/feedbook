@@ -687,18 +687,8 @@ function App() {
 
       <main className="layout">
         {bookingStep !== 'confirmation' ? (
-          <div className="booking-stepper" aria-hidden="true">
-            {((selectedRoomContactOnly ? ['room', 'details'] : ['room', 'date', 'details']) as BookingStep[]).map((step) => (
-              <span
-                key={step}
-                className={`booking-stepper-dot${bookingSteps.indexOf(bookingStep) >= bookingSteps.indexOf(step) ? ' booking-stepper-dot-done' : ''}`}
-              />
-            ))}
-            <span className="booking-stepper-label">
-              {formatTemplate(translations.booking.stepIndicator, selectedRoomContactOnly
-                ? { current: bookingStep === 'room' ? 1 : 2, total: 2 }
-                : { current: bookingSteps.indexOf(bookingStep) + 1, total: 3 })}
-            </span>
+          <div className="booking-heading">
+            <h1>{translations.booking.title}</h1>
           </div>
         ) : null}
 
@@ -757,10 +747,6 @@ function App() {
         {bookingStep === 'date' || bookingStep === 'details' ? (
           <section className="booking-grid">
             <form className="card booking-form" onSubmit={handleSubmit} autoComplete="off">
-              <div className="section-heading">
-                <h2>{translations.booking.title}</h2>
-              </div>
-
             {bookingStep === 'date' ? (
               <div className="booking-step">
               <div className="field-row booking-datetime-row">
