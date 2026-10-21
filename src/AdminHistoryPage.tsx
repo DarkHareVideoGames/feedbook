@@ -174,7 +174,7 @@ type HistoryFilter = 'all' | 'pending' | 'confirmed' | 'rescheduled' | 'cancelle
 // Futuro/hoje fica sempre visivel; 'all' mostra o historico completo.
 type PeriodScope = 'month' | '3m' | '6m' | 'year' | 'all';
 
-type AdminPanel = 'unified' | 'users' | 'rooms' | 'services';
+type AdminPanel = 'unified' | 'contact-requests' | 'users' | 'rooms' | 'services';
 
 type NewUserDraft = {
   name: string;
@@ -207,6 +207,7 @@ type RoomFormDraft = {
   gearEn: string;
   accent: string;
   active: boolean;
+  bookingMode: 'booking' | 'contact';
 };
 
 type ServiceFormDraft = {
@@ -228,6 +229,7 @@ const emptyRoomForm: RoomFormDraft = {
   imageUrl: '',
   gear: '',
   gearEn: '',
+  bookingMode: 'booking',
   accent: 'var(--room-red)',
   active: true,
 };
@@ -255,6 +257,7 @@ function roomToForm(room: api.ApiRoom): RoomFormDraft {
     gearEn: (room.gearEn ?? []).join('\n'),
     accent: room.accent || 'var(--room-red)',
     active: room.active !== false,
+    bookingMode: room.bookingMode,
   };
 }
 
@@ -587,6 +590,8 @@ function consegueAbrirWhatsApp(booking: PastBooking): boolean {
 
 function AdminHistoryPage() {
   const [bookings, setBookings] = useState<PastBooking[]>([]);
+  const [contactRequests, setContactRequests] = useState<api.ApiContactRequest[]>([]);
+  const [contactRequestsLoading, setContactRequestsLoading] = useState(false);
   const [adminLogoVisible, setAdminLogoVisible] = useState(true);
   const [betaEnabled, setBetaEnabled] = useState(true);
   const [token, setToken] = useState('');
@@ -634,6 +639,7 @@ function AdminHistoryPage() {
   const [clearBookingsLoading, setClearBookingsLoading] = useState(false);
   const [clearBookingsModalOpen, setClearBookingsModalOpen] = useState(false);
   const [clearBookingsConfirmation, setClearBookingsConfirmation] = useState('');
+  const [contactRequestToDelete, setContactRequestToDelete] = useState<string | null>(null);
   const [extrasVisible, setExtrasVisible] = useState<Record<string, boolean>>({});
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
     name: '',
@@ -855,6 +861,23 @@ function AdminHistoryPage() {
     }
   };
 
+  const loadContactRequests = async (sessionToken: string) => {
+    if (!sessionToken) return;
+    setContactRequestsLoading(true);
+    try {
+      const payload = await api.adminContactRequests(sessionToken);
+      setContactRequests(payload.contactRequests);
+    } catch (err) {
+      if (err instanceof api.ApiError && (err.status === 401 || err.status === 403)) {
+        setContactRequests([]);
+        return;
+      }
+      setError('Nao foi possivel carregar os pedidos de contacto.');
+    } finally {
+      setContactRequestsLoading(false);
+    }
+  };
+
   const loadFinance = async (token: string) => {
     try {
       const payload = await api.adminFinance(token);
@@ -922,6 +945,7 @@ function AdminHistoryPage() {
       if (isPrivilegedRole(payload.user.role)) {
         await Promise.all([loadFinance(sessionToken), loadCatalogs(), loadUsers(sessionToken)]);
       }
+      await loadContactRequests(sessionToken);
     } catch (_error) {
       throw new Error('Session expired');
     }
@@ -951,6 +975,7 @@ function AdminHistoryPage() {
       setCurrentUser(payload.user);
       setLoginPassword('');
       await loadHistory(payload.token);
+      await loadContactRequests(payload.token);
       if (isPrivilegedRole(payload.user.role)) {
         await Promise.all([loadFinance(payload.token), loadCatalogs(), loadUsers(payload.token)]);
       }
@@ -1236,6 +1261,7 @@ function AdminHistoryPage() {
         gearEn: roomForm.gearEn,
         accent: roomForm.accent,
         active: roomForm.active,
+        bookingMode: roomForm.bookingMode,
       };
       if (editingRoomId) {
         await api.updateRoom(sessionToken, editingRoomId, draft);
@@ -1433,7 +1459,11 @@ function AdminHistoryPage() {
       setError('');
     } catch (err) {
       console.error('History action failed:', err);
-      setError('Nao foi possivel concluir a acao. Verifique se o backend esta ativo.');
+      if (err instanceof TypeError) {
+        setError('Nao foi possivel comunicar com o servico. Verifique a ligacao e tente novamente.');
+      } else {
+        setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel concluir a acao.');
+      }
     } finally {
       setActionLoading((prev) => ({ ...prev, [bookingId]: false }));
     }
@@ -1886,6 +1916,40 @@ function AdminHistoryPage() {
     doc.save(`feedback-ensaios-contas-${stamp}.pdf`);
   };
 
+  const handleContactRequestStatus = async (
+    contactRequestId: string,
+    status: api.ContactRequestStatus,
+  ) => {
+    if (!token || actionLoading[contactRequestId]) return;
+    setError('');
+    try {
+      await withActionLock(contactRequestId, async () => {
+        await api.updateContactRequestStatus(token, contactRequestId, status);
+        await loadContactRequests(token);
+      });
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel atualizar o pedido de contacto.');
+    }
+  };
+
+  const handleDeleteContactRequest = async () => {
+    const contactRequestId = contactRequestToDelete;
+    if (!contactRequestId) return;
+    if (!token || currentUser?.role !== 'superuser' || actionLoading[contactRequestId]) return;
+
+    setError('');
+    try {
+      await withActionLock(contactRequestId, async () => {
+        const payload = await api.deleteContactRequest(token, contactRequestId);
+        await loadContactRequests(token);
+        setCatalogNotice(payload.message);
+        setContactRequestToDelete(null);
+      });
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel apagar o pedido de contacto.');
+    }
+  };
+
   useEffect(() => {
     if (!sidebarOpen) return;
 
@@ -2066,6 +2130,16 @@ function AdminHistoryPage() {
             >
               Ensaios
             </button>
+            <button
+              type="button"
+              className={`admin-sidebar-item ${activePanel === "contact-requests" ? "admin-sidebar-item-active" : ""}`}
+              onClick={() => {
+                setActivePanel("contact-requests");
+                setSidebarOpen(false);
+              }}
+            >
+              Pedidos de contacto
+            </button>
             {isPrivileged ? (
               <button
                 type="button"
@@ -2129,6 +2203,63 @@ function AdminHistoryPage() {
           {error ? <p className="admin-message-error">{error}</p> : null}
           {catalogNotice ? <p className="confirmation">{catalogNotice}</p> : null}
           {loading ? <p className="summary-copy">A carregar...</p> : null}
+
+          {activePanel === 'contact-requests' ? (
+            <section className="card admin-section catalog-management-section">
+              <div className="section-heading section-heading-row catalog-heading">
+                <div>
+                  <p className="eyebrow">Contactos</p>
+                  <h2>Pedidos de contacto</h2>
+                </div>
+                <span className="catalog-count">{contactRequests.length} registados</span>
+              </div>
+              {contactRequestsLoading ? <p className="summary-copy">A carregar pedidos...</p> : null}
+              <ul className="admin-user-list catalog-list">
+                {contactRequests.map((request) => (
+                  <li key={request.id}>
+                    <div className="admin-user-card-head">
+                      <strong>{request.contactName}</strong>
+                      <span className="booking-id-chip">{request.status}</span>
+                    </div>
+                    <span>{request.roomName} · {request.bandName || 'Sem nome de projeto'}</span>
+                    <span>{request.email} · {request.contactPhone}</span>
+                    {request.message ? <span>{request.message}</span> : null}
+                    <div className="team-actions">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        disabled={Boolean(actionLoading[request.id]) || request.status === 'contacted'}
+                        onClick={() => { void handleContactRequestStatus(request.id, 'contacted'); }}
+                      >
+                        {actionLoading[request.id] ? 'A guardar...' : 'Marcar contactado'}
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        disabled={Boolean(actionLoading[request.id]) || request.status === 'closed'}
+                        onClick={() => { void handleContactRequestStatus(request.id, 'closed'); }}
+                      >
+                        Fechar pedido
+                      </button>
+                      {currentUser?.role === 'superuser' ? (
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          disabled={Boolean(actionLoading[request.id])}
+                          onClick={() => setContactRequestToDelete(request.id)}
+                        >
+                          {actionLoading[request.id] ? 'A apagar...' : 'Apagar'}
+                        </button>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {!contactRequestsLoading && contactRequests.length === 0 ? (
+                <p className="summary-copy">Sem pedidos de contacto.</p>
+              ) : null}
+            </section>
+          ) : null}
 
           {isPrivileged && activePanel === 'users' ? (
             <section className="card admin-section catalog-management-section">
@@ -2440,6 +2571,19 @@ function AdminHistoryPage() {
                   />
                 </label>
               </div>
+              <label>
+                Modo de reserva
+                <select
+                  value={roomForm.bookingMode}
+                  onChange={(event) => setRoomForm((current) => ({
+                    ...current,
+                    bookingMode: event.target.value === 'contact' ? 'contact' : 'booking',
+                  }))}
+                >
+                  <option value="booking">Marcação direta</option>
+                  <option value="contact">Apenas pedido de contacto</option>
+                </select>
+              </label>
               <div className="field-row">
                 <label>
                   Foto da sala (recomendado 1200 × 675 px, 16:9, max 5 MB)
@@ -2561,6 +2705,9 @@ function AdminHistoryPage() {
                     </span>
                     <span className="admin-user-badge admin-user-function-badge">
                       Ate {room.maxMembers} elementos
+                    </span>
+                    <span className="admin-user-badge admin-user-function-badge">
+                      {room.bookingMode === 'contact' ? 'Apenas contacto' : 'Marcação direta'}
                     </span>
                     {room.pricePerMemberHour !== null && room.pricePerMemberHour !== undefined ? (
                       <span className="admin-user-badge admin-user-function-badge">
@@ -3292,6 +3439,44 @@ function AdminHistoryPage() {
                 onClick={() => { void handleClearAllBookings(); }}
               >
                 {clearBookingsLoading ? 'A eliminar...' : 'Eliminar definitivamente'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {contactRequestToDelete ? (
+        <div
+          className="admin-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-contact-request-modal-title"
+        >
+          <section className="card admin-modal-card clear-bookings-modal">
+            <div className="clear-bookings-modal-alert">
+              <AlertTriangle aria-hidden="true" size={18} strokeWidth={2.25} />
+              <span>Operação irreversível</span>
+            </div>
+            <h3 id="delete-contact-request-modal-title">Apagar pedido de contacto?</h3>
+            <p>
+              Este pedido será removido definitivamente e deixará de estar disponível no painel de gestão.
+            </p>
+            <div className="admin-modal-actions clear-bookings-modal-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={Boolean(actionLoading[contactRequestToDelete])}
+                onClick={() => setContactRequestToDelete(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="danger-zone-action"
+                disabled={Boolean(actionLoading[contactRequestToDelete])}
+                onClick={() => { void handleDeleteContactRequest(); }}
+              >
+                {actionLoading[contactRequestToDelete] ? 'A apagar...' : 'Apagar definitivamente'}
               </button>
             </div>
           </section>

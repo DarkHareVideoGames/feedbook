@@ -71,6 +71,7 @@ const fallbackRooms: RoomDefinition[] = [
     gearEn: [],
     accent: 'var(--room-red)',
     active: true,
+    bookingMode: 'booking',
   },
   {
     id: 'sala-grey',
@@ -83,6 +84,7 @@ const fallbackRooms: RoomDefinition[] = [
     gearEn: [],
     accent: 'var(--room-grey)',
     active: true,
+    bookingMode: 'booking',
   },
 ];
 
@@ -415,6 +417,7 @@ function App() {
   const paymentMethodLabel = translations.booking.paymentOnSite;
   const displayDate = formatDateForDisplay(locale, selectedDate);
   const todayIso = getToday();
+  const selectedRoomContactOnly = selectedRoom.bookingMode === 'contact';
 
   useEffect(() => {
     if (rooms.length > 0 && !rooms.some((room) => room.id === selectedRoomId)) {
@@ -467,6 +470,10 @@ function App() {
   }, [confirmation]);
 
   function goToNextStep() {
+    if (selectedRoomContactOnly) {
+      setBookingStep((current) => (current === 'room' ? 'details' : current));
+      return;
+    }
     setBookingStep((current) => {
       const index = bookingSteps.indexOf(current);
       const next = bookingSteps[index + 1];
@@ -475,6 +482,10 @@ function App() {
   }
 
   function goToPreviousStep() {
+    if (selectedRoomContactOnly) {
+      setBookingStep((current) => (current === 'details' ? 'room' : current));
+      return;
+    }
     setBookingStep((current) => {
       const index = bookingSteps.indexOf(current);
       const previous = bookingSteps[index - 1];
@@ -560,7 +571,7 @@ function App() {
 
     // Bloqueia reservas em horários já passados (ou slots entretanto ocupados):
     // garante que, mesmo sem mexer nos dropdowns, não se submete um slot inválido. (Issue #15)
-    if (!selectedSlotAvailable) {
+    if (!selectedRoomContactOnly && !selectedSlotAvailable) {
       setErrorMessage(translations.booking.slotUnavailableError);
       setBookingStep('date');
       return;
@@ -571,41 +582,50 @@ function App() {
     setBackendOffline(false);
 
     try {
-      const payload = await api.createBooking({
-        roomId: selectedRoom.id,
-        date: selectedDate,
-        time: selectedSlot,
-        duration,
-        extras: selectedExtras,
-        bandName: draftForm.bandName,
-        contactName: draftForm.contactName,
-        contactPhone: draftForm.contactPhone,
-        email: draftForm.email,
-        focus: draftForm.focus,
-        locale,
-        paymentMethod: 'on-site',
-      });
+      const confirmationRequestId = selectedRoomContactOnly
+        ? (await api.createContactRequest({
+            roomId: selectedRoom.id,
+            bandName: draftForm.bandName,
+            contactName: draftForm.contactName,
+            contactPhone: draftForm.contactPhone,
+            email: draftForm.email,
+            message: draftForm.focus,
+          })).contactRequest.id
+        : (await api.createBooking({
+            roomId: selectedRoom.id,
+            date: selectedDate,
+            time: selectedSlot,
+            duration,
+            extras: selectedExtras,
+            bandName: draftForm.bandName,
+            contactName: draftForm.contactName,
+            contactPhone: draftForm.contactPhone,
+            email: draftForm.email,
+            focus: draftForm.focus,
+            locale,
+            paymentMethod: 'on-site',
+          })).booking.id;
 
-      const message = formatTemplate(translations.booking.confirmation, {
-        bandName: draftForm.bandName || translations.booking.confirmationFallback,
-        roomName: selectedRoom.name,
-        date: displayDate,
-        time: selectedSlot,
-        duration,
-        paymentMethod: paymentMethodLabel,
-      });
+      const message = selectedRoomContactOnly
+        ? `Recebemos o teu pedido de contacto para ${selectedRoom.name}. A nossa equipa irá contactar-te em breve.`
+        : formatTemplate(translations.booking.confirmation, {
+            bandName: draftForm.bandName || translations.booking.confirmationFallback,
+            roomName: selectedRoom.name,
+            date: displayDate,
+            time: selectedSlot,
+            duration,
+            paymentMethod: paymentMethodLabel,
+          });
 
       setConfirmation(message);
-      setConfirmationId(payload.booking.id);
-      setConfirmationExtras(
-        extras
-          .filter((extra) => selectedExtras.includes(extra.id))
-          .map((extra) => ({ id: extra.id, label: extra.label, price: extra.price })),
-      );
+      setConfirmationId(confirmationRequestId);
+      setConfirmationExtras(selectedRoomContactOnly ? [] : extras
+        .filter((extra) => selectedExtras.includes(extra.id))
+        .map((extra) => ({ id: extra.id, label: extra.label, price: extra.price })));
       setBackendOffline(false);
       setBookingStep('confirmation');
 
-      await loadTeamBookings();
+      if (!selectedRoomContactOnly) await loadTeamBookings();
     } catch (error) {
       if (error instanceof TypeError) {
         setBackendOffline(true);
@@ -666,17 +686,16 @@ function App() {
       <main className="layout">
         {bookingStep !== 'confirmation' ? (
           <div className="booking-stepper" aria-hidden="true">
-            {(['room', 'date', 'extras', 'details'] as const).map((step) => (
+            {((selectedRoomContactOnly ? ['room', 'details'] : ['room', 'date', 'extras', 'details']) as BookingStep[]).map((step) => (
               <span
                 key={step}
                 className={`booking-stepper-dot${bookingSteps.indexOf(bookingStep) >= bookingSteps.indexOf(step) ? ' booking-stepper-dot-done' : ''}`}
               />
             ))}
             <span className="booking-stepper-label">
-              {formatTemplate(translations.booking.stepIndicator, {
-                current: bookingSteps.indexOf(bookingStep) + 1,
-                total: 4,
-              })}
+              {formatTemplate(translations.booking.stepIndicator, selectedRoomContactOnly
+                ? { current: bookingStep === 'room' ? 1 : 2, total: 2 }
+                : { current: bookingSteps.indexOf(bookingStep) + 1, total: 4 })}
             </span>
           </div>
         ) : null}
@@ -697,13 +716,13 @@ function App() {
                   style={{ borderColor: room.accent }}
                   onClick={() => {
                     setSelectedRoomId(room.id);
-                    goToNextStep();
+                    setBookingStep(room.bookingMode === 'contact' ? 'details' : 'date');
                   }}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
                       setSelectedRoomId(room.id);
-                      goToNextStep();
+                      setBookingStep(room.bookingMode === 'contact' ? 'details' : 'date');
                     }
                   }}
                 >
@@ -716,8 +735,9 @@ function App() {
                       <h3>{room.name}</h3>
                     </div>
                     <strong>
-                      {translations.rooms.priceFrom}{' '}
-                      {currency.format(resolveRoomPricePerHour(room.pricePerMemberHour))}
+                      {room.bookingMode === 'contact'
+                        ? 'Apenas por contacto'
+                        : <>{translations.rooms.priceFrom} {currency.format(resolveRoomPricePerHour(room.pricePerMemberHour))}</>}
                     </strong>
                   </div>
                   <p>{room.vibe}</p>
@@ -916,6 +936,9 @@ function App() {
 
             {bookingStep === 'details' ? (
               <div className="booking-step">
+                {selectedRoomContactOnly ? (
+                  <p className="summary-copy">Esta sala funciona apenas por contacto. Envia os teus dados e a equipa irá falar contigo para combinar todos os detalhes.</p>
+                ) : null}
               <label>
                 {translations.booking.bandNameLabel}
                 <input

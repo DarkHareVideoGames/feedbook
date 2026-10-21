@@ -118,6 +118,37 @@ async function sendDiscordAlert(booking) {
   }
 }
 
+function buildContactRequestDiscordEmbed(contactRequest) {
+  const ADMIN_URL = 'https://feedbook-kappa.vercel.app/admin';
+  const description = [
+    `**👉 [GERIR PEDIDO!](${ADMIN_URL})**`,
+    `👤 ${plainText(contactRequest.contactName)} · 🎸 ${plainText(contactRequest.bandName, plainText(contactRequest.contactName))}`,
+    `🚪 ${plainText(contactRequest.roomName)} · 📞 ${plainText(contactRequest.contactPhone)}`,
+    `✉️ ${plainText(contactRequest.email)}`,
+    contactRequest.message ? `💬 ${plainText(contactRequest.message)}` : null,
+  ].filter(Boolean).join('\n');
+  return {
+    color: 3447003,
+    url: ADMIN_URL,
+    description,
+    timestamp: new Date().toISOString(),
+    title: '📩 Novo Pedido de Contacto!',
+  };
+}
+
+async function sendContactRequestDiscordAlert(contactRequest) {
+  if (!DISCORD_WEBHOOK_URL) return;
+  try {
+    await fetch(DISCORD_WEBHOOK_URL, {
+      body: JSON.stringify({ embeds: [buildContactRequestDiscordEmbed(contactRequest)] }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    });
+  } catch (e) {
+    console.error('Erro ao enviar alerta Discord:', e);
+  }
+}
+
 function buildMessage(booking, status) {
   const head = '<h1 style="font-size: 24px;">Feedback - Ensaios Status da Reserva</h1>';
   const user = escapeHtml(booking.contactName);
@@ -179,7 +210,16 @@ export default async function handler(req, res) {
   }
 
   const booking = req.body?.booking;
+  const contactRequest = req.body?.contactRequest;
   const status = String(req.body?.status || '').trim();
+
+  if (status === 'contact-request') {
+    if (!contactRequest || typeof contactRequest !== 'object') {
+      return res.status(400).json({ message: 'Contact request payload is required.' });
+    }
+    void sendContactRequestDiscordAlert(contactRequest);
+    return res.json({ message: 'Contact request notification queued.' });
+  }
 
   if (!booking || typeof booking !== 'object') {
     return res.status(400).json({ message: 'Booking payload is required.' });

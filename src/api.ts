@@ -102,6 +102,7 @@ export type ApiRoom = {
   gearEn: string[];
   accent: string;
   active: boolean;
+  bookingMode: 'booking' | 'contact';
 };
 
 export type ApiService = {
@@ -126,6 +127,23 @@ export type RoomDraft = {
   gearEn?: string;
   accent?: string;
   active?: boolean;
+  bookingMode?: 'booking' | 'contact';
+};
+
+export type ContactRequestStatus = 'pending' | 'contacted' | 'closed';
+
+export type ApiContactRequest = {
+  id: string;
+  roomId: string;
+  roomName: string;
+  contactName: string;
+  contactPhone: string;
+  email: string;
+  bandName?: string | null;
+  message?: string | null;
+  status: ContactRequestStatus;
+  createdAt: string;
+  updatedAt?: string;
 };
 
 export type ServiceDraft = {
@@ -193,6 +211,7 @@ const fallbackRooms: ApiRoom[] = [
     gearEn: ['Full drum kit', '2 guitar amps', 'PA with monitors'],
     accent: 'var(--room-red)',
     active: true,
+    bookingMode: 'booking',
   },
   {
     id: 'sala-grey',
@@ -205,6 +224,7 @@ const fallbackRooms: ApiRoom[] = [
     gearEn: ['Compact drum kit', 'Bass amp', 'PA with vocal FX'],
     accent: 'var(--room-grey)',
     active: true,
+    bookingMode: 'booking',
   },
 ];
 
@@ -595,6 +615,154 @@ export async function createBooking(draft: CreateBookingDraft): Promise<{ bookin
     }
     throw toError(error instanceof Error ? error.message : undefined, 'Nao foi possivel concluir a marcacao.');
   }
+}
+
+export type CreateContactRequestDraft = {
+  roomId: string;
+  contactName: string;
+  contactPhone: string;
+  email: string;
+  bandName?: string;
+  message?: string;
+};
+
+function mapContactRequestRow(row: Record<string, unknown>): ApiContactRequest {
+  return {
+    id: String(row.id ?? ''),
+    roomId: String(row.roomId ?? row.room_id ?? ''),
+    roomName: String(row.roomName ?? row.room_name ?? ''),
+    contactName: String(row.contactName ?? row.contact_name ?? ''),
+    contactPhone: String(row.contactPhone ?? row.contact_phone ?? ''),
+    email: String(row.email ?? ''),
+    bandName: row.bandName === undefined ? null : (row.bandName as string | null),
+    message: row.message === undefined ? null : (row.message as string | null),
+    status: (row.status ?? 'pending') as ContactRequestStatus,
+    createdAt: String(row.createdAt ?? row.created_at ?? ''),
+    updatedAt: String(row.updatedAt ?? row.updated_at ?? ''),
+  };
+}
+
+export async function createContactRequest(draft: CreateContactRequestDraft): Promise<{ contactRequest: ApiContactRequest }> {
+  if (!isSupabaseConfigured) {
+    throw new ApiError('Supabase não configurado: define VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.', 500);
+  }
+
+  const roomId = String(draft.roomId || '').trim();
+  const contactName = String(draft.contactName || '').trim();
+  const contactPhone = String(draft.contactPhone || '').trim();
+  const email = String(draft.email || '').trim().toLowerCase();
+  if (!roomId || !contactName || !contactPhone || !email) {
+    throw new ApiError('Missing required contact request fields.', 400);
+  }
+
+  const { data: room, error: roomError } = await supabase
+    .from('rooms')
+    .select('id, name, active, bookingMode')
+    .eq('id', roomId)
+    .maybeSingle();
+  if (roomError || !room || room.active === false || room.bookingMode !== 'contact') {
+    throw new ApiError('This room is not available for contact requests.', 400);
+  }
+
+  const id = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+  const contactRequest: ApiContactRequest = {
+    id,
+    roomId,
+    roomName: String(room.name ?? ''),
+    contactName,
+    contactPhone,
+    email,
+    bandName: String(draft.bandName || '').trim() || null,
+    message: String(draft.message || '').trim() || null,
+    status: 'pending',
+    createdAt,
+    updatedAt: createdAt,
+  };
+
+  const { error } = await supabase
+    .from('contact_requests')
+    .insert({
+      id: contactRequest.id,
+      roomId: contactRequest.roomId,
+      roomName: contactRequest.roomName,
+      contactName: contactRequest.contactName,
+      contactPhone: contactRequest.contactPhone,
+      email: contactRequest.email,
+      bandName: contactRequest.bandName,
+      message: contactRequest.message,
+      status: contactRequest.status,
+    });
+  if (error) throw toError(error.message, 'Nao foi possivel enviar o pedido de contacto.');
+
+  notifyContactRequest(contactRequest);
+  return { contactRequest };
+}
+
+export async function adminContactRequests(token: string): Promise<{ contactRequests: ApiContactRequest[] }> {
+  await requireActor(token, ['superuser', 'admin', 'collaborator', 'technician']);
+  const { data, error } = await supabase
+    .from('contact_requests')
+    .select('*')
+    .order('createdAt', { ascending: false });
+  if (error) throw toError(error.message, 'Could not load contact requests.', 400);
+  return { contactRequests: (data ?? []).map((row) => mapContactRequestRow(row as Record<string, unknown>)) };
+}
+
+export async function updateContactRequestStatus(
+  token: string,
+  contactRequestId: string,
+  status: ContactRequestStatus,
+): Promise<{ contactRequest: ApiContactRequest }> {
+  if (!['pending', 'contacted', 'closed'].includes(status)) {
+    throw new ApiError('Invalid contact request status.', 400);
+  }
+  const actor = await requireActor(token, ['superuser', 'admin', 'collaborator', 'technician']);
+  const { data, error } = await supabase
+    .from('contact_requests')
+    .update({ status })
+    .eq('id', contactRequestId)
+    .select()
+    .single();
+  if (error || !data) throw toError(error?.message, 'Nao foi possivel atualizar o pedido de contacto.');
+  const contactRequest = mapContactRequestRow(data as Record<string, unknown>);
+  await recordAudit({
+    action: 'contact-request-status-updated',
+    actor: { id: actor.id, name: actor.name, role: actor.role },
+    target: contactRequest.id,
+    details: { sala: contactRequest.roomName, estado: status },
+  });
+  return { contactRequest };
+}
+
+export async function deleteContactRequest(token: string, contactRequestId: string): Promise<{ message: string }> {
+  const actor = await requireActor(token, ['superuser']);
+  const { data: existing, error: existingError } = await supabase
+    .from('contact_requests')
+    .select('*')
+    .eq('id', contactRequestId)
+    .maybeSingle();
+  if (existingError) throw toError(existingError.message, 'Nao foi possivel consultar o pedido de contacto.');
+  if (!existing) throw new ApiError('Pedido de contacto nao encontrado ou sem permissao para o consultar.', 404);
+
+  const { data: deletedRows, error } = await supabase
+    .from('contact_requests')
+    .delete()
+    .eq('id', contactRequestId)
+    .select('id');
+  if (error) throw toError(error.message, 'Nao foi possivel apagar o pedido de contacto.');
+  if (!deletedRows || deletedRows.length !== 1) {
+    throw new ApiError('O pedido de contacto nao foi apagado. Confirme se a politica DELETE para superuser foi aplicada no Supabase.', 403);
+  }
+
+  const contactRequest = mapContactRequestRow(existing as Record<string, unknown>);
+  await recordAudit({
+    action: 'contact-request-deleted',
+    actor: { id: actor.id, name: actor.name, role: actor.role },
+    target: contactRequest.id,
+    details: { sala: contactRequest.roomName, contacto: contactRequest.contactName },
+  });
+  return { message: 'Pedido de contacto apagado.' };
 }
 
 // --- Bookings (admin) ---------------------------------------
@@ -1067,6 +1235,7 @@ function mapRoomRow(row: Record<string, unknown>): ApiRoom {
     gearEn,
     accent: String(row.accent ?? 'var(--room-red)'),
     active: row.active !== false,
+    bookingMode: row.bookingMode === 'contact' ? 'contact' : 'booking',
   };
 }
 
@@ -1160,6 +1329,7 @@ export async function createRoom(token: string, draft: RoomDraft): Promise<{ roo
     gearEn: splitLines(draft?.gearEn),
     accent: String(draft?.accent || 'var(--room-red)'),
     active: draft?.active !== false,
+    bookingMode: draft?.bookingMode === 'contact' ? 'contact' : 'booking',
     updatedAt: new Date().toISOString(),
   };
   const { data, error } = await supabase.from('rooms').insert(row).select().single();
@@ -1194,6 +1364,7 @@ export async function updateRoom(token: string, roomId: string, draft: RoomDraft
     gearEn: splitLines(draft?.gearEn),
     accent: String(draft?.accent || 'var(--room-red)'),
     active: draft?.active !== false,
+    bookingMode: draft?.bookingMode === 'contact' ? 'contact' : 'booking',
     imageUrl: normalizeRoomImageUrl(draft?.imageUrl),
   };
   const { data, error } = await supabase.from('rooms').update(patch).eq('id', roomId).select().single();
@@ -1762,5 +1933,15 @@ function notifyBooking(booking: ApiBooking, status: 'pending' | 'confirmed' | 'r
     body: JSON.stringify({ booking, status }),
   }).catch(() => {
     // Sem servidor de email a correr — a marcacao fica na mesma registada.
+  });
+}
+
+function notifyContactRequest(contactRequest: ApiContactRequest): void {
+  void fetch('/api/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contactRequest, status: 'contact-request' }),
+  }).catch(() => {
+    // Sem servidor de notificações a correr — o pedido fica na mesma registado.
   });
 }
