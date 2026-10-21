@@ -29,9 +29,11 @@ type BookingForm = {
 
 type BookingStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
 
-type BookingStep = 'room' | 'date' | 'extras' | 'details' | 'confirmation';
+// Fluxo normal de marcação em três passos (Issues #4 e #37):
+// Sala → Data/Hora/Duração + Extras → Dados. A confirmação é o ecrã final.
+type BookingStep = 'room' | 'date' | 'details' | 'confirmation';
 
-const bookingSteps: BookingStep[] = ['room', 'date', 'extras', 'details', 'confirmation'];
+const bookingSteps: BookingStep[] = ['room', 'date', 'details', 'confirmation'];
 
 type TeamBooking = {
   id: string;
@@ -686,7 +688,7 @@ function App() {
       <main className="layout">
         {bookingStep !== 'confirmation' ? (
           <div className="booking-stepper" aria-hidden="true">
-            {((selectedRoomContactOnly ? ['room', 'details'] : ['room', 'date', 'extras', 'details']) as BookingStep[]).map((step) => (
+            {((selectedRoomContactOnly ? ['room', 'details'] : ['room', 'date', 'details']) as BookingStep[]).map((step) => (
               <span
                 key={step}
                 className={`booking-stepper-dot${bookingSteps.indexOf(bookingStep) >= bookingSteps.indexOf(step) ? ' booking-stepper-dot-done' : ''}`}
@@ -695,7 +697,7 @@ function App() {
             <span className="booking-stepper-label">
               {formatTemplate(translations.booking.stepIndicator, selectedRoomContactOnly
                 ? { current: bookingStep === 'room' ? 1 : 2, total: 2 }
-                : { current: bookingSteps.indexOf(bookingStep) + 1, total: 4 })}
+                : { current: bookingSteps.indexOf(bookingStep) + 1, total: 3 })}
             </span>
           </div>
         ) : null}
@@ -752,7 +754,7 @@ function App() {
           </section>
         ) : null}
 
-        {bookingStep === 'date' || bookingStep === 'extras' || bookingStep === 'details' ? (
+        {bookingStep === 'date' || bookingStep === 'details' ? (
           <section className="booking-grid">
             <form className="card booking-form" onSubmit={handleSubmit} autoComplete="off">
               <div className="section-heading">
@@ -761,29 +763,6 @@ function App() {
 
             {bookingStep === 'date' ? (
               <div className="booking-step">
-              <div className="duration-lead">
-                <label>
-                  {translations.booking.durationLabel}
-                  <select
-                    value={duration}
-                    onChange={(event) => setDuration(Number(event.target.value))}
-                    className="duration-select"
-                  >
-                    {durations.map((value) => (
-                      <option
-                        key={value}
-                        value={value}
-                        disabled={!canSessionFit(selectedStartHour, value)}
-                      >
-                        {formatTemplate(translations.booking.durationOption, { count: value })}
-                        {' — '}
-                        {currency.format(calculateRehearsalPrice(value, selectedRoomPricePerHour))}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
               <div className="field-row booking-datetime-row">
               <div className="calendar-field">
                 <div className="calendar-picker">
@@ -856,31 +835,56 @@ function App() {
                 </div>
               </div>
 
-              <div className="starttime-field">
-                <label>
-                  {translations.booking.startTimeLabel}
-                  <select
-                    value={selectedSlot}
-                    onChange={(event) => setSelectedSlot(event.target.value)}
-                    className="starttime-select"
-                  >
-                    {startSlotLabels.map((slotLabel) => {
-                      const isUnavailable = !isSlotAvailable(
-                        slotLabel,
-                        duration,
-                        selectedDate,
-                        selectedRoomId,
-                        teamBookings,
-                      );
-                      return (
-                        <option key={slotLabel} value={slotLabel} disabled={isUnavailable}>
-                          {slotLabel}
-                          {isUnavailable ? ` — ${translations.slots.unavailable}` : ''}
+              <div className="booking-schedule-column">
+                <div className="starttime-field">
+                  <label>
+                    {translations.booking.startTimeLabel}
+                    <select
+                      value={selectedSlot}
+                      onChange={(event) => setSelectedSlot(event.target.value)}
+                      className="starttime-select"
+                    >
+                      {startSlotLabels.map((slotLabel) => {
+                        const isUnavailable = !isSlotAvailable(
+                          slotLabel,
+                          duration,
+                          selectedDate,
+                          selectedRoomId,
+                          teamBookings,
+                        );
+                        return (
+                          <option key={slotLabel} value={slotLabel} disabled={isUnavailable}>
+                            {slotLabel}
+                            {isUnavailable ? ` — ${translations.slots.unavailable}` : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="duration-lead">
+                  <label>
+                    {translations.booking.durationLabel}
+                    <select
+                      value={duration}
+                      onChange={(event) => setDuration(Number(event.target.value))}
+                      className="duration-select"
+                    >
+                      {durations.map((value) => (
+                        <option
+                          key={value}
+                          value={value}
+                          disabled={!canSessionFit(selectedStartHour, value)}
+                        >
+                          {formatTemplate(translations.booking.durationOption, { count: value })}
+                          {' — '}
+                          {currency.format(calculateRehearsalPrice(value, selectedRoomPricePerHour))}
                         </option>
-                      );
-                    })}
-                  </select>
-                </label>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               </div>
               </div>
 
@@ -889,6 +893,24 @@ function App() {
                   <span>⚠ {translations.booking.slotUnavailableError}</span>
                 </div>
               ) : null}
+
+              {/* Issue #37: os extras ficam no mesmo passo, por baixo de dia/hora/duração. */}
+              <div className="booking-extras-block">
+                <span className="field-label">{translations.booking.addonsLabel}</span>
+                <div className="extras-list">
+                  {extras.map((extra) => (
+                    <label key={extra.id} className="extra-toggle">
+                      <input
+                        type="checkbox"
+                        checked={selectedExtras.includes(extra.id)}
+                        onChange={() => toggleExtra(extra.id)}
+                      />
+                      <span>{extra.label}</span>
+                      <strong>{currency.format(extra.price)}</strong>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
               <div className="booking-nav">
                 <button type="button" className="secondary-button" onClick={goToPreviousStep}>
@@ -906,39 +928,44 @@ function App() {
               </div>
             ) : null}
 
-            {bookingStep === 'extras' ? (
-              <div className="booking-step">
-                <span className="field-label">{translations.booking.addonsLabel}</span>
-                <div className="extras-list">
-                  {extras.map((extra) => (
-                    <label key={extra.id} className="extra-toggle">
-                      <input
-                        type="checkbox"
-                        checked={selectedExtras.includes(extra.id)}
-                        onChange={() => toggleExtra(extra.id)}
-                      />
-                      <span>{extra.label}</span>
-                      <strong>{currency.format(extra.price)}</strong>
-                    </label>
-                  ))}
-                </div>
-
-                <div className="booking-nav">
-                  <button type="button" className="secondary-button" onClick={goToPreviousStep}>
-                    {translations.booking.back}
-                  </button>
-                  <button type="button" className="primary-button" onClick={goToNextStep}>
-                    {translations.booking.next}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
             {bookingStep === 'details' ? (
               <div className="booking-step">
                 {selectedRoomContactOnly ? (
                   <p className="summary-copy">Esta sala funciona apenas por contacto. Envia os teus dados e a equipa irá falar contigo para combinar todos os detalhes.</p>
-                ) : null}
+                ) : (
+                  <div className="booking-summary">
+                    <span className="field-label">{translations.booking.summaryTitle}</span>
+                    <dl className="booking-summary-list">
+                      <div>
+                        <dt>{translations.rooms.selected}</dt>
+                        <dd>{selectedRoom.name}</dd>
+                      </div>
+                      <div>
+                        <dt>{translations.summary.date}</dt>
+                        <dd>{displayDate}</dd>
+                      </div>
+                      <div>
+                        <dt>{translations.summary.startTime}</dt>
+                        <dd>{selectedSlot}</dd>
+                      </div>
+                      <div>
+                        <dt>{translations.summary.duration}</dt>
+                        <dd>{formatTemplate(translations.summary.hours, { count: duration })}</dd>
+                      </div>
+                      <div>
+                        <dt>{translations.summary.addons}</dt>
+                        <dd>
+                          {selectedExtras.length > 0
+                            ? extras
+                              .filter((extra) => selectedExtras.includes(extra.id))
+                              .map((extra) => extra.label)
+                              .join(', ')
+                            : translations.booking.noExtras}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                )}
               <label>
                 {translations.booking.bandNameLabel}
                 <input

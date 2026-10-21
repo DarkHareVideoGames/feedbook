@@ -1032,6 +1032,60 @@ textarea:focus {
   animation: booking-step-in 0.28s ease;
 }
 
+/* Coluna direita do passo de data: hora seguida de duração (Issue #4). */
+.booking-schedule-column {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.booking-schedule-column .duration-lead {
+  max-width: none;
+}
+
+/* Extras no mesmo passo da data/hora/duração (Issue #37). */
+.booking-extras-block {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+/* Recapitulação da escolha no passo de dados. */
+.booking-summary {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.booking-summary-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.booking-summary-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 12px;
+  align-items: baseline;
+}
+
+.booking-summary-list dt {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.booking-summary-list dd {
+  margin: 0;
+  color: var(--text-main);
+  font-weight: 600;
+  text-align: right;
+}
+
 @keyframes booking-step-in {
   from {
     opacity: 0;
