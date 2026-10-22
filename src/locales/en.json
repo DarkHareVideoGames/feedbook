@@ -9,7 +9,7 @@
     "site": "Website",
     "instagram": "Instagram",
     "youtube": "YouTube",
-    "credit": "©DNAI - Workstation 2026"
+    "credit": "®FEEDBACKPRODUCTIONS ©DNAI - Workstation 2026"
   },
   "languages": {
     "pt-PT": "PT",
@@ -52,6 +52,52 @@
     "selected": "Selected room",
     "choose": "Choose this room",
     "priceFrom": "from"
+  },
+  "about": {
+    "eyebrow": "About us",
+    "title": "Feedback Studios, your creative hub",
+    "lede": "We are an all-in-one creative hub built specifically to answer every need of bands, musicians and content creators under a single roof. The space was designed to connect every stage of your project fluidly: the rooms talk to each other, letting you move from the creative immersion of a rehearsal to a multitrack audio recording, a music video shoot, a live stream or an intimate concert.",
+    "infrastructureTitle": "Our infrastructure",
+    "infrastructure": [
+      {
+        "title": "2 dedicated rehearsal rooms",
+        "description": "Fully equipped and ready for daily rehearsals or pre-production residencies, with one high-impact room and one balanced room for detail work."
+      },
+      {
+        "title": "Multi-purpose room with stage (up to 30 people)",
+        "description": "Our big Live Room: a versatile space prepared for concert rehearsals, high-fidelity audiovisual capture and workshops."
+      },
+      {
+        "title": "Bar & lounge area",
+        "description": "The ideal meeting point to relax between sessions, host guests and network with other artists and our technical team."
+      }
+    ],
+    "amenitiesTitle": "Amenities",
+    "amenities": [
+      { "label": "Air conditioning", "value": "in every room" },
+      { "label": "Free Wi-Fi", "value": "for artists, crews and guests" },
+      { "label": "Restrooms", "value": "clean and accessible" },
+      { "label": "Extended hours", "value": "from 10:00 to 24:00" }
+    ],
+    "activitiesTitle": "What you can do in our space",
+    "activities": [
+      {
+        "title": "Artist residencies & rehearsals",
+        "description": "Artist residency packages of up to 2 days in full immersion mode. With two independent rooms we guarantee the intensive pre-production of your project with total focus, while our ecosystem handles all the backstage logistical and technical support."
+      },
+      {
+        "title": "Audio & video recording",
+        "description": "Simultaneous multitrack capture (drums, amplifiers and vocals) in the Multi-purpose Room, with partial acoustic isolation to keep the band's organic energy. Need more isolation? The adjacent rehearsal rooms double as secondary booths directly wired to our Central Control Room."
+      },
+      {
+        "title": "Studio box: streaming, podcasts & clips",
+        "description": "Broadcast your concert live with real-time sound mixing and image direction, or record live sessions for later editing. Produce podcasts in a dedicated space with ATEM Blackmagic switchers, multiple cameras and studio microphones, and build dynamic music video sets using our stage, show lighting system, chroma backdrops and video mapping."
+      },
+      {
+        "title": "Intimate concerts & workshops",
+        "description": "Exclusive showcases for album releases, acoustic concerts or private events for an audience of up to 30 people (press, brands or VIP fans), with a base technical rider (PA, professional lighting, cabling and microphones) and an open-door space for instrument masterclasses, sound technique workshops, music production and digital arts."
+      }
+    ]
   },
   "cookies": {
     "title": "This site uses cookies",

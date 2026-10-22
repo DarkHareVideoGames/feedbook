@@ -9,7 +9,7 @@
     "site": "Site",
     "instagram": "Instagram",
     "youtube": "YouTube",
-    "credit": "©DNAI - Workstation 2026"
+    "credit": "®FEEDBACKPRODUCTIONS ©DNAI - Workstation 2026"
   },
   "languages": {
     "pt-PT": "PT",
@@ -52,6 +52,52 @@
     "selected": "Sala selecionada",
     "choose": "Escolher esta sala",
     "priceFrom": "desde"
+  },
+  "about": {
+    "eyebrow": "Quem somos",
+    "title": "Feedback Studios, o teu hub criativo",
+    "lede": "Somos um hub criativo “tudo-em-um”, desenvolvido especificamente para responder a todas as necessidades de bandas, músicos e criadores de conteúdos num único teto. O espaço foi desenhado para ligar de forma fluida todas as fases do teu projeto: as salas comunicam entre si, permitindo-te passar da imersão criativa de um ensaio para uma gravação de áudio multitrack, produção de videoclipe, transmissão em streaming ou um concerto intimista.",
+    "infrastructureTitle": "A nossa infraestrutura",
+    "infrastructure": [
+      {
+        "title": "2 salas de ensaio dedicadas",
+        "description": "Totalmente equipadas e preparadas para ensaios diários ou residências de pré-produção, com uma sala de forte impacto e outra equilibrada para trabalho de detalhe."
+      },
+      {
+        "title": "Sala multiusos com palco (até 30 pessoas)",
+        "description": "A nossa grande Live Room: um espaço polivalente preparado para simulação de concertos, captação audiovisual de alta fidelidade e workshops."
+      },
+      {
+        "title": "Zona de bar & descompressão",
+        "description": "O ponto de encontro ideal para relaxar entre sessões, receber convidados e fazer networking com outros artistas e a nossa equipa técnica."
+      }
+    ],
+    "amenitiesTitle": "Comodidades",
+    "amenities": [
+      { "label": "Ar condicionado", "value": "em todas as salas" },
+      { "label": "Wi-Fi gratuito", "value": "para artistas, equipas e convidados" },
+      { "label": "WC", "value": "limpos e acessíveis" },
+      { "label": "Horário alargado", "value": "das 10:00 às 24:00" }
+    ],
+    "activitiesTitle": "O que podes fazer no nosso espaço",
+    "activities": [
+      {
+        "title": "Residências artísticas & ensaios",
+        "description": "Pacotes de residências artísticas de até 2 dias em regime de imersão total. Com duas salas independentes garantimos a pré-produção intensiva do teu projeto com total foco, enquanto o nosso ecossistema assegura todo o apoio logístico e técnico de retaguarda."
+      },
+      {
+        "title": "Gravações de áudio e vídeo",
+        "description": "Captação multitrack em simultâneo (bateria, amplificadores e vozes) na Sala Multiusos, com isolamento acústico parcial para manter a energia orgânica da banda. Precisas de mais isolamento? As salas de ensaio adjacentes servem de cabines secundárias interligadas à Régie Central."
+      },
+      {
+        "title": "Studio box: streaming, podcasts & clipes",
+        "description": "Transmite o teu concerto em direto com mistura de som e realização de imagem em tempo real, ou grava sessões ao vivo para edição posterior. Produz podcasts em espaço otimizado com mesas de corte ATEM Blackmagic, múltiplas câmaras e microfones de estúdio, e cria cenários dinâmicos para videoclipes com o palco, o sistema de luzes de espetáculo, fundos croma e video mapping."
+      },
+      {
+        "title": "Concertos intimistas & workshops",
+        "description": "Showcases exclusivos para lançamentos de álbuns, concertos acústicos ou eventos privados para uma plateia de até 30 pessoas (imprensa, marcas ou fãs VIP), com rider técnico base (PA, iluminação profissional, cablagens e microfones) e um espaço de portas abertas para masterclasses de instrumentos, workshops de técnica de som, produção musical e artes digitais."
+      }
+    ]
   },
   "cookies": {
     "title": "Este site usa cookies",
