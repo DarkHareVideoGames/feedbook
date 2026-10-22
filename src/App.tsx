@@ -4,6 +4,7 @@ import * as api from './api';
 import { Locale, useI18n } from './i18n';
 import { calculateRehearsalPrice, resolveRoomPricePerHour } from './helpers/rehearsalPricing';
 import CookieConsent from './components/ui/CookieConsent';
+import AboutSection from './components/ui/AboutSection';
 
 type RoomDefinition = api.ApiRoom;
 
@@ -1144,6 +1145,9 @@ function App() {
             </div>
           </section>
         ) : null}
+
+        <AboutSection />
+
       </main>
 
       <footer className="site-footer">
