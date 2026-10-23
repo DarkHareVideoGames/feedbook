@@ -720,6 +720,14 @@ textarea:focus {
   margin: 0;
 }
 
+.extra-toggle .extra-description {
+  grid-column: 2;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+
 .primary-button,
 .secondary-button {
   border: none;

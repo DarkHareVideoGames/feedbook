@@ -215,6 +215,7 @@ type ServiceFormDraft = {
   name: string;
   nameEn: string;
   description: string;
+  descriptionEn: string;
   price: string;
   active: boolean;
 };
@@ -239,6 +240,7 @@ const emptyServiceForm: ServiceFormDraft = {
   name: '',
   nameEn: '',
   description: '',
+  descriptionEn: '',
   price: '',
   active: true,
 };
@@ -267,6 +269,7 @@ function serviceToForm(service: api.ApiService): ServiceFormDraft {
     name: service.name,
     nameEn: service.nameEn,
     description: service.description,
+    descriptionEn: service.descriptionEn,
     price: String(service.price),
     active: service.active !== false,
   };
@@ -640,6 +643,7 @@ function AdminHistoryPage() {
   const [clearBookingsModalOpen, setClearBookingsModalOpen] = useState(false);
   const [clearBookingsConfirmation, setClearBookingsConfirmation] = useState('');
   const [contactRequestToDelete, setContactRequestToDelete] = useState<string | null>(null);
+  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
   const [extrasVisible, setExtrasVisible] = useState<Record<string, boolean>>({});
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
     name: '',
@@ -1329,6 +1333,7 @@ function AdminHistoryPage() {
         name: trimmedName,
         nameEn: serviceForm.nameEn,
         description: serviceForm.description,
+        descriptionEn: serviceForm.descriptionEn,
         price,
         active: serviceForm.active,
       };
@@ -1346,17 +1351,21 @@ function AdminHistoryPage() {
     }
   };
 
-  const handleDeleteService = async (serviceId: string) => {
+  const handleDeleteService = async () => {
+    const serviceId = serviceToDelete;
+    if (!serviceId) return;
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
     if (!sessionToken || !isPrivileged) return;
-    if (!window.confirm('Apagar DEFINITIVAMENTE este servico? Sai do site e do admin.')) return;
     setCatalogNotice('');
     setError('');
     try {
-      const payload = await api.deleteService(sessionToken, serviceId);
-      if (editingServiceId === serviceId) cancelEditService();
-      await loadCatalogs();
-      setCatalogNotice(payload.message || 'Servico removido.');
+      await withActionLock(serviceId, async () => {
+        const payload = await api.deleteService(sessionToken, serviceId);
+        if (editingServiceId === serviceId) cancelEditService();
+        await loadCatalogs();
+        setCatalogNotice(payload.message || 'Servico removido.');
+        setServiceToDelete(null);
+      });
     } catch {
       setError('Nao foi possivel apagar o servico.');
     }
@@ -2792,6 +2801,14 @@ function AdminHistoryPage() {
                   onChange={(event) => setServiceForm((current) => ({ ...current, description: event.target.value }))}
                 />
               </label>
+               <label>
+                 Descricao (EN)
+                 <textarea
+                   rows={2}
+                   value={serviceForm.descriptionEn}
+                   onChange={(event) => setServiceForm((current) => ({ ...current, descriptionEn: event.target.value }))}
+                 />
+               </label>
               <div className="field-row">
                 <label>
                   Preco (EUR) *
@@ -2833,14 +2850,14 @@ function AdminHistoryPage() {
                   <div className="admin-user-card-head">
                     <strong className="admin-user-badge admin-service-name-badge">{service.name}</strong>
                     {!service.active ? <span className="booking-id-chip">inativo</span> : null}
+                  <span style={{ marginLeft: 'auto', fontWeight: 600 }}>{service.price} EUR</span>
                   </div>
-                  <span>{service.nameEn || 'Sem nome EN'}</span>
-                  <span>{service.price} EUR · {service.description || 'Sem descricao'}</span>
+                  <small>{service.description || 'Sem descricao'}</small>
                   <div className="team-actions">
                     <button type="button" className="secondary-button" onClick={() => startEditService(service)}>
                       Editar
                     </button>
-                    <button type="button" className="secondary-button" onClick={() => void handleDeleteService(service.id)}>
+                    <button type="button" className="secondary-button" onClick={() => setServiceToDelete(service.id)}>
                       Apagar
                     </button>
                   </div>
@@ -3477,6 +3494,44 @@ function AdminHistoryPage() {
                 onClick={() => { void handleDeleteContactRequest(); }}
               >
                 {actionLoading[contactRequestToDelete] ? 'A apagar...' : 'Apagar definitivamente'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {serviceToDelete ? (
+        <div
+          className="admin-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-service-modal-title"
+        >
+          <section className="card admin-modal-card clear-bookings-modal">
+            <div className="clear-bookings-modal-alert">
+              <AlertTriangle aria-hidden="true" size={18} strokeWidth={2.25} />
+              <span>Operação irreversível</span>
+            </div>
+            <h3 id="delete-service-modal-title">Apagar serviço?</h3>
+            <p>
+              Este serviço será removido. Se estiver em uso, será arquivado.
+            </p>
+            <div className="admin-modal-actions clear-bookings-modal-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={Boolean(actionLoading[serviceToDelete])}
+                onClick={() => setServiceToDelete(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="danger-zone-action"
+                disabled={Boolean(actionLoading[serviceToDelete])}
+                onClick={() => { void handleDeleteService(); }}
+              >
+                {actionLoading[serviceToDelete] ? 'A apagar...' : 'Apagar definitivamente'}
               </button>
             </div>
           </section>

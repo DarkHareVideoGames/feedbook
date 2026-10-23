@@ -13,6 +13,7 @@ type Extra = {
   id: string;
   price: number;
   label: string;
+  description: string;
 };
 
 type PricingConfig = {
@@ -382,7 +383,8 @@ function App() {
         const catalog = serviceCatalog.find((service) => service.id === id);
         const legacyLabel = (translations.extras as Record<string, string>)[id];
         const label = catalog ? (locale.startsWith('pt') ? catalog.name : catalog.nameEn || catalog.name) : legacyLabel || id;
-        return { id, price: Number(price || 0), label };
+        const description = catalog ? (locale.startsWith('pt') ? catalog.description : catalog.descriptionEn || catalog.description) : '';
+        return { id, price: Number(price || 0), label, description };
       }),
     [pricing, serviceCatalog, locale, translations],
   );
@@ -897,7 +899,8 @@ function App() {
                         checked={selectedExtras.includes(extra.id)}
                         onChange={() => toggleExtra(extra.id)}
                       />
-                      <span>{extra.label}</span>
+                      <span className="admin-user-badge admin-service-name-badge">{extra.label}</span>
+                      {extra.description ? <small className="extra-description">{extra.description}</small> : null}
                       <strong>{currency.format(extra.price)}</strong>
                     </label>
                   ))}
