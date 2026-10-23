@@ -325,6 +325,7 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [backendOffline, setBackendOffline] = useState(false);
 const [dataReady, setDataReady] = useState(false);
+const [minDelayDone, setMinDelayDone] = useState(false);
   const [teamBookings, setTeamBookings] = useState<TeamBooking[]>([]);
   const [bookingStep, setBookingStep] = useState<BookingStep>('room');
   const [betaEnabled, setBetaEnabled] = useState(true);
@@ -436,7 +437,7 @@ const [dataReady, setDataReady] = useState(false);
     return urls;
   }, [rooms]);
   const imagesReady = useImagesReady(criticalImageUrls);
-  const isReady = dataReady && imagesReady;
+  const isReady = dataReady && imagesReady && minDelayDone;
 
   useEffect(() => {
     if (rooms.length > 0 && !rooms.some((room) => room.id === selectedRoomId)) {
@@ -449,9 +450,11 @@ const [dataReady, setDataReady] = useState(false);
   }, [pricing]);
 
   useEffect(() => {
+    const timer = setTimeout(() => setMinDelayDone(true), 800);
     void Promise.all([loadTeamBookings(), loadPricing()])
       .catch(() => setBackendOffline(true))
       .finally(() => setDataReady(true));
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {

@@ -606,6 +606,11 @@ function AdminHistoryPage() {
   const [authError, setAuthError] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [minDelayDone, setMinDelayDone] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMinDelayDone(true), 800);
+    return () => clearTimeout(t);
+  }, []);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [viewFilter, setViewFilter] = useState<HistoryFilter>('all');
   // Escopo de arquivo: por defeito limita ao mes corrente para nao
@@ -2001,7 +2006,7 @@ function AdminHistoryPage() {
   if (!currentUser) {
     return (
       <>
-        <GlobalLoading visible={loading} />
+        <GlobalLoading visible={loading || !minDelayDone} />
         <div className="page-shell">
         <div className="ambient ambient-left" />
         <div className="ambient ambient-right" />
@@ -2061,7 +2066,7 @@ function AdminHistoryPage() {
 
   return (
     <>
-      <GlobalLoading visible={loading} />
+      <GlobalLoading visible={loading || !minDelayDone} />
       <div className="page-shell">
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
