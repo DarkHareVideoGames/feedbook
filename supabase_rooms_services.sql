@@ -62,6 +62,7 @@ create table if not exists public.services (
   name text not null,
   "nameEn" text not null default '',
   description text not null default '',
+  "descriptionEn" text not null default '',
   price numeric(10,2) not null default 0 check (price >= 0),
   active boolean not null default true,
   "sortOrder" integer not null default 0,
@@ -69,12 +70,18 @@ create table if not exists public.services (
   "updatedAt" timestamptz not null default now()
 );
 
+-- Migração para bases já existentes: garante coluna descriptionEn
+alter table public.services add column if not exists "descriptionEn" text not null default '';
+
+-- Forca recarga do schema cache do PostgREST/Supabase
+notify pgrst, 'reload schema';
+
 -- Seed com os 3 extras que já existem no preçário.
-insert into public.services (id, name, "nameEn", description, price, active, "sortOrder")
+insert into public.services (id, name, "nameEn", description, "descriptionEn", price, active, "sortOrder")
 values
-  ('engineer', 'Tecnico de sessao', 'Session engineer', '', 24, true, 0),
-  ('recording', 'Captacao stereo do ensaio', 'Stereo rehearsal capture', '', 18, true, 1),
-  ('backline', 'Preparacao extra de backline', 'Extra backline setup', '', 12, true, 2)
+  ('engineer', 'Tecnico de sessao', 'Session engineer', '', '', 24, true, 0),
+  ('recording', 'Captacao stereo do ensaio', 'Stereo rehearsal capture', '', '', 18, true, 1),
+  ('backline', 'Preparacao extra de backline', 'Extra backline setup', '', '', 12, true, 2)
 on conflict (id) do nothing;
 
 -- ------------------------------------------------------------

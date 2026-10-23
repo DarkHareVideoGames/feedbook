@@ -110,6 +110,7 @@ export type ApiService = {
   name: string;
   nameEn: string;
   description: string;
+  descriptionEn: string;
   price: number;
   active: boolean;
   sortOrder: number;
@@ -151,6 +152,7 @@ export type ServiceDraft = {
   name: string;
   nameEn?: string;
   description?: string;
+  descriptionEn?: string;
   price: number;
   active?: boolean;
   sortOrder?: number;
@@ -229,9 +231,9 @@ const fallbackRooms: ApiRoom[] = [
 ];
 
 const fallbackServices: ApiService[] = [
-  { id: 'engineer', name: 'Tecnico de sessao', nameEn: 'Session engineer', description: '', price: 24, active: true, sortOrder: 0 },
-  { id: 'recording', name: 'Captacao stereo do ensaio', nameEn: 'Stereo rehearsal capture', description: '', price: 18, active: true, sortOrder: 1 },
-  { id: 'backline', name: 'Preparacao extra de backline', nameEn: 'Extra backline setup', description: '', price: 12, active: true, sortOrder: 2 },
+  { id: 'engineer', name: 'Tecnico de sessao', nameEn: 'Session engineer', description: 'Tecnico de sessao durante o ensaio.', descriptionEn: 'Session engineer during the rehearsal.', price: 24, active: true, sortOrder: 0 },
+  { id: 'recording', name: 'Captacao stereo do ensaio', nameEn: 'Stereo rehearsal capture', description: 'Gravacao stereo da sessao.', descriptionEn: 'Stereo recording of the session.', price: 18, active: true, sortOrder: 1 },
+  { id: 'backline', name: 'Preparacao extra de backline', nameEn: 'Extra backline setup', description: 'Preparacao extra de backline.', descriptionEn: 'Extra backline setup.', price: 12, active: true, sortOrder: 2 },
 ];
 
 const roomsById: Record<string, string> = {
@@ -1216,6 +1218,7 @@ function mapServiceRow(row: Record<string, unknown>): ApiService {
     name: String(row.name ?? ''),
     nameEn: String(row.nameEn ?? (row as Record<string, unknown>).name_en ?? ''),
     description: String(row.description ?? ''),
+    descriptionEn: String(row.descriptionEn ?? (row as Record<string, unknown>).description_en ?? ''),
     price: Number(row.price ?? 0),
     active: row.active !== false,
     sortOrder: Number(row.sortOrder ?? (row as Record<string, unknown>).sort_order ?? 0),
@@ -1398,6 +1401,7 @@ export async function createService(token: string, draft: ServiceDraft): Promise
     name,
     nameEn: String(draft?.nameEn ?? ''),
     description: String(draft?.description ?? ''),
+    descriptionEn: String(draft?.descriptionEn ?? ''),
     price,
     active: draft?.active !== false,
     sortOrder: nextOrder,
@@ -1423,6 +1427,7 @@ export async function updateService(token: string, serviceId: string, draft: Ser
     name,
     nameEn: String(draft?.nameEn ?? ''),
     description: String(draft?.description ?? ''),
+    descriptionEn: String(draft?.descriptionEn ?? ''),
     price,
     active: draft?.active !== false,
   };
