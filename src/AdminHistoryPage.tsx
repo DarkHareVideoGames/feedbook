@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Check, MessageCircle, Plus, Wallet } from 'lucide-react';
 import * as api from './api';
+import GlobalLoading from './components/ui/GlobalLoading';
 
 type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
 
@@ -1999,7 +2000,9 @@ function AdminHistoryPage() {
 
   if (!currentUser) {
     return (
-      <div className="page-shell">
+      <>
+        <GlobalLoading visible={loading} />
+        <div className="page-shell">
         <div className="ambient ambient-left" />
         <div className="ambient ambient-right" />
 
@@ -2052,11 +2055,14 @@ function AdminHistoryPage() {
           </section>
         </main>
       </div>
+    </>
     );
   }
 
   return (
-    <div className="page-shell">
+    <>
+      <GlobalLoading visible={loading} />
+      <div className="page-shell">
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
 
@@ -3693,7 +3699,8 @@ function AdminHistoryPage() {
           </section>
         </div>
       ) : null}
-    </div>
+      </div>
+    </>
   );
 }
 

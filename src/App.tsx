@@ -6,6 +6,8 @@ import LanguageSwitcher from './components/ui/LanguageSwitcher';
 import { calculateRehearsalPrice, resolveRoomPricePerHour } from './helpers/rehearsalPricing';
 import CookieConsent from './components/ui/CookieConsent';
 import AboutSection from './components/ui/AboutSection';
+import GlobalLoading from './components/ui/GlobalLoading';
+import { useImagesReady } from './hooks/useImageReady';
 
 type RoomDefinition = api.ApiRoom;
 
@@ -322,6 +324,7 @@ function App() {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [backendOffline, setBackendOffline] = useState(false);
+const [dataReady, setDataReady] = useState(false);
   const [teamBookings, setTeamBookings] = useState<TeamBooking[]>([]);
   const [bookingStep, setBookingStep] = useState<BookingStep>('room');
   const [betaEnabled, setBetaEnabled] = useState(true);
@@ -425,6 +428,16 @@ function App() {
   const todayIso = getToday();
   const selectedRoomContactOnly = selectedRoom.bookingMode === 'contact';
 
+  const criticalImageUrls = useMemo(() => {
+    const urls: string[] = ['/loadingdb.png', '/feedbook-logo.png'];
+    rooms.forEach((room) => {
+      if (room.imageUrl) urls.push(room.imageUrl);
+    });
+    return urls;
+  }, [rooms]);
+  const imagesReady = useImagesReady(criticalImageUrls);
+  const isReady = dataReady && imagesReady;
+
   useEffect(() => {
     if (rooms.length > 0 && !rooms.some((room) => room.id === selectedRoomId)) {
       setSelectedRoomId(rooms[0].id);
@@ -436,7 +449,9 @@ function App() {
   }, [pricing]);
 
   useEffect(() => {
-    void Promise.all([loadTeamBookings(), loadPricing()]);
+    void Promise.all([loadTeamBookings(), loadPricing()])
+      .catch(() => setBackendOffline(true))
+      .finally(() => setDataReady(true));
   }, []);
 
   useEffect(() => {
@@ -666,7 +681,10 @@ function App() {
   }, []);
 
   return (
-    <div className="page-shell">
+    <>
+      <GlobalLoading visible={!isReady} />
+      {isReady ? (
+        <div className="page-shell">
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
 
@@ -1203,7 +1221,9 @@ function App() {
       </footer>
 
       <CookieConsent />
-    </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
