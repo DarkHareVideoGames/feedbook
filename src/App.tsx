@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Camera, Globe, PlayCircle } from 'lucide-react';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
+import LanguageSwitcher from './components/ui/LanguageSwitcher';
 import { calculateRehearsalPrice, resolveRoomPricePerHour } from './helpers/rehearsalPricing';
 import CookieConsent from './components/ui/CookieConsent';
 import AboutSection from './components/ui/AboutSection';
@@ -683,6 +684,10 @@ function App() {
               onError={() => setLogoVisible(false)}
             />
           ) : null}
+        </div>
+        
+      <div className="topbar-tools">
+          <LanguageSwitcher />
         </div>
       </header>
 
