@@ -51,7 +51,8 @@
     },
     "selected": "Selected room",
     "choose": "Choose this room",
-    "priceFrom": "from"
+    "priceFrom": "from",
+    "contactOnly": "Contact only"
   },
   "about": {
     "eyebrow": "About us",
@@ -108,6 +109,7 @@
   },
   "booking": {
     "title": "Book now!",
+    "contactTitle": "Contact us now!",
     "next": "Continue",
     "back": "Back",
     "stepRoom": "Room",
@@ -135,6 +137,8 @@
     "focusLabel": "Session focus",
     "focusPlaceholder": "Set run-through, vocal balance, camera rehearsal, writing session...",
     "submit": "Request booking",
+    "submitContact": "REQUEST CONTACT",
+    "contactSummary": "This room works by contact only. Send your details and our team will get in touch to arrange all the details.",
     "defaultFocus": "Full band rehearsal",
     "confirmationFallback": "Your band",
     "confirmation": "{{bandName}} is pending confirmation for {{roomName}} on {{date}} at {{time}} for {{duration}} hours. Payment: {{paymentMethod}}. The Feedback team will confirm the rehearsal. Keep an eye on your Email and WhatsApp!",

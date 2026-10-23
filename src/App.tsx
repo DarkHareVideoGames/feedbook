@@ -694,7 +694,7 @@ function App() {
       <main className="layout">
         {bookingStep !== 'confirmation' ? (
           <div className="booking-heading">
-            <h1>{translations.booking.title}</h1>
+            <h1>{selectedRoomContactOnly ? translations.booking.contactTitle : translations.booking.title}</h1>
           </div>
         ) : null}
 
@@ -734,7 +734,7 @@ function App() {
                     </div>
                     <strong>
                       {room.bookingMode === 'contact'
-                        ? 'Apenas por contacto'
+                        ? translations.rooms.contactOnly
                         : <>{translations.rooms.priceFrom} {currency.format(resolveRoomPricePerHour(room.pricePerMemberHour))}</>}
                     </strong>
                   </div>
@@ -923,7 +923,7 @@ function App() {
             {bookingStep === 'details' ? (
               <div className="booking-step">
                 {selectedRoomContactOnly ? (
-                  <p className="summary-copy">Esta sala funciona apenas por contacto. Envia os teus dados e a equipa irá falar contigo para combinar todos os detalhes.</p>
+                  <p className="summary-copy">{translations.booking.contactSummary}</p>
                 ) : (
                   <div className="booking-summary">
                     <span className="field-label">{translations.booking.summaryTitle}</span>
@@ -1105,7 +1105,7 @@ function App() {
                   {translations.booking.back}
                 </button>
                 <button className="primary-button" type="submit" disabled={isSubmitting || backendOffline || !acceptedTerms || !contactValid}>
-                  {isSubmitting ? translations.booking.submitting : translations.booking.submit}
+                  {isSubmitting ? translations.booking.submitting : (selectedRoomContactOnly ? translations.booking.submitContact : translations.booking.submit)}
                 </button>
               </div>
             </div>
@@ -1120,33 +1120,43 @@ function App() {
           <section className="booking-grid">
             <div className="card booking-form">
               <div className="confirmation-banner" role="status" aria-live="polite" tabIndex={-1} ref={confirmationRef}>
-                <span className="confirmation-banner-badge">{translations.booking.pendingBadge}</span>
+                <span className="confirmation-banner-badge">{selectedRoomContactOnly ? 'Aguarda!' : translations.booking.pendingBadge}</span>
                 <p className="confirmation-banner-message">{confirmation}</p>
-                {confirmationExtras.length > 0 ? (
-                  <ul className="confirmation-extras-list" aria-label={translations.booking.addonsLabel}>
-                    {confirmationExtras.map((extra) => (
-                      <li key={extra.id}>
-                        <span>{extra.label}</span>
-                        <strong>{currency.format(extra.price)}</strong>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="confirmation-extras-empty">{translations.booking.noExtras ?? 'Sem servicos extra — so o ensaio.'}</p>
+                {!selectedRoomContactOnly && (
+                  <>
+                    {confirmationExtras.length > 0 ? (
+                      <ul className="confirmation-extras-list" aria-label={translations.booking.addonsLabel}>
+                        {confirmationExtras.map((extra) => (
+                          <li key={extra.id}>
+                            <span>{extra.label}</span>
+                            <strong>{currency.format(extra.price)}</strong>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="confirmation-extras-empty">{translations.booking.noExtras ?? 'Sem servicos extra — so o ensaio.'}</p>
+                    )}
+                  </>
                 )}
-                <div className="confirmation-id-row">
-                  <span>{translations.booking.bookingIdLabel ?? 'N.º da reserva:'}</span>
-                  <strong className="confirmation-id-value">{confirmationId}</strong>
-                </div>
-                <p className="confirmation-id-note">
-                  {translations.booking.bookingIdNote ?? 'Guarda este numero para futuras referencias.'}
-                </p>
+                {!selectedRoomContactOnly && (
+                  <div className="confirmation-id-row">
+                    <span>{translations.booking.bookingIdLabel ?? 'N.º da reserva:'}</span>
+                    <strong className="confirmation-id-value">{confirmationId}</strong>
+                  </div>
+                )}
+                {!selectedRoomContactOnly && (
+                  <p className="confirmation-id-note">
+                    {translations.booking.bookingIdNote ?? 'Guarda este numero para futuras referencias.'}
+                  </p>
+                )}
               </div>
 
-              <div className="pending-box" role="status" aria-live="polite">
-                <strong>{translations.booking.pendingBadge}</strong>
-                <p>{translations.booking.pendingDescription}</p>
-              </div>
+              {!selectedRoomContactOnly && (
+                <div className="pending-box" role="status" aria-live="polite">
+                  <strong>{translations.booking.pendingBadge}</strong>
+                  <p>{translations.booking.pendingDescription}</p>
+                </div>
+              )}
             </div>
           </section>
         ) : null}

@@ -643,10 +643,6 @@ function mapContactRequestRow(row: Record<string, unknown>): ApiContactRequest {
 }
 
 export async function createContactRequest(draft: CreateContactRequestDraft): Promise<{ contactRequest: ApiContactRequest }> {
-  if (!isSupabaseConfigured) {
-    throw new ApiError('Supabase não configurado: define VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.', 500);
-  }
-
   const roomId = String(draft.roomId || '').trim();
   const contactName = String(draft.contactName || '').trim();
   const contactPhone = String(draft.contactPhone || '').trim();
@@ -655,48 +651,23 @@ export async function createContactRequest(draft: CreateContactRequestDraft): Pr
     throw new ApiError('Missing required contact request fields.', 400);
   }
 
-  const { data: room, error: roomError } = await supabase
-    .from('rooms')
-    .select('id, name, active, bookingMode')
-    .eq('id', roomId)
-    .maybeSingle();
-  if (roomError || !room || room.active === false || room.bookingMode !== 'contact') {
-    throw new ApiError('This room is not available for contact requests.', 400);
+  const response = await fetch('/api/contact-request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      roomId,
+      contactName,
+      contactPhone,
+      email,
+      bandName: draft.bandName,
+      message: draft.message,
+    }),
+  });
+  const payload = (await response.json().catch(() => ({}))) as { contactRequest?: ApiContactRequest; message?: string };
+  if (!response.ok || !payload.contactRequest) {
+    throw new ApiError(payload.message || 'Nao foi possivel enviar o pedido de contacto.', response.status || 500);
   }
-
-  const id = crypto.randomUUID();
-  const createdAt = new Date().toISOString();
-  const contactRequest: ApiContactRequest = {
-    id,
-    roomId,
-    roomName: String(room.name ?? ''),
-    contactName,
-    contactPhone,
-    email,
-    bandName: String(draft.bandName || '').trim() || null,
-    message: String(draft.message || '').trim() || null,
-    status: 'pending',
-    createdAt,
-    updatedAt: createdAt,
-  };
-
-  const { error } = await supabase
-    .from('contact_requests')
-    .insert({
-      id: contactRequest.id,
-      roomId: contactRequest.roomId,
-      roomName: contactRequest.roomName,
-      contactName: contactRequest.contactName,
-      contactPhone: contactRequest.contactPhone,
-      email: contactRequest.email,
-      bandName: contactRequest.bandName,
-      message: contactRequest.message,
-      status: contactRequest.status,
-    });
-  if (error) throw toError(error.message, 'Nao foi possivel enviar o pedido de contacto.');
-
-  notifyContactRequest(contactRequest);
-  return { contactRequest };
+  return { contactRequest: mapContactRequestRow(payload.contactRequest as Record<string, unknown>) };
 }
 
 export async function adminContactRequests(token: string): Promise<{ contactRequests: ApiContactRequest[] }> {
@@ -1933,15 +1904,5 @@ function notifyBooking(booking: ApiBooking, status: 'pending' | 'confirmed' | 'r
     body: JSON.stringify({ booking, status }),
   }).catch(() => {
     // Sem servidor de email a correr — a marcacao fica na mesma registada.
-  });
-}
-
-function notifyContactRequest(contactRequest: ApiContactRequest): void {
-  void fetch('/api/notify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contactRequest, status: 'contact-request' }),
-  }).catch(() => {
-    // Sem servidor de notificações a correr — o pedido fica na mesma registado.
   });
 }
