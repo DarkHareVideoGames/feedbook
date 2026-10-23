@@ -2093,7 +2093,7 @@ function AdminHistoryPage() {
             type="button"
             className="admin-sidebar-toggle"
             aria-label="Abrir menu de gestao"
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => setSidebarOpen((current) => !current)}
           >
             <span className="admin-pie-burger" aria-hidden="true">
               <span />

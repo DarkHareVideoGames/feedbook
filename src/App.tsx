@@ -675,7 +675,7 @@ function App() {
       ) : null}
 
       <header className="topbar">
-        <div className="brand-wrap">
+        <a className="brand-wrap" href="/" aria-label="Ir para a pagina inicial">
           {logoVisible ? (
             <img
               className="brand-logo"
@@ -684,7 +684,7 @@ function App() {
               onError={() => setLogoVisible(false)}
             />
           ) : null}
-        </div>
+        </a>
         
       <div className="topbar-tools">
           <LanguageSwitcher />
@@ -922,42 +922,56 @@ function App() {
 
             {bookingStep === 'details' ? (
               <div className="booking-step">
-                {selectedRoomContactOnly ? (
-                  <p className="summary-copy">{translations.booking.contactSummary}</p>
-                ) : (
-                  <div className="booking-summary">
-                    <span className="field-label">{translations.booking.summaryTitle}</span>
-                    <dl className="booking-summary-list">
-                      <div>
-                        <dt>{translations.rooms.selected}</dt>
-                        <dd>{selectedRoom.name}</dd>
-                      </div>
-                      <div>
-                        <dt>{translations.summary.date}</dt>
-                        <dd>{displayDate}</dd>
-                      </div>
-                      <div>
-                        <dt>{translations.summary.startTime}</dt>
-                        <dd>{selectedSlot}</dd>
-                      </div>
-                      <div>
-                        <dt>{translations.summary.duration}</dt>
-                        <dd>{formatTemplate(translations.summary.hours, { count: duration })}</dd>
-                      </div>
+                <div className="booking-summary">
+                  <span className="field-label">{translations.booking.summaryTitle}</span>
+
+                  <dl className="booking-summary-list">
+                    <div>
+                      <dt>{translations.rooms.selected}</dt>
+                      <dd>
+                        <strong
+                          className={`admin-user-badge admin-room-name-badge${selectedRoom.accent.includes('grey') ? ' admin-room-name-badge-grey' : ''}`}
+                          style={{ backgroundColor: selectedRoom.accent, borderColor: selectedRoom.accent }}
+                        >
+                          {selectedRoom.name}
+                        </strong>
+                      </dd>
+                    </div>
+                    {!selectedRoomContactOnly ? (
+                      <>
+                        <div>
+                          <dt>{translations.summary.date}</dt>
+                          <dd>{displayDate}</dd>
+                        </div>
+                        <div>
+                          <dt>{translations.summary.startTime}</dt>
+                          <dd>{selectedSlot}</dd>
+                        </div>
+                        <div>
+                          <dt>{translations.summary.duration}</dt>
+                          <dd>{formatTemplate(translations.summary.hours, { count: duration })}</dd>
+                        </div>
+                      </>
+                    ) : null}
                       <div>
                         <dt>{translations.summary.addons}</dt>
                         <dd>
                           {selectedExtras.length > 0
                             ? extras
                               .filter((extra) => selectedExtras.includes(extra.id))
-                              .map((extra) => extra.label)
-                              .join(', ')
+                              .map((extra) => (
+                                <strong key={extra.id} className="admin-user-badge admin-service-name-badge">
+                                  {extra.label}
+                                </strong>
+                              ))
                             : translations.booking.noExtras}
                         </dd>
                       </div>
                     </dl>
-                  </div>
-                )}
+                  {selectedRoomContactOnly ? (
+                    <p className="summary-copy">{translations.booking.contactSummary}</p>
+                  ) : null}
+                </div>
               <label>
                 {translations.booking.bandNameLabel}
                 <input
