@@ -100,7 +100,7 @@ swRegistration = found ?? (await navigator.serviceWorker.getRegistration()) ?? n
 
     let vapidPublicKey = '';
     try {
-      const response = await fetch('/api/push/config');
+      const response = await fetch('/api/push-config');
       if (response.ok) {
         const json = await response.json();
         vapidPublicKey = String(json?.publicKey || '');
@@ -111,7 +111,7 @@ swRegistration = found ?? (await navigator.serviceWorker.getRegistration()) ?? n
           detail: vapidPublicKey ? 'Chave pública VAPID disponível.' : 'Backend sem VAPID configurado.',
         });
       } else {
-        next.push({ id: 'config', label: 'Configuração Web Push (backend)', status: 'warning', detail: 'Endpoint /api/push/config indisponível.' });
+        next.push({ id: 'config', label: 'Configuração Web Push (backend)', status: 'warning', detail: `Endpoint /api/push-config indisponível (${response.status}).` });
       }
     } catch {
       next.push({ id: 'config', label: 'Configuração Web Push (backend)', status: 'warning', detail: 'Não foi possível contactar o backend.' });
@@ -175,7 +175,7 @@ swRegistration = found ?? (await navigator.serviceWorker.getRegistration()) ?? n
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
       });
 
-      const response = await fetch('/api/push/subscribe', {
+      const response = await fetch('/api/push-subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ userId, subscription }),
