@@ -1644,6 +1644,66 @@ textarea:focus {
   gap: 16px;
 }
 
+.admin-diagnostics-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 37px;
+}
+
+.admin-diagnostics-title {
+  position: absolute;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transform: translateX(-50%);
+}
+
+.admin-diagnostics-title h3 {
+  margin: 0;
+}
+
+.admin-diagnostics-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.admin-diagnostic-status-ok {
+  color: #34d399;
+}
+
+.admin-diagnostic-status-warning {
+  color: #fbbf24;
+}
+
+.admin-diagnostic-status-error {
+  color: #f87171;
+}
+
+.admin-diagnostic-status-pending {
+  color: var(--text-muted);
+}
+
+@media (max-width: 720px) {
+  .admin-diagnostics-header {
+    min-height: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .admin-diagnostics-title {
+    position: static;
+    width: 100%;
+    justify-content: center;
+    transform: none;
+  }
+}
+
 .catalog-heading {
   align-items: end;
 }

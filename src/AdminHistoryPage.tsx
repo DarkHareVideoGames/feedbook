@@ -3,6 +3,7 @@ import { AlertTriangle, Check, MessageCircle, Plus, Wallet } from 'lucide-react'
 import * as api from './api';
 import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
+import AdminSetupDiagnostics from './components/ui/AdminSetupDiagnostics';
 
 type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
 
@@ -176,7 +177,7 @@ type HistoryFilter = 'all' | 'pending' | 'confirmed' | 'rescheduled' | 'cancelle
 // Futuro/hoje fica sempre visivel; 'all' mostra o historico completo.
 type PeriodScope = 'month' | '3m' | '6m' | 'year' | 'all';
 
-type AdminPanel = 'unified' | 'contact-requests' | 'users' | 'rooms' | 'services';
+type AdminPanel = 'unified' | 'contact-requests' | 'users' | 'rooms' | 'services' | 'devtools';
 
 type NewUserDraft = {
   name: string;
@@ -2252,6 +2253,17 @@ function AdminHistoryPage() {
               </>
             ) : null}
 
+            <button
+              type="button"
+              className={`admin-sidebar-item ${activePanel === "devtools" ? "admin-sidebar-item-active" : ""}`}
+              onClick={() => {
+                setActivePanel("devtools");
+                setSidebarOpen(false);
+              }}
+            >
+              DevTools
+            </button>
+
             <div className="admin-sidebar-footer">
               <a href="/" className="admin-sidebar-item admin-sidebar-link" onClick={() => setSidebarOpen(false)}>
                 Site publico
@@ -2930,6 +2942,12 @@ function AdminHistoryPage() {
                 </li>
               ))}
             </ul>
+          </section>
+        ) : null}
+
+        {activePanel === 'devtools' ? (
+          <section className="card admin-section catalog-management-section">
+            {currentUser ? <AdminSetupDiagnostics token={token} userId={currentUser.id} /> : null}
           </section>
         ) : null}
 

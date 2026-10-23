@@ -12,7 +12,7 @@ const path = window.location.pathname;
 // Registo do Service Worker apenas na área administrativa (escopo /admin).
 // Não controla rotas públicas.
 if (path.startsWith('/admin') && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+  const registerSw = () => {
     navigator.serviceWorker
       .register('/sw.js', { scope: '/admin' })
       .then((registration) => {
@@ -32,7 +32,12 @@ if (path.startsWith('/admin') && 'serviceWorker' in navigator) {
       .catch(() => {
         // Silencioso: PWA é progressiva; falha não bloqueia a app.
       });
-  });
+  };
+  if (document.readyState === 'complete') {
+    registerSw();
+  } else {
+    window.addEventListener('load', registerSw, { once: true });
+  }
 }
 
 function Root() {
