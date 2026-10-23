@@ -51,7 +51,8 @@
     },
     "selected": "Sala selecionada",
     "choose": "Escolher esta sala",
-    "priceFrom": "desde"
+    "priceFrom": "desde",
+    "contactOnly": "Apenas por contacto"
   },
   "about": {
     "eyebrow": "Quem somos",
@@ -108,6 +109,7 @@
   },
   "booking": {
     "title": "Reserva agora!",
+    "contactTitle": "Contata-nos agora!",
     "next": "Continuar",
     "back": "Voltar",
     "stepRoom": "Sala",
@@ -135,6 +137,8 @@
     "focusLabel": "Foco da sessao",
     "focusPlaceholder": "Passagem do alinhamento, equilibrio de voz, ensaio com camara, escrita...",
     "submit": "Pedir marcacao",
+    "submitContact": "PEDIR CONTATO",
+    "contactSummary": "Esta sala funciona apenas por contacto. Envia os teus dados e a equipa irá falar contigo para combinar todos os detalhes.",
     "defaultFocus": "Ensaio com banda completa",
     "confirmationFallback": "A tua banda",
     "confirmation": "{{bandName}} ficou com reserva pendente na {{roomName}} para {{date}} as {{time}} durante {{duration}} horas. Pagamento: {{paymentMethod}}. A equipa do Feedback ir\u00e1 confirmar o ensaio. Fica atento ao teu Email e WhatsApp!",

@@ -3,6 +3,7 @@ import express from 'express';
 import nodemailer from 'nodemailer';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'url';
 
 // Carrega as variáveis do ficheiro .env (raiz do projeto) para process.env.
@@ -246,6 +247,98 @@ async function sendBookingNotifications(booking, status) {
 }
 
 // --- ROTAS ---
+
+// Envia e-mail ao utilizador e alerta Discord para pedidos de contacto.
+async function sendContactRequestNotification(contactRequest) {
+  const recipientEmail = String(contactRequest.email || '').trim().toLowerCase();
+  if (recipientEmail && emailTransport) {
+    let subject = '📩 Recebemos o teu pedido de contacto';
+    let bodyHTML = '<h1 style="font-size: 24px;">Feedback - Ensaios — Novo Pedido de Contacto</h1>';
+    bodyHTML += `<p>Olá ${escapeHtml(contactRequest.contactName)},</p>`;
+    bodyHTML += `<p>Recebemos o teu pedido de contacto para a sala ${escapeHtml(contactRequest.roomName)}. A nossa equipa irá contactar-te em breve.</p>`;
+    if (contactRequest.contactPhone) bodyHTML += `<p>📞 ${escapeHtml(contactRequest.contactPhone)}</p>`;
+    if (contactRequest.email) bodyHTML += `<p>✉️ ${escapeHtml(contactRequest.email)}</p>`;
+    if (contactRequest.message) bodyHTML += `<p>💬 ${escapeHtml(contactRequest.message)}</p>`;
+    bodyHTML += emailSignature();
+    await sendEmail(recipientEmail, subject, bodyHTML);
+  }
+
+  if (DISCORD_WEBHOOK_URL) {
+    try {
+      await fetch(DISCORD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          embeds: [
+            {
+              title: '📩 Novo Pedido de Contacto',
+              description: `Sala: ${contactRequest.roomName}\nNome: ${contactRequest.contactName}\nTel: ${contactRequest.contactPhone}\nEmail: ${contactRequest.email}\nMensagem: ${contactRequest.message || '—'}`,
+              color: 3447003,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        }),
+      });
+    } catch (e) {
+      console.error('Erro ao enviar alerta Discord:', e);
+    }
+  }
+}
+
+// POST /api/contact-request — cria pedido de contacto e envia e-mail ao utilizador.
+app.post('/api/contact-request', async (req, res) => {
+  try {
+    const body = req.body || {};
+    if (!supabaseService) {
+      return res.status(503).json({ message: 'Supabase nao configurado no servidor.' });
+    }
+    const roomId = String(body.roomId || '').trim();
+    const contactName = String(body.contactName || '').trim();
+    const contactPhone = String(body.contactPhone || '').trim();
+    const email = String(body.email || '').trim().toLowerCase();
+    const bandName = String(body.bandName || '').trim() || null;
+    const message = String(body.message || '').trim() || null;
+
+    if (!roomId || !contactName || !contactPhone || !email) {
+      return res.status(400).json({ message: 'Missing required contact request fields.' });
+    }
+
+    const { data: room, error: roomError } = await supabaseService
+      .from('rooms')
+      .select('id, name, active, bookingMode')
+      .eq('id', roomId)
+      .maybeSingle();
+    if (roomError || !room || room.active === false || room.bookingMode !== 'contact') {
+      return res.status(400).json({ message: 'This room is not available for contact requests.' });
+    }
+
+    const createdAt = new Date().toISOString();
+    const contactRequest = {
+      id: randomUUID(),
+      roomId,
+      roomName: String(room.name ?? ''),
+      contactName,
+      contactPhone,
+      email,
+      bandName,
+      message,
+      status: 'pending',
+      createdAt,
+      updatedAt: createdAt,
+    };
+
+    const { error } = await supabaseService.from('contact_requests').insert(contactRequest);
+    if (error) {
+      return res.status(500).json({ message: 'Nao foi possivel enviar o pedido de contacto.' });
+    }
+
+    void sendContactRequestNotification(contactRequest);
+    return res.status(201).json({ contactRequest });
+  } catch (e) {
+    console.error('Erro ao criar pedido de contacto:', e);
+    return res.status(500).json({ message: 'Nao foi possivel enviar o pedido de contacto.' });
+  }
+});
 
 // POST /api/notify — chamado pelo front (src/api.ts) após cada ação
 app.post('/api/notify', (req, res) => {
