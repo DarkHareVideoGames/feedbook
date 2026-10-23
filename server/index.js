@@ -439,6 +439,56 @@ app.post('/api/user-invite', async (req, res) => {
   }
 });
 
+// --- Web Push (diagnóstico/configuração Admin) ---
+app.get('/api/push/config', (req, res) => {
+  const publicKey = String(process.env.VAPID_PUBLIC_KEY || process.env.VITE_VAPID_PUBLIC_KEY || '').trim();
+  if (!publicKey) return res.status(503).json({ message: 'VAPID public key not configured.', publicKey: '' });
+  return res.status(200).json({ publicKey });
+});
+
+app.post('/api/push/subscribe', async (req, res) => {
+  try {
+    const authHeader = String(req.headers?.authorization || '');
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    if (!token || !supabaseAuth || !supabaseService) return res.status(401).json({ message: 'Missing auth or Supabase config.' });
+
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
+    const userId = String(req.body?.userId || '').trim();
+    if (userError || !userData?.user || userData.user.id !== userId) {
+      return res.status(401).json({ message: 'Invalid or expired session.' });
+    }
+
+    const subscription = req.body?.subscription || {};
+    const endpoint = String(subscription.endpoint || '').trim();
+    const keys = subscription.keys || {};
+    const p256dh = String(keys.p256dh || '').trim();
+    const auth = String(keys.auth || '').trim();
+    if (!endpoint || !p256dh || !auth) {
+      return res.status(400).json({ message: 'Invalid subscription payload.' });
+    }
+
+    const { error } = await supabaseService
+      .from('push_subscriptions')
+      .upsert({
+        user_id: userId,
+        endpoint,
+        p256dh,
+        auth,
+        user_agent: String(req.headers?.['user-agent'] || ''),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'endpoint' });
+
+    if (error) {
+      console.error('push_subscriptions upsert error:', error);
+      return res.status(500).json({ message: 'Could not save subscription.' });
+    }
+    return res.status(200).json({ message: 'Subscription saved.' });
+  } catch (e) {
+    console.error('Erro em /api/push/subscribe:', e);
+    return res.status(500).json({ message: 'Unexpected error.' });
+  }
+});
+
 // --- SERVE APP BUILD (Frontend) ---
 const DIST_PATH = path.join(__dirname, '../dist');
 app.use(express.static(DIST_PATH));

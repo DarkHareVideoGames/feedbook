@@ -3,6 +3,7 @@ import { AlertTriangle, Check, MessageCircle, Plus, Wallet } from 'lucide-react'
 import * as api from './api';
 import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
+import AdminSetupDiagnostics from './components/ui/AdminSetupDiagnostics';
 
 type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
 
@@ -3760,6 +3761,7 @@ function AdminHistoryPage() {
         </div>
       ) : null}
       </div>
+      {currentUser ? <AdminSetupDiagnostics token={token} userId={currentUser.id} /> : null}
       {currentUser ? <InstallPwaPrompt /> : null}
     </>
   );
