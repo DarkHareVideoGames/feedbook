@@ -139,6 +139,8 @@ button {
 .brand-wrap {
   display: grid;
   gap: 10px;
+  text-decoration: none;
+  color: inherit;
 }
 
 .brand-logo {
@@ -1049,6 +1051,25 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.booking-summary-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.booking-summary .admin-service-name-badge {
+  font-size: 0.62rem;
+  padding: 2px 8px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+.booking-summary-extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
 .booking-summary-list {
   display: grid;
   gap: 10px;
@@ -1865,8 +1886,9 @@ textarea:focus {
 }
 
 .admin-sidebar-footer {
-  margin-top: auto;
+  margin-top: 16px;
   padding-top: 14px;
+  padding-bottom: 24px;
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -1943,6 +1965,10 @@ textarea:focus {
 
   .admin-sidebar-close {
     display: inline-flex;
+  }
+
+  .admin-sidebar-head {
+    padding-left: 48px;
   }
 
   .admin-sidebar-toggle {
@@ -3793,4 +3819,11 @@ textarea:focus {
   .about-activity {
     padding: 16px;
   }
+}
+
+.booking-summary-extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
 }
