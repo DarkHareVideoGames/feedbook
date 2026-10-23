@@ -236,11 +236,6 @@ const fallbackServices: ApiService[] = [
   { id: 'backline', name: 'Preparacao extra de backline', nameEn: 'Extra backline setup', description: 'Preparacao extra de backline.', descriptionEn: 'Extra backline setup.', price: 12, active: true, sortOrder: 2 },
 ];
 
-const roomsById: Record<string, string> = {
-  'sala-red': 'SALA RED',
-  'sala-grey': 'SALA GREY',
-};
-
 const defaultPricing: PricingConfig = {
   extras: { engineer: 24, recording: 18, backline: 12 },
 };
@@ -273,14 +268,6 @@ function randHex(bytes: number): string {
   return Array.from(buffer)
     .map((value) => value.toString(16).padStart(2, '0'))
     .join('');
-}
-
-function generateBookingId(): string {
-  const buffer = new Uint8Array(4);
-  crypto.getRandomValues(buffer);
-  const value =
-    (buffer[0] * 0x1000000 + buffer[1] * 0x10000 + buffer[2] * 0x100 + buffer[3]) % 1_000_000;
-  return `FB-${String(value).padStart(6, '0')}`;
 }
 
 function normalizeRole(value: unknown): Role {
@@ -526,97 +513,29 @@ export type CreateBookingDraft = {
 };
 
 export async function createBooking(draft: CreateBookingDraft): Promise<{ booking: ApiBooking }> {
-  try {
-    if (!isSupabaseConfigured) {
-      throw new ApiError('Supabase não configurado: define VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.', 500);
-    }
-    const roomId = String(draft?.roomId || '').trim() || null;
-    let roomName = String(draft?.roomName || '').trim();
-    if (!roomName && roomId) {
-      try {
-        const { rooms } = await listRooms({ includeInactive: true });
-        roomName = rooms.find((room) => room.id === roomId)?.name || roomsById[roomId] || '';
-      } catch {
-        roomName = roomsById[roomId] || '';
-      }
-    }
-
-    if (!roomName || !draft?.date || !draft?.time || !draft?.duration || !draft?.contactName || !draft?.email) {
-      throw new ApiError('Missing required booking fields.', 400);
-    }
-
-    const pricing = await loadPricingConfig();
-    const roomPriceMap = await loadRoomPriceMap();
-
-    const extras = Array.isArray(draft.extras) ? draft.extras.filter(Boolean) : [];
-    const duration = Number(draft.duration);
-    const participants = Number(draft.participants || 0);
-    const amount = Number.isFinite(Number(draft.amount))
-      ? Number(draft.amount)
-      : estimateBookingAmount(
-          { duration, participants, extras, roomPricePerHour: roomId ? roomPriceMap[roomId] ?? null : null },
-          pricing,
-        );
-
-    const row = {
-      roomId,
-      status: 'pending',
-      roomName,
-      date: new Date(draft.date).toISOString().split('T')[0],
+  const response = await fetch('/api/create-booking', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      roomId: draft.roomId,
+      date: draft.date,
       time: draft.time,
-      duration,
-      bandName: draft.bandName || draft.contactName || '-',
+      duration: draft.duration,
+      extras: draft.extras,
+      bandName: draft.bandName,
       contactName: draft.contactName,
-      contactPhone: draft.contactPhone ?? null,
+      contactPhone: draft.contactPhone,
       email: draft.email,
-      participants: Number.isFinite(participants) && participants > 0 ? participants : null,
-      paymentMethod: draft.paymentMethod || 'on-site',
-      paymentStatus: 'pending',
-      amount,
-      extras,
-      createdAt: new Date().toISOString(),
-    };
-
-    let data: Record<string, unknown> | null = null;
-    let insertError: { message?: string; code?: string } | null = null;
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const result = await supabase
-        .from('bookings')
-        .insert({ ...row, id: generateBookingId() })
-        .select()
-        .single();
-      data = (result.data as Record<string, unknown> | null) ?? null;
-      insertError = result.error;
-      // 23505 = chave primaria duplicada: gera outro numero e tenta de novo.
-      if (!result.error || String(result.error.code) !== '23505') break;
-    }
-    if (insertError || !data) {
-      throw toError(insertError?.message, 'Falha ao criar marcacao.');
-    }
-
-    const booking = mapBookingRow(data as Record<string, unknown>);
-
-    await recordAudit({
-      action: 'booking-created',
-      actor: { id: 'CLIENT_USER', name: draft.contactName || 'Client', role: 'client' },
-      target: booking.id,
-      details: {
-        banda: booking.bandName,
-        contacto: booking.contactName,
-        sala: booking.roomName,
-        data: booking.date,
-      },
-    });
-
-    notifyBooking(booking, 'pending');
-
-    return { booking };
-  } catch (error) {
-    if (error instanceof ApiError || error instanceof TypeError) {
-      throw error;
-    }
-    throw toError(error instanceof Error ? error.message : undefined, 'Nao foi possivel concluir a marcacao.');
+      paymentMethod: draft.paymentMethod,
+    }),
+  });
+  const payload = (await response.json().catch(() => ({}))) as { booking?: Record<string, unknown>; message?: string };
+  if (!response.ok || !payload.booking) {
+    throw new ApiError(payload.message || 'Nao foi possivel concluir a marcacao.', response.status || 500);
   }
+  const booking = mapBookingRow(payload.booking);
+  notifyBooking(booking, 'pending');
+  return { booking };
 }
 
 export type CreateContactRequestDraft = {
