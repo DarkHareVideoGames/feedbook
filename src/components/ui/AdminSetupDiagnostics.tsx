@@ -46,7 +46,8 @@ export default function AdminSetupDiagnostics({ token, userId }: AdminSetupDiagn
     let swRegistration: ServiceWorkerRegistration | null = null;
     if ('serviceWorker' in navigator) {
       try {
-        swRegistration = await navigator.serviceWorker.getRegistration('/admin') || await navigator.serviceWorker.getRegistration();
+        const found = await navigator.serviceWorker.getRegistration('/admin');
+swRegistration = found ?? (await navigator.serviceWorker.getRegistration()) ?? null;
         next.push({
           id: 'sw',
           label: 'Service Worker (escopo /admin)',
@@ -163,7 +164,7 @@ export default function AdminSetupDiagnostics({ token, userId }: AdminSetupDiagn
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
       });
 
       const response = await fetch('/api/push/subscribe', {
