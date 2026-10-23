@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import webpush from 'web-push';
 import { fileURLToPath } from 'url';
+import createBookingHandler from '../api/create-booking.js';
 
 // Carrega as variáveis do ficheiro .env (raiz do projeto) para process.env.
 // Necessário para que SMTP_* e DISCORD_WEBHOOK_URL funcionem em desenvolvimento.
@@ -48,6 +49,10 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Espelha a função Vercel para que a criação pública segura de marcações
+// também funcione com `npm run dev:api`.
+app.post('/api/create-booking', createBookingHandler);
 
 // --- Configuração SMTP (servidor próprio; sem SMTP_PASS os emails são ignorados) ---
 const SMTP_HOST = String(process.env.SMTP_HOST || 'mail.feedbackproductions.pt').trim();
