@@ -66,6 +66,7 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
+function isApiOrDataRequest(url) {
   return (
     url.hostname.includes('supabase.co') ||
     url.pathname.startsWith('/api/') ||

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, AlertTriangle, Settings2, Bell, RefreshCw } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Bell, RefreshCw } from 'lucide-react';
 
 type DiagnosticStatus = 'ok' | 'warning' | 'error' | 'pending';
 
@@ -24,11 +24,11 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
-const STATUS_COLOR: Record<DiagnosticStatus, string> = {
-  ok: 'text-emerald-400',
-  warning: 'text-amber-400',
-  error: 'text-red-400',
-  pending: 'text-white/60',
+const STATUS_CLASS: Record<DiagnosticStatus, string> = {
+  ok: 'admin-diagnostic-status-ok',
+  warning: 'admin-diagnostic-status-warning',
+  error: 'admin-diagnostic-status-error',
+  pending: 'admin-diagnostic-status-pending',
 };
 
 export default function AdminSetupDiagnostics({ token, userId }: AdminSetupDiagnosticsProps) {
@@ -36,6 +36,8 @@ export default function AdminSetupDiagnostics({ token, userId }: AdminSetupDiagn
   const [overall, setOverall] = useState<'ready' | 'needs_permission' | 'needs_config' | 'unavailable'>('needs_config');
   const [loading, setLoading] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [hasRun, setHasRun] = useState(false);
   const [message, setMessage] = useState('');
 
   async function runDiagnostics() {
@@ -143,12 +145,18 @@ swRegistration = found ?? (await navigator.serviceWorker.getRegistration()) ?? n
     else setOverall('ready');
 
     (window as any).__feedbookVapidPublicKey = vapidPublicKey;
+    setHasRun(true);
     setLoading(false);
   }
 
   useEffect(() => {
     void runDiagnostics();
   }, [token]);
+
+  useEffect(() => {
+    if (!hasRun) return;
+    setExpanded(overall !== 'ready');
+  }, [overall, hasRun]);
 
   async function enablePush() {
     setPushLoading(true);
@@ -159,8 +167,8 @@ swRegistration = found ?? (await navigator.serviceWorker.getRegistration()) ?? n
       if (permission !== 'granted') throw new Error('Permissão de notificações não concedida.');
 
       const registration = await navigator.serviceWorker.ready;
-      const vapidPublicKey = String((window as any).__feedbookVapidPublicKey || import.meta.env.VITE_VAPID_PUBLIC_KEY || '');
-      if (!vapidPublicKey) throw new Error('Chave VAPID não disponível. Configura VITE_VAPID_PUBLIC_KEY.');
+      const vapidPublicKey = String((window as any).__feedbookVapidPublicKey || '');
+      if (!vapidPublicKey) throw new Error('Chave VAPID não disponível. Configura VAPID_PUBLIC_KEY no backend.');
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -183,69 +191,74 @@ swRegistration = found ?? (await navigator.serviceWorker.getRegistration()) ?? n
     }
   }
 
-  const overallLabel =
-    overall === 'ready'
-      ? 'Pronto'
-      : overall === 'needs_permission'
-        ? 'Requer autorização'
-        : overall === 'needs_config'
-          ? 'Requer configuração'
-          : 'Indisponível';
-
   return (
-    <section className="mb-6 rounded-2xl border border-white/10 bg-[#1a1d24] p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Settings2 className="h-5 w-5 text-white" />
-          <h2 className="text-sm font-semibold text-white">Diagnóstico de configuração Admin</h2>
+    <>
+      <div className="admin-diagnostics-header">
+        <div className="admin-diagnostics-title">
+          <h3 className="text-[11px] font-semibold text-[var(--text-main)]">Diagnóstico de configuração</h3>
+          {overall === 'ready' ? (
+            <CheckCircle2 className="h-3.5 w-3.5 admin-diagnostic-status-ok" />
+          ) : (
+            <AlertTriangle className={`h-3.5 w-3.5 ${overall === 'unavailable' ? 'admin-diagnostic-status-error' : 'admin-diagnostic-status-warning'}`} />
+          )}
         </div>
-        <span className={`text-xs font-semibold ${overall === 'ready' ? 'text-emerald-400' : overall === 'unavailable' ? 'text-red-400' : 'text-amber-400'}`}>
-          {overallLabel}
-        </span>
+        <div className="admin-diagnostics-actions">
+          <button
+            type="button"
+            onClick={() => void runDiagnostics()}
+            disabled={loading}
+            className="secondary-button"
+            style={{ padding: '4px 8px', fontSize: '10px' }}
+          >
+            <RefreshCw className="mr-1 inline h-2.5 w-2.5" />
+            {loading ? 'A verificar...' : 'Reverificar'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void enablePush()}
+            disabled={pushLoading || overall === 'unavailable'}
+            className="primary-button"
+            style={{ padding: '4px 8px', fontSize: '10px' }}
+          >
+            <Bell className="mr-1 inline h-2.5 w-2.5" />
+            {pushLoading ? 'A ativar...' : 'Ativar notificações'}
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-2">
-        {items.map((item) => (
-          <div key={item.id} className="flex items-start gap-2 rounded-xl border border-white/5 bg-white/5 p-2">
-            {item.status === 'ok' ? (
-              <CheckCircle2 className={`mt-0.5 h-4 w-4 ${STATUS_COLOR[item.status]}`} />
-            ) : (
-              <AlertTriangle className={`mt-0.5 h-4 w-4 ${STATUS_COLOR[item.status]}`} />
-            )}
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-white">{item.label}</p>
-              <p className="text-[11px] text-white/60">{item.detail}</p>
+      {expanded ? (
+        <div className="space-y-1">
+          {items.map((item) => (
+            <div key={item.id} className="card flex items-start gap-1.5" style={{ padding: '6px', borderRadius: '8px', boxShadow: 'none' }}>
+              {item.status === 'ok' ? (
+                <CheckCircle2 className={`mt-0.5 h-3 w-3 ${STATUS_CLASS[item.status]}`} />
+              ) : (
+                <AlertTriangle className={`mt-0.5 h-3 w-3 ${STATUS_CLASS[item.status]}`} />
+              )}
+              <div className="min-w-0">
+                <p className="text-[10px] font-medium text-[var(--text-main)]">{item.label}</p>
+                <p className="text-[9px] text-[var(--text-muted)]">{item.detail}</p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : null}
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-1 flex items-center justify-between">
         <button
           type="button"
-          onClick={() => void runDiagnostics()}
-          disabled={loading}
-          className="rounded-lg border border-white/20 px-3 py-1.5 text-xs text-white/80 disabled:opacity-60"
+          onClick={() => setExpanded((v) => !v)}
+          className="text-[9px] text-[var(--text-muted)]"
         >
-          <RefreshCw className="mr-1 inline h-3.5 w-3.5" />
-          {loading ? 'A verificar...' : 'Reverificar'}
-        </button>
-        <button
-          type="button"
-          onClick={() => void enablePush()}
-          disabled={pushLoading || overall === 'unavailable'}
-          className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-[#12141a] disabled:opacity-60"
-        >
-          <Bell className="mr-1 inline h-3.5 w-3.5" />
-          {pushLoading ? 'A ativar...' : 'Ativar notificações'}
+          {expanded ? 'Ocultar' : 'Ver detalhes'}
         </button>
       </div>
 
-      {message ? <p className="mt-2 text-xs text-white/80">{message}</p> : null}
+      {message ? <p className="mt-1 text-[10px] text-[var(--text-muted)]">{message}</p> : null}
 
-      <p className="mt-2 text-[11px] text-white/40">
+      <p className="mt-1 text-[9px] text-[var(--text-muted)]">
         As permissões do browser só são pedidas após clicar em “Ativar notificações”. Nenhuma permissão protegida é concedida automaticamente.
       </p>
-    </section>
+    </>
   );
 }

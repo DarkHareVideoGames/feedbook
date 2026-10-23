@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import { createClient } from '@supabase/supabase-js';
+import webpush from 'web-push';
 
 // ============================================================
 // Feedback - Ensaios — POST /api/notify (Vercel Serverless)
@@ -25,6 +27,21 @@ const SMTP_SECURE = String(process.env.SMTP_SECURE || (SMTP_PORT === 465 ? 'true
 // Discord — alerta da equipa para novas marcações (canal #marcação-de-ensaios).
 // Sem esta variável o alerta é ignorado e o resto do fluxo não é afetado.
 const DISCORD_WEBHOOK_URL = String(process.env.DISCORD_WEBHOOK_URL || '').trim();
+
+// Supabase — usado para ler as subscrições Web Push dos admins.
+const SUPABASE_URL = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim();
+const SUPABASE_SERVICE_ROLE_KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+const supabaseService = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
+  : null;
+
+// Web Push (VAPID) — usado para notificar os admins no browser.
+const VAPID_PUBLIC_KEY = String(process.env.VAPID_PUBLIC_KEY || '').trim();
+const VAPID_PRIVATE_KEY = String(process.env.VAPID_PRIVATE_KEY || '').trim();
+const VAPID_SUBJECT = String(process.env.VAPID_SUBJECT || 'mailto:ensaios@feedbackproductions.pt').trim();
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  try { webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY); } catch (e) { console.error('VAPID inválido:', e); }
+}
 
 function getTransport() {
   if (!SMTP_HOST || !SMTP_PASS) return null;
@@ -204,6 +221,46 @@ function buildMessage(booking, status) {
   return null;
 }
 
+// Notificação Web Push para os admins (em segundo plano; nunca bloqueia a resposta).
+async function sendPushAlert(booking) {
+  if (!supabaseService || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
+  try {
+    const { data: rows, error } = await supabaseService
+      .from('push_subscriptions')
+      .select('endpoint, p256dh, auth');
+    if (error || !Array.isArray(rows)) return;
+
+    const title = '🚨 Novo Pedido de Marcação!';
+    const body = [
+      plainText(booking.contactName),
+      plainText(booking.bandName || booking.contactName),
+      `${plainText(formatDatePt(booking.date))} ${plainText(booking.time)}`,
+      plainText(booking.roomName),
+    ].filter(Boolean).join(' · ');
+    const payload = JSON.stringify({ title, body, url: '/admin' });
+
+    await Promise.allSettled(rows.map(async (row) => {
+      const subscription = {
+        endpoint: String(row.endpoint || '').trim(),
+        keys: { p256dh: String(row.p256dh || '').trim(), auth: String(row.auth || '').trim() },
+      };
+      if (!subscription.endpoint || !subscription.keys.p256dh || !subscription.keys.auth) return;
+      try {
+        await webpush.sendNotification(subscription, payload);
+      } catch (e) {
+        const status = Number(e?.statusCode || 0);
+        if (status === 404 || status === 410) {
+          try { await supabaseService.from('push_subscriptions').delete().eq('endpoint', subscription.endpoint); } catch {}
+        } else {
+          console.error('Erro ao enviar Web Push:', e?.message || e);
+        }
+      }
+    }));
+  } catch (e) {
+    console.error('Erro ao preparar Web Push:', e);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed.' });
@@ -233,6 +290,7 @@ export default async function handler(req, res) {
   // Alerta Discord em segundo plano para novas marcações (não bloqueia a resposta).
   if (status === 'pending') {
     void sendDiscordAlert(booking);
+    void sendPushAlert(booking);
   }
 
   if (!transport) {
