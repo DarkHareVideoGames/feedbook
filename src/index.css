@@ -3892,3 +3892,19 @@ textarea:focus {
     opacity: 0.6;
   }
 }
+
+/* PWA admin — melhorias mobile */
+@media (max-width: 640px) {
+  .admin-shell {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .admin-content {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (display-mode: standalone) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}

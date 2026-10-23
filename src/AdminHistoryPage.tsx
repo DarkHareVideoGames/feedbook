@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Check, MessageCircle, Plus, Wallet } from 'lucide-react';
 import * as api from './api';
 import GlobalLoading from './components/ui/GlobalLoading';
+import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
 
 type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
 
@@ -611,6 +612,47 @@ function AdminHistoryPage() {
     const t = setTimeout(() => setMinDelayDone(true), 800);
     return () => clearTimeout(t);
   }, []);
+
+  // Injectar manifest PWA + meta tags apenas na área admin.
+  useEffect(() => {
+    const head = document.head;
+    const ensureLink = (rel: string, href: string, extra?: Record<string, string>) => {
+      let el = head.querySelector(`link[rel="${rel}"][href="${href}"]`) as HTMLLinkElement | null;
+      if (!el) {
+        el = document.createElement('link');
+        el.rel = rel;
+        el.href = href;
+        if (extra) Object.entries(extra).forEach(([k, v]) => el!.setAttribute(k, v));
+        head.appendChild(el);
+      }
+      return el;
+    };
+    ensureLink('manifest', '/admin-manifest.webmanifest');
+    ensureLink('apple-touch-icon', '/feedbook-pwa-assets/apple-touch-icon.png');
+    ensureLink('icon', '/feedbook-pwa-assets/favicon.png', { sizes: '64x64', type: 'image/png' });
+
+    const ensureMeta = (name: string, content: string) => {
+      let el = head.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        el.name = name;
+        el.content = content;
+        head.appendChild(el);
+      } else {
+        el.content = content;
+      }
+      return el;
+    };
+    ensureMeta('theme-color', '#12141a');
+    ensureMeta('apple-mobile-web-app-capable', 'yes');
+    ensureMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
+    ensureMeta('apple-mobile-web-app-title', 'Feedbook Admin');
+
+    return () => {
+      // Remover apenas os elementos que criámos para não afetar o site público
+      head.querySelectorAll('link[href="/admin-manifest.webmanifest"]').forEach((n) => n.remove());
+    };
+  }, []);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [viewFilter, setViewFilter] = useState<HistoryFilter>('all');
   // Escopo de arquivo: por defeito limita ao mes corrente para nao
@@ -1031,6 +1073,10 @@ function AdminHistoryPage() {
     setShowNewUserForm(false);
     setShowNewRoomForm(false);
     setShowNewServiceForm(false);
+
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'LOGOUT' });
+    }
   };
 
   const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
@@ -3705,6 +3751,7 @@ function AdminHistoryPage() {
         </div>
       ) : null}
       </div>
+      <InstallPwaPrompt />
     </>
   );
 }
