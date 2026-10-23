@@ -613,9 +613,17 @@ function AdminHistoryPage() {
     return () => clearTimeout(t);
   }, []);
 
-  // Injectar manifest PWA + meta tags apenas na área admin.
+  // Injectar manifest PWA + meta tags apenas na área admin e apenas após autenticação.
   useEffect(() => {
     const head = document.head;
+    if (!currentUser) {
+      // Garantir remoção caso tenha sido injectado antes.
+      head.querySelectorAll('link[href="/admin-manifest.webmanifest"]').forEach((n) => n.remove());
+      head.querySelectorAll('link[href="/feedbook-pwa-assets/apple-touch-icon.png"]').forEach((n) => n.remove());
+      head.querySelectorAll('link[href="/feedbook-pwa-assets/favicon.png"]').forEach((n) => n.remove());
+      return;
+    }
+
     const ensureLink = (rel: string, href: string, extra?: Record<string, string>) => {
       let el = head.querySelector(`link[rel="${rel}"][href="${href}"]`) as HTMLLinkElement | null;
       if (!el) {
@@ -649,10 +657,11 @@ function AdminHistoryPage() {
     ensureMeta('apple-mobile-web-app-title', 'Feedbook Admin');
 
     return () => {
-      // Remover apenas os elementos que criámos para não afetar o site público
       head.querySelectorAll('link[href="/admin-manifest.webmanifest"]').forEach((n) => n.remove());
+      head.querySelectorAll('link[href="/feedbook-pwa-assets/apple-touch-icon.png"]').forEach((n) => n.remove());
+      head.querySelectorAll('link[href="/feedbook-pwa-assets/favicon.png"]').forEach((n) => n.remove());
     };
-  }, []);
+  }, [currentUser]);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [viewFilter, setViewFilter] = useState<HistoryFilter>('all');
   // Escopo de arquivo: por defeito limita ao mes corrente para nao
@@ -3751,7 +3760,7 @@ function AdminHistoryPage() {
         </div>
       ) : null}
       </div>
-      <InstallPwaPrompt />
+      {currentUser ? <InstallPwaPrompt /> : null}
     </>
   );
 }
