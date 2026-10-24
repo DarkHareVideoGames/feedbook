@@ -25,7 +25,6 @@ export default function GlobalLoading({ message = 'A preparar o teu espaço de e
           />
           <span className="global-loading-ring" aria-hidden="true" />
         </div>
-        <p className="global-loading-message">{message}</p>
       </div>
     </div>
   );
