@@ -1,5 +1,4 @@
 type GlobalLoadingProps = {
-  message?: string;
   visible: boolean;
 };
 
@@ -8,7 +7,7 @@ type GlobalLoadingProps = {
  * Usa o logótipo personalizado /loadingdb.png como elemento central.
  * Animação via CSS (anel), sem modificar o ficheiro original.
  */
-export default function GlobalLoading({ message = 'A preparar o teu espaço de ensaio…', visible }: GlobalLoadingProps) {
+export default function GlobalLoading({ visible }: GlobalLoadingProps) {
   if (!visible) return null;
 
   return (
@@ -25,7 +24,6 @@ export default function GlobalLoading({ message = 'A preparar o teu espaço de e
           />
           <span className="global-loading-ring" aria-hidden="true" />
         </div>
-        <p className="global-loading-message">{message}</p>
       </div>
     </div>
   );
