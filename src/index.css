@@ -1,5 +1,5 @@
 :root {
-  font-family: Bahnschrift, "Aptos", "Segoe UI Variable", "Trebuchet MS", sans-serif;
+  font-family: "IBM Plex Mono", monospace;
   color: #f2f3f5;
   background: #000000;
   --surface: rgba(18, 20, 24, 0.82);
