@@ -59,7 +59,7 @@ export default function AboutSection() {
           </ul>
         </div>
 
-        <aside className="about-amenities">
+        <div className="about-block">
           <h3 className="about-block-title">{about.amenitiesTitle}</h3>
           <ul className="about-amenities-list">
             {about.amenities.map((item, index) => {
@@ -78,7 +78,7 @@ export default function AboutSection() {
               );
             })}
           </ul>
-        </aside>
+        </div>
       </div>
 
       <div className="about-block">
