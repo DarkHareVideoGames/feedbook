@@ -1802,7 +1802,12 @@ export function sendUserInvite(token: string, email: string, name: string): Prom
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ email, name }),
-  }).then(() => undefined).catch((err) => {
+  }).then(async (response) => {
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { message?: string };
+      console.error('Erro ao enviar convite ao utilizador:', response.status, payload.message);
+    }
+  }).catch((err) => {
     console.error('Erro ao enviar convite ao utilizador:', err);
   });
 }
