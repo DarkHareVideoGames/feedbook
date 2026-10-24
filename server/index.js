@@ -433,7 +433,9 @@ app.post('/api/user-invite', async (req, res) => {
       return res.status(401).json({ message: 'Invalid session token.' });
     }
 
-    const { data: profileRows } = await supabaseAuth
+    // Usa a service role key para ler o perfil (bypassa RLS; a anon key
+    // nao teria permissao para ler perfis de outros utilizadores).
+    const { data: profileRows } = await supabaseService
       .from('profiles')
       .select('role')
       .eq('id', actorData.user.id)
