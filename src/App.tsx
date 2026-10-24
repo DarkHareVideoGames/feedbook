@@ -733,7 +733,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                   tabIndex={0}
                   aria-pressed={isSelected}
                   aria-label={`${room.name} — ${translations.rooms.choose}`}
-                  className={`room-card card relative ${isSelected ? 'room-card-selected' : ''}`}
+                  className={`room-card card relative group ${isSelected ? 'room-card-selected' : ''}`}
                   style={{ borderColor: room.accent }}
                   onClick={() => {
                     setSelectedRoomId(room.id);
@@ -767,7 +767,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
-                  <span className="absolute bottom-4 right-4 text-red-500 font-bold text-lg">&gt;</span>
+                  <span className="absolute bottom-3 right-4 text-red-500 font-bold text-3xl transition-transform duration-200 group-hover:translate-x-1">&gt;</span>
                 </article>
               );
             })}
