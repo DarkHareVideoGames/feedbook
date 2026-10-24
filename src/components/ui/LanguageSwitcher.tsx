@@ -13,7 +13,6 @@ export default function LanguageSwitcher() {
       role="group"
       aria-label={translations.topbar.languageLabel}
     >
-      <span className="language-switcher-label">{translations.topbar.languageLabel}</span>
       <div className="language-switcher-buttons">
         {(['pt-PT', 'en'] as const).map((language) => (
           <button
