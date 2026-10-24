@@ -2,9 +2,9 @@
   font-family: "IBM Plex Sans", sans-serif;
   color: #f2f3f5;
   background: #000000;
-  --surface: rgba(18, 20, 24, 0.82);
-  --surface-strong: rgba(10, 11, 13, 0.94);
-  --surface-soft: rgba(255, 255, 255, 0.06);
+  --surface: rgba(0, 0, 0, 0.82);
+  --surface-strong: rgba(0, 0, 0, 0.94);
+  --surface-soft: rgba(0, 0, 0, 0.06);
   --border: rgba(220, 225, 235, 0.18);
   --text-main: #f2f3f5;
   --text-muted: #b3bac5;
@@ -13,7 +13,7 @@
   --secondary: #cfd3da;
   --room-red: #d11323;
   --room-grey: #8e949f;
-  --room-purple: #6d28d9;
+  --room-purple: #2b004e;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -204,6 +204,7 @@ button {
   font-size: 0.8rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  outline: none;
 }
 
 .language-switcher-buttons {
@@ -221,6 +222,10 @@ button {
   border-radius: 999px;
   font-weight: 700;
   letter-spacing: 0.08em;
+  outline: none;
+}
+.language-button:focus-visible {
+  outline: none;
 }
 
 .language-button-active {
