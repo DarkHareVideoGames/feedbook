@@ -211,8 +211,7 @@ button {
   display: inline-flex;
   padding: 4px;
   border-radius: 999px;
-  background: rgb(0, 0, 0);
-  outline: none;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .language-button {
@@ -3488,7 +3487,7 @@ textarea:focus {
   }
 
   .page-shell {
-    background: #050506;
+    background: #000000;
   }
 
   .brand-logo,
