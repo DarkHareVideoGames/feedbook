@@ -1599,9 +1599,10 @@ export async function createUser(
     details: { name: profile.name, email: profile.email, phone: profile.phone },
   });
 
-  // Convite "define a tua password" em segundo plano (nunca bloqueia a criação;
-  // falhas ficam nos logs do servidor).
-  sendUserInvite(token, profile.email, profile.name);
+  // Convite "define a tua password" (envia email com link de recuperação).
+  // Nao bloqueia a criacao do utilizador, mas aguarda o pedido HTTP para
+  // garantir que o convite e processado pelo servidor.
+  await sendUserInvite(token, profile.email, profile.name);
 
   return { message: 'User created successfully', user: profile };
 }
@@ -1802,7 +1803,7 @@ export function sendUserInvite(token: string, email: string, name: string): Prom
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ email, name }),
   }).then(() => undefined).catch((err) => {
-    console.error('Erro ao enviar convite de utilizador:', err);
+    console.error('Erro ao enviar convite ao utilizador:', err);
   });
 }
 
