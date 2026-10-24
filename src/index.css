@@ -328,6 +328,7 @@ button {
   border-width: 2px;
   cursor: pointer;
   overflow: hidden;
+  position: relative;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
 }
 
@@ -338,6 +339,21 @@ button {
 
 .room-card:hover {
   transform: translateY(-4px);
+}
+
+.room-card-arrow {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  color: #dc2626;
+  font-weight: 700;
+  font-size: 2.5rem;
+  line-height: 1;
+  transition: transform 200ms ease;
+}
+
+.room-card:hover .room-card-arrow {
+  transform: translateX(4px);
 }
 
 .room-card-image {
