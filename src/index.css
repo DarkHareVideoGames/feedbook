@@ -222,6 +222,7 @@ button {
   border-radius: 999px;
   font-weight: 700;
   letter-spacing: 0.08em;
+  outline: none;
 }
 
 .language-button-active {
