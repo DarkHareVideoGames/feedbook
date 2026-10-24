@@ -698,6 +698,9 @@ const [minDelayDone, setMinDelayDone] = useState(false);
       ) : null}
 
       <header className="topbar">
+        <div className="topbar-tools">
+          <LanguageSwitcher />
+        </div>
         <a className="brand-wrap" href="/" aria-label="Ir para a pagina inicial">
           {logoVisible ? (
             <img

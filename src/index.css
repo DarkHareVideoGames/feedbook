@@ -130,7 +130,7 @@ button {
 
 .topbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   gap: 24px;
   align-items: end;
   margin-bottom: 28px;
@@ -191,6 +191,7 @@ button {
   display: grid;
   gap: 12px;
   justify-items: end;
+  margin-left: auto;
 }
 
 .language-switcher {
