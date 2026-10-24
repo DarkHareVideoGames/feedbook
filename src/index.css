@@ -211,7 +211,6 @@ button {
   padding: 4px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border);
 }
 
 .language-button {
@@ -888,8 +887,7 @@ textarea:focus {
 .site-footer {
   margin-top: 40px;
   padding: 24px 16px 28px;
-  border-top: 1px solid var(--border);
-  background: var(--surface-strong);
+  background: #000000;
 }
 
 .site-footer-inner {
