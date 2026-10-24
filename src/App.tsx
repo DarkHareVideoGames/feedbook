@@ -767,6 +767,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
+                  <span className="room-card-arrow">&gt;</span>
                 </article>
               );
             })}
