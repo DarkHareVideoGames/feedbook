@@ -204,6 +204,7 @@ button {
   font-size: 0.8rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  outline: none;
 }
 
 .language-switcher-buttons {
@@ -222,6 +223,9 @@ button {
   border-radius: 999px;
   font-weight: 700;
   letter-spacing: 0.08em;
+  outline: none;
+}
+.language-button:focus-visible {
   outline: none;
 }
 
