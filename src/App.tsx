@@ -770,7 +770,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
     <>
       <GlobalLoading visible={!isReady} />
       {isReady ? (
-        <div className="page-shell">
+        <div className={`page-shell ${bookingStep === 'confirmation' ? 'confirmation-page' : ''}`}>
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
 
@@ -780,7 +780,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
         </div>
       ) : null}
 
-      <header className="topbar">
+      <header className="topbar public-topbar">
         <a className="brand-wrap" href="/" aria-label="Ir para a pagina inicial">
           {logoVisible ? (
             <img
@@ -1279,8 +1279,8 @@ const [minDelayDone, setMinDelayDone] = useState(false);
         ) : null}
 
         {bookingStep === 'confirmation' ? (
-          <section className="booking-grid">
-            <div className="card booking-form">
+          <section className="booking-grid confirmation-grid">
+            <div className="card booking-form confirmation-form">
               <div className="confirmation-banner" role="status" aria-live="polite" tabIndex={-1} ref={confirmationRef}>
                 <span className="confirmation-banner-badge">{selectedRoomContactOnly ? 'Aguarda!' : translations.booking.pendingBadge}</span>
                 <p className="confirmation-banner-message">{confirmation}</p>
