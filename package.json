@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.117.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.55.0",

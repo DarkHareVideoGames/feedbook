@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Camera, ChevronDown, ChevronUp, Globe, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Camera, ChevronDown, ChevronUp, Download, Globe, LoaderCircle, PlayCircle } from 'lucide-react';
+import { toPng } from 'html-to-image';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
 import LanguageSwitcher from './components/ui/LanguageSwitcher';
@@ -38,6 +39,7 @@ type BookingConfirmationDetails = {
   time: string;
   duration: number;
   customerMessage: string;
+  totalAmount: number;
 };
 
 type BookingStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
@@ -334,6 +336,10 @@ function formatPublicBookingReference(bookingId: string, roomName: string): stri
   return `FB-${roomInitial}-${shortId}`;
 }
 
+function formatPublicRoomName(roomName: string): string {
+  return roomName.replace(/^(sala|room)\s+/i, '').trim() || roomName;
+}
+
 function App() {
   const { locale, translations } = useI18n();
   const [logoVisible, setLogoVisible] = useState(true);
@@ -352,6 +358,8 @@ function App() {
   const [confirmationDetails, setConfirmationDetails] = useState<BookingConfirmationDetails | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingConfirmation, setIsSavingConfirmation] = useState(false);
+  const [confirmationSaveError, setConfirmationSaveError] = useState('');
   const [backendOffline, setBackendOffline] = useState(false);
 const [dataReady, setDataReady] = useState(false);
 const [minDelayDone, setMinDelayDone] = useState(false);
@@ -561,6 +569,30 @@ const [minDelayDone, setMinDelayDone] = useState(false);
     );
   }
 
+  async function handleSaveConfirmationImage() {
+    if (!confirmationRef.current || !confirmationId || isSavingConfirmation) return;
+
+    setIsSavingConfirmation(true);
+    setConfirmationSaveError('');
+
+    try {
+      await document.fonts?.ready;
+      const dataUrl = await toPng(confirmationRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: '#07110c',
+      });
+      const link = document.createElement('a');
+      link.download = `feedbook-${confirmationId}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (_error) {
+      setConfirmationSaveError(translations.booking.saveCardError);
+    } finally {
+      setIsSavingConfirmation(false);
+    }
+  }
+
   async function loadTeamBookings() {
     try {
       const payload = await api.listBookings();
@@ -642,16 +674,20 @@ const [minDelayDone, setMinDelayDone] = useState(false);
     setBackendOffline(false);
 
     try {
-      const confirmationRequestId = selectedRoomContactOnly
-        ? (await api.createContactRequest({
+      let confirmationRequestId = '';
+      let confirmationAmount = 0;
+
+      if (selectedRoomContactOnly) {
+        confirmationRequestId = (await api.createContactRequest({
             roomId: selectedRoom.id,
             bandName: draftForm.bandName,
             contactName: draftForm.contactName,
             contactPhone: draftForm.contactPhone,
             email: draftForm.email,
             message: draftForm.focus,
-          })).contactRequest.id
-        : (await api.createBooking({
+          })).contactRequest.id;
+      } else {
+        const { booking } = await api.createBooking({
             roomId: selectedRoom.id,
             date: selectedDate,
             time: selectedSlot,
@@ -664,7 +700,16 @@ const [minDelayDone, setMinDelayDone] = useState(false);
             focus: draftForm.focus,
             locale,
             paymentMethod: 'on-site',
-          })).booking.id;
+          });
+        confirmationRequestId = booking.id;
+        const fallbackAmount = calculateRehearsalPrice(duration, selectedRoomPricePerHour)
+          + extras
+            .filter((extra) => selectedExtras.includes(extra.id))
+            .reduce((sum, extra) => sum + extra.price, 0);
+        confirmationAmount = Number.isFinite(Number(booking.amount)) && booking.amount !== null
+          ? Number(booking.amount)
+          : fallbackAmount;
+      }
 
       const message = selectedRoomContactOnly
         ? `Recebemos o teu pedido de contacto para ${selectedRoom.name}. A nossa equipa irá contactar-te em breve.`
@@ -676,12 +721,14 @@ const [minDelayDone, setMinDelayDone] = useState(false);
         .filter((extra) => selectedExtras.includes(extra.id))
         .map((extra) => ({ id: extra.id, label: extra.label, price: extra.price })));
       setConfirmationDetails(selectedRoomContactOnly ? null : {
-        roomName: selectedRoom.name,
+        roomName: formatPublicRoomName(selectedRoom.name),
         date: displayDate,
         time: selectedSlot,
         duration,
         customerMessage: draftForm.focus.trim(),
+        totalAmount: confirmationAmount,
       });
+      setConfirmationSaveError('');
       setBackendOffline(false);
       setBookingStep('confirmation');
 
@@ -1278,6 +1325,11 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                       <h3 id="confirmation-message-title">{translations.booking.customerMessageLabel}</h3>
                       <p>{confirmationDetails.customerMessage || translations.booking.noCustomerMessage}</p>
                     </section>
+
+                    <section className="confirmation-total" aria-label={translations.booking.totalAmountLabel}>
+                      <span>{translations.booking.totalAmountLabel}</span>
+                      <strong>{currency.format(confirmationDetails.totalAmount)}</strong>
+                    </section>
                   </>
                 )}
                 {!selectedRoomContactOnly && (
@@ -1292,6 +1344,28 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                   </p>
                 )}
               </div>
+              {!selectedRoomContactOnly && (
+                <div className="confirmation-save-actions">
+                  <button
+                    type="button"
+                    className="secondary-button confirmation-save-button"
+                    onClick={handleSaveConfirmationImage}
+                    disabled={isSavingConfirmation}
+                  >
+                    {isSavingConfirmation ? (
+                      <LoaderCircle className="confirmation-save-spinner" aria-hidden="true" />
+                    ) : (
+                      <Download aria-hidden="true" />
+                    )}
+                    {isSavingConfirmation
+                      ? translations.booking.savingCard
+                      : translations.booking.saveCard}
+                  </button>
+                  {confirmationSaveError ? (
+                    <p className="confirmation-save-error" role="alert">{confirmationSaveError}</p>
+                  ) : null}
+                </div>
+              )}
             </div>
           </section>
         ) : null}
