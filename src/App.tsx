@@ -729,7 +729,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
       <main className="layout">
         {bookingStep !== 'confirmation' ? (
           <div className="booking-heading">
-            <h1>
+            <h1 className={bookingStep === 'details' ? 'booking-heading-single-line' : undefined}>
               {bookingStep === 'room'
                 ? translations.booking.roomTitle
                 : bookingStep === 'date'

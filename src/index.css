@@ -1145,6 +1145,12 @@ textarea:focus {
   max-width: 18ch;
 }
 
+.booking-heading h1.booking-heading-single-line {
+  max-width: none;
+  font-size: clamp(1.45rem, 5.8vw, 2.9rem);
+  white-space: nowrap;
+}
+
 .booking-step {
   display: grid;
   gap: 18px;
