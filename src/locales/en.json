@@ -110,9 +110,9 @@
     "privacy": "Privacy policy"
   },
   "booking": {
-    "roomTitle": "1- Choose your room",
-    "dateTitle": "2- Choose the day and time",
-    "detailsTitle": "3- Fill in your details",
+    "roomTitle": "Choose your room",
+    "dateTitle": "Choose the day and time",
+    "detailsTitle": "Fill in your details",
     "contactTitle": "Contact us now!",
     "next": "Continue",
     "back": "Back",
