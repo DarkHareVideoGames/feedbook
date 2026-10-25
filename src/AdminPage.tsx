@@ -258,6 +258,7 @@ function consegueAbrirWhatsApp(booking: TeamBooking): boolean {
 function AdminPage() {
   const { locale, setLocale, translations } = useI18n();
   const [adminLogoVisible, setAdminLogoVisible] = useState(true);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [token, setToken] = useState('');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [loginEmail, setLoginEmail] = useState('admin@feedbook.local');
@@ -933,10 +934,15 @@ function AdminPage() {
             />
           ) : null}
           <div className="admin-session-bar">
-            <p className="summary-copy admin-session-pill">
+            <button
+              type="button"
+              className="admin-session-pill admin-session-pill-button"
+              onClick={() => setLogoutModalOpen(true)}
+              title="Clique para sair da conta"
+            >
               Sessao ativa: {currentUser.name} ({roleLabels[currentUser.role]}
               {currentUser.function ? ` · ${api.staffFunctionLabels[currentUser.function]}` : ''})
-            </p>
+            </button>
             <button type="button" className="secondary-button admin-logout-inline" onClick={handleLogout}>
               Sair
             </button>
@@ -1785,6 +1791,41 @@ function AdminPage() {
             </ul>
           </section>
         ) : null}
+      {logoutModalOpen ? (
+        <div
+          className="admin-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="logout-modal-title-admin"
+        >
+          <section className="card admin-modal-card clear-bookings-modal">
+            <h3 id="logout-modal-title-admin">Sair da conta?</h3>
+            <p>
+              Vais terminar a sessão atual. Tens a certeza que queres sair?
+            </p>
+            <div className="admin-modal-actions clear-bookings-modal-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setLogoutModalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => {
+                  setLogoutModalOpen(false);
+                  handleLogout();
+                }}
+              >
+                Sair
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
       </main>
     </div>
   );

@@ -12,6 +12,17 @@ export default function SetPasswordModal() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
+  const [expiredOpen, setExpiredOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('feedbook:authError');
+      if (stored && (/otp_expired/.test(stored) || /access_denied/.test(stored))) {
+        sessionStorage.removeItem('feedbook:authError');
+        setExpiredOpen(true);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   const resetAndOpen = () => {
     setState('form');
@@ -86,6 +97,22 @@ export default function SetPasswordModal() {
     await supabase.auth.signOut();
     setState('done');
   };
+
+  if (expiredOpen) {
+    return (
+      <div className="set-password-overlay" role="dialog" aria-modal="true" aria-labelledby="expired-title">
+        <div className="set-password-card">
+          <h2 id="expired-title">Link expirado</h2>
+          <p className="admin-helper-note">
+            O link de redefinição de password é inválido ou já expirou. Pede um novo link ao administrador.
+          </p>
+          <button type="button" className="primary-button" onClick={() => setExpiredOpen(false)}>
+            Fechar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!open) {
     return null;

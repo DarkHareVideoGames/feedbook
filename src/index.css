@@ -1721,8 +1721,33 @@ textarea:focus {
   box-shadow: 0 0 14px rgba(34, 197, 94, 0.35), inset 0 0 10px rgba(34, 197, 94, 0.1);
 }
 
+.admin-user-chip-button {
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
 .admin-logout-inline {
   border-color: rgba(52, 211, 153, 0.6);
+}
+
+.admin-user-chip-button:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.admin-session-pill-button {
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.admin-session-pill-button:hover {
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .admin-logout-inline:hover {

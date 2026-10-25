@@ -7,6 +7,13 @@ import { I18nProvider } from './i18n';
 import './index.css';
 import './brand-overrides.css';
 
+// Captura precoce do hash de erro do Supabase (token expirado), antes de o
+// cliente Supabase o processar/limpar da URL.
+if (window.location.hash && /otp_expired|access_denied/.test(window.location.hash)) {
+  try { sessionStorage.setItem('feedbook:authError', window.location.hash); } catch { /* ignore */ }
+  window.history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
 const path = window.location.pathname;
 
 // Registo do Service Worker apenas na área administrativa (escopo /admin).

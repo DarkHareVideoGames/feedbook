@@ -33,7 +33,7 @@ const SMTP_SECURE = String(process.env.SMTP_SECURE || (SMTP_PORT === 465 ? 'true
 const SUPABASE_URL = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim();
 const SUPABASE_ANON_KEY = String(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
 const SUPABASE_SERVICE_ROLE_KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-const APP_BASE_URL = String(process.env.APP_BASE_URL || 'https://feedbook-kappa.vercel.app').trim().replace(/\/+$/, '');
+const APP_BASE_URL = String(process.env.APP_BASE_URL || 'https://www.ensaiosfeedback.pt').trim().replace(/\/+$/, '');
 
 const supabaseAuth = SUPABASE_URL && SUPABASE_ANON_KEY
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
@@ -67,7 +67,7 @@ function escapeHtml(value) {
 function emailSignature() {
   const btnStyle = 'display:inline-block;margin:0 8px 8px 0;padding:8px 16px;background-color:#222222;color:#ffffff !important;font-size:13px;font-family:Arial,sans-serif;text-decoration:none;border-radius:20px;';
   return (
-    `<br><img src="https://feedbook-kappa.vercel.app/mailsign.png" width="108" height="42" style="width:108px;height:42px;display:block;border:0;" alt="Feedback Productions">` +
+    `<br><img src="https://www.ensaiosfeedback.pt/mailsign.png" width="108" height="42" style="width:108px;height:42px;display:block;border:0;" alt="Feedback Productions">` +
     `<p style="color:#555555;font-size:14px;line-height:1.5;margin:12px 0 0 0;">` +
     `Feedback Productions<br>` +
     `Estúdios de Ensaio &amp; Produção Musical<br>` +
@@ -160,7 +160,7 @@ export default async function handler(req, res) {
   const { data, error } = await supabaseService.auth.admin.generateLink({
     type: 'recovery',
     email,
-    options: { redirectTo: APP_BASE_URL },
+    options: { redirectTo: `${APP_BASE_URL}/admin` },
   });
   const inviteUrl = String(data?.properties?.action_link || '');
   if (error || !inviteUrl) {

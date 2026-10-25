@@ -100,7 +100,7 @@ function plainText(value, fallback = '-') {
 // Embed Discord para novas marcações pendentes (canal #marcação-de-ensaios).
 function buildDiscordEmbed(booking) {
   // Link direto para a página de gestão (sempre em produção — é um alerta para a equipa).
-  const ADMIN_URL = 'https://feedbook-kappa.vercel.app/admin';
+  const ADMIN_URL = 'https://www.ensaiosfeedback.pt/admin';
   // Layout compacto na description (markdown) em vez de campos inline:
   // no telemóvel os campos inline empilham-se um por linha e alongam o card,
   // enquanto a description flui o texto e mantém-se curta.
@@ -220,7 +220,7 @@ function formatDatePt(value) {
 function emailSignature() {
   const btnStyle = 'display:inline-block;margin:0 8px 8px 0;padding:8px 16px;background-color:#222222;color:#ffffff !important;font-size:13px;font-family:Arial,sans-serif;text-decoration:none;border-radius:20px;';
   return (
-    `<br><img src="https://feedbook-kappa.vercel.app/mailsign.png" width="108" height="42" style="width:108px;height:42px;display:block;border:0;" alt="Feedback Productions">` +
+    `<br><img src="https://www.ensaiosfeedback.pt/mailsign.png" width="108" height="42" style="width:108px;height:42px;display:block;border:0;" alt="Feedback Productions">` +
     `<p style="color:#555555;font-size:14px;line-height:1.5;margin:12px 0 0 0;">` +
     `Feedback Productions<br>` +
     `Estúdios de Ensaio &amp; Produção Musical<br>` +
@@ -445,7 +445,7 @@ app.post('/api/user-invite', async (req, res) => {
     const { data, error } = await supabaseService.auth.admin.generateLink({
       type: 'recovery',
       email,
-      options: { redirectTo: APP_BASE_URL },
+      options: { redirectTo: `${APP_BASE_URL}/admin` },
     });
     const inviteUrl = String(data?.properties?.action_link || '');
     if (error || !inviteUrl) {
