@@ -242,7 +242,7 @@ function emailSignature() {
 // Gera um ficheiro ICS (RFC 5545) para adicionar o ensaio ao calendário do cliente.
 function buildIcs(booking, status) {
   if (!booking || !booking.date || !booking.time) return null;
-  if (status !== 'confirmed') return null;
+  if (status !== 'confirmed' && status !== 'rescheduled') return null;
 
   const durationHours = Number(booking.duration) || 1;
   const start = new Date(`${booking.date}T${booking.time}:00`);
