@@ -5,6 +5,10 @@
 -- Idempotente. Aplicar no SQL Editor do Supabase.
 -- ============================================================
 
+-- 0. Garantir coluna customerMessage (idempotente)
+alter table public.bookings
+  add column if not exists "customerMessage" text;
+
 -- 1. Garantir GRANTs para service_role
 grant all on public.bookings to service_role;
 grant all on public.audit_logs to service_role;
@@ -46,3 +50,6 @@ create policy "service write audit_logs" on public.audit_logs for all to service
 
 drop policy if exists "service write bookings" on public.bookings;
 create policy "service write bookings" on public.bookings for all to service_role using (true) with check (true);
+
+-- 6. Forçar refresh do schema cache do PostgREST
+notify pgrst, 'reload schema';
