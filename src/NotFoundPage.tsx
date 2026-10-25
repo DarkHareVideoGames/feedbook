@@ -160,13 +160,13 @@ const NotFoundPage: React.FC = () => {
         >
           <p
             className="eyebrow"
-            style={{ fontSize: '1.5rem', letterSpacing: '0.2em', opacity: 0.6 }}
+            style={{ fontSize: 'clamp(4rem, 12vw, 8rem)', letterSpacing: '0.1em', opacity: 0.9, lineHeight: 1, margin: 0 }}
           >
             404
           </p>
           <h1
             id="not-found-title"
-            style={{ fontSize: 'clamp(2.5rem, 8vw, 5rem)', marginTop: '0.25rem', lineHeight: 1.05 }}
+            style={{ fontSize: 'clamp(1.25rem, 4vw, 2rem)', marginTop: '1rem', lineHeight: 1.2 }}
           >
             Esta página fez um stage dive e ninguém a apanhou.
           </h1>
