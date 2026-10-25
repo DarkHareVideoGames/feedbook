@@ -83,7 +83,7 @@ const SUPABASE_URL = String(process.env.SUPABASE_URL || process.env.VITE_SUPABAS
 const SUPABASE_ANON_KEY = String(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
 const SUPABASE_SERVICE_ROLE_KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 // URL base da app para onde o link "define a password" redireciona.
-const APP_BASE_URL = String(process.env.APP_BASE_URL || 'https://feedbook-kappa.vercel.app').trim().replace(/\/+$/, '');
+const APP_BASE_URL = String(process.env.APP_BASE_URL || 'https://www.ensaiosfeedback.pt').trim().replace(/\/+$/, '');
 
 const supabaseAuth = SUPABASE_URL && SUPABASE_ANON_KEY
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
