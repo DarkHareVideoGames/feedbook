@@ -62,9 +62,6 @@ const SMTP_PASS = String(process.env.SMTP_PASS || '');
 const SMTP_FROM = String(process.env.SMTP_FROM || 'Feedback - Ensaios <ensaios@feedbackproductions.pt>').trim();
 // Porta 465 = SSL/TLS direto (secure); 587 = STARTTLS. Força sempre canal encriptado.
 const SMTP_SECURE = String(process.env.SMTP_SECURE || (SMTP_PORT === 465 ? 'true' : 'false')).toLowerCase() === 'true';
-const WHATSAPP_TWILIO_ACCOUNT_SID = String(process.env.WHATSAPP_TWILIO_ACCOUNT_SID || '').trim();
-const WHATSAPP_TWILIO_AUTH_TOKEN = String(process.env.WHATSAPP_TWILIO_AUTH_TOKEN || '').trim();
-const WHATSAPP_TWILIO_FROM = String(process.env.WHATSAPP_TWILIO_FROM || '').trim();
 
 // Discord — alerta da equipa para novas marcações (canal #marcação-de-ensaios).
 // Sem esta variável o alerta é ignorado e o resto do fluxo não é afetado.
@@ -202,15 +199,6 @@ async function sendEmail(to, subject, htmlContent) {
   }
 }
 
-async function sendWhatsApp(recipient, message) {
-  if (!WHATSAPP_TWILIO_ACCOUNT_SID || !WHATSAPP_TWILIO_AUTH_TOKEN || !WHATSAPP_TWILIO_FROM) return;
-  try {
-    console.log(`[Simulação] Enviando WhatsApp para ${recipient}: ${message}`);
-  } catch (e) {
-    console.error('Erro ao enviar WhatsApp:', e);
-  }
-}
-
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -283,6 +271,10 @@ async function sendBookingNotifications(booking, status) {
     } else if (status === 'cancelled') {
       subject = '⚠️ Reserva Cancelada.';
       bodyHTML += `<p>Olá ${user}, o seu ensaio foi cancelado pela equipa de administração.</p>`;
+    } else if (status === 'rescheduled') {
+      subject = '🔄 Reserva Reagendada.';
+      bodyHTML += `<p>Olá ${user}, o seu ensaio foi reagendado.</p>`;
+      bodyHTML += `<p>Novos detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>`;
     } else if (status === 'pending') {
       subject = '📩 Reserva Recebida. Aguarda confirmação.';
       bodyHTML += `<p>Olá ${user}, recebemos o pedido de ensaio dos ${band}.</p>`;
@@ -294,10 +286,6 @@ async function sendBookingNotifications(booking, status) {
     await sendEmail(recipientEmail, subject, bodyHTML);
   }
 
-  if (booking.contactPhone) {
-    const message = `[Feedback - Ensaios] Seu ensaio foi ${status === 'confirmed' ? 'confirmado' : status === 'rejected' ? 'rejeitado' : 'cancelado'}!`;
-    await sendWhatsApp(booking.contactPhone, message);
-  }
 }
 
 // --- ROTAS ---
@@ -403,7 +391,7 @@ app.post('/api/notify', (req, res) => {
     return res.status(400).json({ message: 'Booking payload is required.' });
   }
 
-  if (!['pending', 'confirmed', 'rejected', 'cancelled'].includes(status)) {
+  if (!['pending', 'confirmed', 'rejected', 'cancelled', 'rescheduled'].includes(status)) {
     return res.status(400).json({ message: 'Invalid notification status.' });
   }
 

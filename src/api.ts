@@ -60,6 +60,7 @@ export type ApiBooking = {
   contactName: string;
   contactPhone?: string | null;
   email: string;
+  customerMessage?: string | null;
   participants?: number | null;
   paymentMethod?: string | null;
   paymentStatus?: string;
@@ -384,6 +385,9 @@ function mapBookingRow(row: Record<string, unknown>): ApiBooking {
     contactName: String(row.contactName ?? row.contact_name ?? ''),
     contactPhone: row.contactPhone === undefined ? null : (row.contactPhone as string | null),
     email: String(row.email ?? ''),
+    customerMessage: row.customerMessage === undefined && row.customer_message === undefined
+      ? null
+      : String(row.customerMessage ?? row.customer_message ?? ''),
     participants: row.participants === null || row.participants === undefined ? null : Number(row.participants),
     amount: row.amount === null || row.amount === undefined ? null : Number(row.amount),
     extras: Array.isArray(row.extras) ? (row.extras as string[]) : [],
@@ -534,6 +538,7 @@ export async function createBooking(draft: CreateBookingDraft): Promise<{ bookin
       contactName: draft.contactName,
       contactPhone: draft.contactPhone,
       email: draft.email,
+      customerMessage: draft.focus?.trim() || null,
       paymentMethod: draft.paymentMethod,
     }),
   });
@@ -764,7 +769,7 @@ export async function bookingAction(
   const patch: Record<string, unknown> = {};
   let auditAction = '';
   let auditDetails: Record<string, unknown> = {};
-  let notifyStatus: 'confirmed' | 'rejected' | 'cancelled' | null = null;
+  let notifyStatus: 'confirmed' | 'rejected' | 'cancelled' | 'rescheduled' | null = null;
 
   const baseDetails = {
     banda: booking.bandName || booking.contactName || '-',
@@ -805,6 +810,10 @@ export async function bookingAction(
     };
     notifyStatus = 'confirmed';
   } else if (action === 'reject') {
+    const paymentStatus = normalizePaymentStatus(booking.paymentStatus);
+    if (booking.status === 'confirmed' && paymentStatus === 'received') {
+      throw new ApiError('Não é possível desmarcar um ensaio confirmado e pago.', 400);
+    }
     patch.status = 'rejected';
     patch.rejectedBy = actorStamp;
     auditAction = 'booking-rejected';
@@ -834,6 +843,9 @@ export async function bookingAction(
     if (normalizePaymentStatus(booking.paymentStatus) === 'refunded') {
       throw new ApiError('Cannot reschedule a refunded booking.', 400);
     }
+    if (booking.status === 'confirmed' && normalizePaymentStatus(booking.paymentStatus) === 'received') {
+      throw new ApiError('Não é possível reagendar um ensaio confirmado e pago.', 400);
+    }
 
     const nextDate = String(body?.date || '').trim();
     const nextTime = String(body?.time || '').trim();
@@ -862,6 +874,7 @@ export async function bookingAction(
     // Marcador persistente de reagendamento (nao e limpo na reconfirmacao),
     // usado pelo filtro "Reagendados" da administracao.
     patch.rescheduledBy = actorStamp;
+    notifyStatus = 'rescheduled';
 
     auditAction = 'booking-rescheduled';
     auditDetails = {
@@ -1843,7 +1856,7 @@ export async function resendPasswordReset(token: string, email: string, name: st
   return { message: payload.message || 'Link de redefinicao reenviado.' };
 }
 
-function notifyBooking(booking: ApiBooking, status: 'pending' | 'confirmed' | 'rejected' | 'cancelled'): void {
+function notifyBooking(booking: ApiBooking, status: 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'rescheduled'): void {
   void fetch('/api/notify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

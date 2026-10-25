@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, MessageCircle, Plus, Wallet } from 'lucide-react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, ChevronRight, MessageCircle, Plus, Wallet, X } from 'lucide-react';
 import * as api from './api';
 import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
@@ -56,6 +56,7 @@ type PastBooking = {
   contactName: string;
   contactPhone?: string;
   email: string;
+  customerMessage?: string | null;
   paymentMethod?: 'on-site';
   paymentStatus?: string;
   amount?: number;
@@ -156,10 +157,9 @@ const statusLabel: Record<BookingStatus, string> = {
 const HISTORY_FILTER_OPTIONS: Array<{ value: HistoryFilter; label: string }> = [
   { value: 'all', label: 'Todos' },
   { value: 'pending', label: 'Por confirmar' },
-  { value: 'confirmed', label: 'Confirmados' },
   { value: 'rejected', label: 'Desmarcados' },
   { value: 'rescheduled', label: 'Reagendados' },
-  { value: 'cancelled', label: 'Anulados' },
+  { value: 'unpaid', label: 'Sem pagamento' },
 ];
 
 // Escopos de arquivo: limitam registos passados; futuro/hoje fica sempre visivel.
@@ -171,7 +171,7 @@ const PERIOD_SCOPE_OPTIONS: Array<{ value: PeriodScope; label: string }> = [
   { value: 'all', label: 'Tudo' },
 ];
 
-type HistoryFilter = 'all' | 'pending' | 'confirmed' | 'rescheduled' | 'cancelled' | 'rejected';
+type HistoryFilter = 'all' | 'pending' | 'rejected' | 'rescheduled' | 'unpaid';
 
 // Escopo temporal: limita quantos registos passados sao mostrados.
 // Futuro/hoje fica sempre visivel; 'all' mostra o historico completo.
@@ -300,6 +300,13 @@ type PaymentDraft = {
   receivedById: string;
 };
 
+type CustomerNotificationAction = 'confirm' | 'reject' | 'reschedule';
+
+type CustomerNotificationDecision = {
+  bookingId: string;
+  action: CustomerNotificationAction;
+};
+
 function isPastConfirmed(booking: PastBooking): boolean {
   if (booking.status !== 'confirmed') return false;
   const d = new Date(`${booking.date}T00:00:00`);
@@ -320,24 +327,30 @@ function isFutureOrTodayConfirmed(booking: PastBooking): boolean {
 
 function canReschedule(booking: PastBooking): boolean {
   const payment = String(booking.paymentStatus || '').toLowerCase();
-  return booking.status !== 'cancelled' && booking.status !== 'rejected' && payment !== 'refunded';
+  if (booking.status === 'cancelled' || booking.status === 'rejected') return false;
+  if (payment === 'refunded') return false;
+  // Ensaio confirmado e pago: bloqueado para reagendamento.
+  if (booking.status === 'confirmed' && payment === 'received') return false;
+  return true;
 }
 
 function formatContactPhone(phone?: string): string {
   return String(phone || '').trim().replace(/^(?:\+|00)351[\s.-]*/, '');
 }
 
-// O checkmark de WhatsApp so faz sentido enquanto existir uma acao que notifica o
-// cliente (confirmar/desmarcar/reagendar/anular). Desaparece nos estados terminais:
-// desmarcado, anulado, devolvido ou pagamento ja recebido.
-function podeUsarCheckmarkWhatsApp(booking: PastBooking): boolean {
-  const payment = String(booking.paymentStatus || '').toLowerCase();
-  if (booking.status === 'cancelled') return false;
-  if (booking.status === 'rejected') return false;
-  if (payment === 'refunded') return false;
-  if (payment === 'received' || payment === 'paid') return false;
-  if (booking.status === 'pending') return true;
-  return isFutureOrTodayConfirmed(booking);
+function formatBookingReference(booking: PastBooking): string {
+  const roomName = String(booking.roomName || '')
+    .replace(/^sala\s+/i, '')
+    .trim();
+  const roomInitial = roomName.replace(/[^a-z0-9]/gi, '').charAt(0).toUpperCase() || 'X';
+  const bookingCode = String(booking.id || '').replace(/[^a-z0-9]/gi, '').slice(0, 6).toUpperCase().padEnd(6, '0');
+  return `FB-${roomInitial}${bookingCode}`;
+}
+
+function customerNotificationActionLabel(action: CustomerNotificationAction): string {
+  if (action === 'confirm') return 'confirmar o ensaio';
+  if (action === 'reject') return 'desmarcar o ensaio';
+  return 'reagendar o ensaio';
 }
 
 function bookingMainTag(booking: PastBooking): { label: string; tone: string } {
@@ -531,7 +544,7 @@ function normalizarNumeroWhatsApp(numero: string): string {
   return String(numero || '').replace(/\D/g, '');
 }
 
-type TipoMensagemWhatsApp = 'confirm' | 'cancel' | 'refund' | 'reschedule';
+type TipoMensagemWhatsApp = 'confirm' | 'reject' | 'cancel' | 'refund' | 'reschedule';
 
 function abrirWhatsAppMensagem(
   booking: PastBooking,
@@ -570,6 +583,14 @@ function abrirWhatsAppMensagem(
       `O meu nome é ${colaboradorNome}.`,
       `A marcação da banda ${booking.bandName || nomeContato} foi anulada pela equipa.`,
       'Se quiseres, podemos ajudar a reagendar para outro horário.',
+    ].join('\n');
+  }
+
+  if (tipo === 'reject') {
+    corpo = [
+      `O meu nome é ${colaboradorNome}.`,
+      `A marcação da banda ${booking.bandName || nomeContato} foi desmarcada pela equipa.`,
+      'Se quiseres, podemos ajudar a encontrar outro horário.',
     ].join('\n');
   }
 
@@ -678,8 +699,7 @@ function AdminHistoryPage() {
   // Modal de confirmacao de pagamento (substitui o window.confirm nativo):
   // mostra o valor esperado e deixa confirmar/ajustar o valor recebido.
   const [paymentDraft, setPaymentDraft] = useState<PaymentDraft | null>(null);
-  // Opt-in por marcacao: so abre o WhatsApp quando o checkmark esta ativo.
-  const [whatsappOptIn, setWhatsappOptIn] = useState<Record<string, boolean>>({});
+  const [customerNotificationDecision, setCustomerNotificationDecision] = useState<CustomerNotificationDecision | null>(null);
   // Escolha do responsavel pelo ensaio (apenas admin/superuser escolhe no dropdown).
   const [assigneeChoice, setAssigneeChoice] = useState<Record<string, string>>({});
   const [financeData, setFinanceData] = useState<FinanceMonthSummary[]>([]);
@@ -708,7 +728,9 @@ function AdminHistoryPage() {
   const [clearBookingsConfirmation, setClearBookingsConfirmation] = useState('');
   const [contactRequestToDelete, setContactRequestToDelete] = useState<string | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
-  const [extrasVisible, setExtrasVisible] = useState<Record<string, boolean>>({});
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const bookingModalTriggerRef = useRef<HTMLElement | null>(null);
+  const bookingModalCloseRef = useRef<HTMLButtonElement | null>(null);
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
     name: '',
     email: '',
@@ -786,32 +808,6 @@ function AdminHistoryPage() {
     return 'status-pending';
   };
 
-  // Checkmark reutilizavel: ativa o envio de WhatsApp ao confirmar/desmarcar/reagendar.
-  const renderWhatsAppOptIn = (bookingId: string, canSend: boolean) => {
-    const active = Boolean(whatsappOptIn[bookingId]);
-    return (
-      <button
-        type="button"
-        className={`wa-optin ${active ? 'wa-optin-active' : ''}`}
-        aria-pressed={active}
-        aria-label={active ? 'Enviar mensagem por WhatsApp' : 'Não enviar mensagem por WhatsApp'}
-        title={
-          canSend
-            ? 'Enviar tambem mensagem por WhatsApp ao confirmar/desmarcar/reagendar'
-            : 'Sem telemovel valido para WhatsApp'
-        }
-        disabled={!canSend || Boolean(actionLoading[bookingId])}
-        onClick={() =>
-          setWhatsappOptIn((prev) => ({ ...prev, [bookingId]: !active }))
-        }
-      >
-        <MessageCircle aria-hidden="true" size={14} strokeWidth={2.25} />
-        <span>WhatsApp</span>
-        {active ? <Check aria-hidden="true" size={13} strokeWidth={2.5} /> : null}
-      </button>
-    );
-  };
-
   // Dropdown de responsavel pelo ensaio — visivel apenas para admin/superuser.
   // Mostra todos os utilizadores registados, por defeito o proprio admin logado.
   const renderAssigneeSelect = (booking: PastBooking) => {
@@ -873,19 +869,69 @@ function AdminHistoryPage() {
     return booking.status === 'confirmed' && paymentStatus !== 'received' && paymentStatus !== 'refunded';
   };
 
+  const renderBookingActions = (booking: PastBooking) => {
+    const isLoading = Boolean(actionLoading[booking.id]);
+
+    return (
+      <div className="booking-detail-actions">
+        {canConfirmPaymentReceipt(booking) ? (
+          <button
+            type="button"
+            className="primary-button"
+            disabled={isLoading}
+            onClick={() => handleConfirmPaymentReceipt(booking.id)}
+          >
+            Confirmar pagamento
+          </button>
+        ) : null}
+        {booking.status === 'pending' ? (
+          <button
+            type="button"
+            className="primary-button"
+            disabled={isLoading}
+            onClick={() => openCustomerNotificationDecision(booking.id, 'confirm')}
+          >
+            {isLoading ? 'A processar...' : 'Confirmar ensaio'}
+          </button>
+        ) : null}
+        {booking.status === 'pending' || (booking.status === 'confirmed' && String(booking.paymentStatus || '').toLowerCase() !== 'received') ? (
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={isLoading}
+            onClick={() => openCustomerNotificationDecision(booking.id, 'reject')}
+          >
+            {isLoading ? 'A processar...' : 'Desmarcar'}
+          </button>
+        ) : null}
+        {canReschedule(booking) ? (
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={isLoading}
+            onClick={() => openRescheduleModal(booking)}
+          >
+            Reagendar
+          </button>
+        ) : null}
+      </div>
+    );
+  };
+
   const filteredBookings = useMemo(() => {
     let scoped: PastBooking[];
 
     if (viewFilter === 'pending') {
       scoped = bookings.filter((booking) => booking.status === 'pending');
-    } else if (viewFilter === 'confirmed') {
-      scoped = bookings.filter((booking) => isFutureOrTodayConfirmed(booking));
     } else if (viewFilter === 'rejected') {
       scoped = bookings.filter((booking) => booking.status === 'rejected');
     } else if (viewFilter === 'rescheduled') {
       scoped = bookings.filter((booking) => Boolean(booking.rescheduledBy));
-    } else if (viewFilter === 'cancelled') {
-      scoped = bookings.filter((booking) => booking.status === 'cancelled');
+    } else if (viewFilter === 'unpaid') {
+      scoped = bookings.filter((booking) => {
+        const payment = String(booking.paymentStatus || '').toLowerCase();
+        return booking.status === 'confirmed' && payment !== 'received' && payment !== 'refunded';
+      });
     } else {
       scoped = bookings;
     }
@@ -904,6 +950,56 @@ function AdminHistoryPage() {
       return a.id.localeCompare(b.id);
     });
   }, [bookings, viewFilter, periodScope]);
+
+  const selectedBooking = useMemo(
+    () => bookings.find((booking) => booking.id === selectedBookingId) || null,
+    [bookings, selectedBookingId],
+  );
+  const customerNotificationBooking = useMemo(
+    () => bookings.find((booking) => booking.id === customerNotificationDecision?.bookingId) || null,
+    [bookings, customerNotificationDecision],
+  );
+
+  const openBookingModal = (bookingId: string, trigger: HTMLElement) => {
+    bookingModalTriggerRef.current = trigger;
+    setSelectedBookingId(bookingId);
+    setError('');
+  };
+
+  const closeBookingModal = () => {
+    setSelectedBookingId(null);
+    window.requestAnimationFrame(() => bookingModalTriggerRef.current?.focus());
+  };
+
+  useEffect(() => {
+    if (!selectedBookingId) return undefined;
+
+    window.requestAnimationFrame(() => bookingModalCloseRef.current?.focus());
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeBookingModal();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedBookingId]);
+
+  useEffect(() => {
+    if (!customerNotificationDecision) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || actionLoading[customerNotificationDecision.bookingId]) return;
+
+      const decision = customerNotificationDecision;
+      setCustomerNotificationDecision(null);
+      if (decision.action !== 'reschedule') {
+        window.requestAnimationFrame(() => setSelectedBookingId(decision.bookingId));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [customerNotificationDecision, actionLoading]);
 
   const historyCountLabel = filteredBookings.length === 1 ? '1 registo' : `${filteredBookings.length} registos`;
 
@@ -1441,12 +1537,27 @@ function AdminHistoryPage() {
     }
   };
 
-  const handleConfirmBooking = async (bookingId: string) => {
+  const openCustomerNotificationDecision = (bookingId: string, action: CustomerNotificationAction) => {
+    if (action !== 'reschedule') {
+      setSelectedBookingId(null);
+    }
+    setCustomerNotificationDecision({ bookingId, action });
+    setError('');
+  };
+
+  const closeCustomerNotificationDecision = () => {
+    const decision = customerNotificationDecision;
+    setCustomerNotificationDecision(null);
+    if (decision && decision.action !== 'reschedule') {
+      window.requestAnimationFrame(() => setSelectedBookingId(decision.bookingId));
+    }
+  };
+
+  const handleConfirmBooking = async (bookingId: string, sendWhatsApp: boolean) => {
     const token = window.localStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
     const booking = bookings.find((item) => item.id === bookingId);
-    const sendWhatsApp = Boolean(whatsappOptIn[bookingId]);
     // Admin/superuser escolhe o responsavel (por defeito fica ele proprio).
     const chosenAssigneeId = isPrivileged
       ? assigneeChoice[bookingId] || currentUser?.id || ''
@@ -1463,6 +1574,7 @@ function AdminHistoryPage() {
       if (isPrivileged) {
         await loadFinance(token);
       }
+      setCustomerNotificationDecision(null);
     });
   };
 
@@ -1473,6 +1585,7 @@ function AdminHistoryPage() {
     // Abre o modal inline (em vez do window.confirm nativo) com o valor esperado
     // pre-preenchido, para o colaborador/admin confirmar ou ajustar o recebido.
     setError('');
+    setSelectedBookingId(null);
     setPaymentDraft({
       bookingId,
       expected: String(Number(booking.amount || 0).toFixed(2)),
@@ -1483,7 +1596,11 @@ function AdminHistoryPage() {
   };
 
   const closePaymentModal = () => {
+    const bookingId = paymentDraft?.bookingId;
     setPaymentDraft(null);
+    if (bookingId) {
+      window.requestAnimationFrame(() => setSelectedBookingId(bookingId));
+    }
   };
 
   const handleSubmitPayment = async (event: FormEvent<HTMLFormElement>) => {
@@ -1509,25 +1626,24 @@ function AdminHistoryPage() {
       if (isPrivileged) {
         await loadFinance(token);
       }
-      closePaymentModal();
+      setPaymentDraft(null);
     });
   };
 
-  const handleRejectBooking = async (bookingId: string) => {
+  const handleRejectBooking = async (bookingId: string, sendWhatsApp: boolean) => {
     const token = window.localStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
     const booking = bookings.find((item) => item.id === bookingId);
-    const sendWhatsApp = Boolean(whatsappOptIn[bookingId]);
-
     await withActionLock(bookingId, async () => {
       await api.bookingAction(token, bookingId, 'reject');
 
       if (sendWhatsApp && booking && consegueAbrirWhatsApp(booking)) {
-        abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'cancel');
+        abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'reject');
       }
 
       await loadHistory(token);
+      setCustomerNotificationDecision(null);
     });
   };
 
@@ -1548,28 +1664,8 @@ function AdminHistoryPage() {
     }
   };
 
-  const handleCancelBooking = async (bookingId: string) => {
-    const token = window.localStorage.getItem(TOKEN_KEY);
-    if (!token) return;
-
-    const booking = bookings.find((item) => item.id === bookingId);
-    const sendWhatsApp = Boolean(whatsappOptIn[bookingId]);
-
-    await withActionLock(bookingId, async () => {
-      await api.bookingAction(token, bookingId, 'cancel');
-
-      if (sendWhatsApp && booking && consegueAbrirWhatsApp(booking)) {
-        abrirWhatsAppMensagem(booking, currentUser?.name || 'Feedback - Ensaios', 'cancel');
-      }
-
-      await loadHistory(token);
-      if (isPrivileged) {
-        await loadFinance(token);
-      }
-    });
-  };
-
   const openRescheduleModal = (booking: PastBooking) => {
+    setSelectedBookingId(null);
     setRescheduleDraft({
       bookingId: booking.id,
       date: booking.date,
@@ -1580,7 +1676,11 @@ function AdminHistoryPage() {
   };
 
   const closeRescheduleModal = () => {
+    const bookingId = rescheduleDraft?.bookingId;
     setRescheduleDraft(null);
+    if (bookingId) {
+      window.requestAnimationFrame(() => setSelectedBookingId(bookingId));
+    }
   };
 
   const handleSubmitReschedule = async (event: FormEvent<HTMLFormElement>) => {
@@ -1594,11 +1694,6 @@ function AdminHistoryPage() {
       return;
     }
 
-    const token = window.localStorage.getItem(TOKEN_KEY);
-    if (!token) return;
-
-    const sendWhatsApp = Boolean(whatsappOptIn[booking.id]);
-
     const nextDuration = Number(rescheduleDraft.duration);
     if (!Number.isFinite(nextDuration) || nextDuration <= 0) {
       setError('Duracao invalida para reagendamento.');
@@ -1609,6 +1704,23 @@ function AdminHistoryPage() {
       setError('Data e hora sao obrigatorias para reagendar.');
       return;
     }
+
+    openCustomerNotificationDecision(booking.id, 'reschedule');
+  };
+
+  const executeReschedule = async (sendWhatsApp: boolean) => {
+    if (!rescheduleDraft) return;
+
+    const booking = bookings.find((item) => item.id === rescheduleDraft.bookingId);
+    if (!booking) {
+      setError('Marcacao nao encontrada para reagendar.');
+      return;
+    }
+
+    const token = window.localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+
+    const nextDuration = Number(rescheduleDraft.duration);
 
     await withActionLock(booking.id, async () => {
       await api.bookingAction(token, booking.id, 'reschedule', {
@@ -1630,14 +1742,26 @@ function AdminHistoryPage() {
         );
       }
 
-      setWhatsappOptIn((prev) => ({ ...prev, [booking.id]: false }));
-
       await loadHistory(token);
       if (isPrivileged) {
         await loadFinance(token);
       }
-      closeRescheduleModal();
+      setRescheduleDraft(null);
+      setCustomerNotificationDecision(null);
     });
+  };
+
+  const executeCustomerNotificationDecision = async (sendWhatsApp: boolean) => {
+    if (!customerNotificationDecision) return;
+
+    const { bookingId, action } = customerNotificationDecision;
+    if (action === 'confirm') {
+      await handleConfirmBooking(bookingId, sendWhatsApp);
+    } else if (action === 'reject') {
+      await handleRejectBooking(bookingId, sendWhatsApp);
+    } else {
+      await executeReschedule(sendWhatsApp);
+    }
   };
 
   const totals = useMemo(() => {
@@ -3212,18 +3336,27 @@ function AdminHistoryPage() {
                       <th>Hora</th>
                       <th>Sala</th>
                       <th>Banda</th>
-                      <th>Extras</th>
                       <th>Duracao</th>
                       <th>Pagamento</th>
                       <th>Estado</th>
-                      <th>Acoes</th>
+                      <th>Detalhes</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredBookings.map((b) => (
                       <tr
                         key={b.id}
-                        className={`history-row-${b.status} ${isPastConfirmed(b) ? 'history-row-past' : ''} ${roomToneClass(b)}`}
+                        className={`history-booking-row history-row-${b.status} ${isPastConfirmed(b) ? 'history-row-past' : ''} ${roomToneClass(b)}`}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Ver detalhes do ensaio de ${b.bandName || b.contactName}`}
+                        onClick={(event) => openBookingModal(b.id, event.currentTarget)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openBookingModal(b.id, event.currentTarget);
+                          }
+                        }}
                       >
                         <td>{formatDateWithWeekday(b.date)}</td>
                         <td>{b.time}</td>
@@ -3236,38 +3369,6 @@ function AdminHistoryPage() {
                             </span>
                           ) : null}
                         </td>
-                        <td className="history-extras-cell">
-                         {(b.extras ?? []).length > 0 ? (
-                           <div className="history-extras">
-                              <button
-                                type="button"
-                                className="history-extras-trigger"
-                                aria-expanded={extrasVisible[b.id] ? 'true' : 'false'}
-                                aria-label="Ver extras"
-                                onClick={() => {
-                                  setExtrasVisible((prev) => ({
-                                    ...prev,
-                                    [b.id]: !(prev[b.id] ?? false),
-                                  }));
-                                }}
-                              >
-                                <span className="history-extras-label">
-                                  {(() => { const c = b.extras?.length ?? 0; return c > 1 ? `${c} extras` : '1 extra'; })()}
-                                </span>
-                                <span className="history-extras-arrow" aria-hidden="true">▾</span>
-                              </button>
-                              {extrasVisible[b.id] ? (
-                                <ul className="history-extras-list">
-                                  {(b.extras ?? []).map((extraId) => (
-                                    <li key={extraId}>{extraId}</li>
-                                  ))}
-                                </ul>
-                              ) : null}
-                            </div>
-                          ) : (
-                            <span className="history-extras-empty">Sem extras</span>
-                          )}
-                        </td>
                         <td>{b.duration}h</td>
                         <td>
                           <span className={`status-chip ${paymentStatusTone(b)}`}>
@@ -3276,86 +3377,18 @@ function AdminHistoryPage() {
                         </td>
                         <td>{renderStatusWithAssignee(b)}</td>
                         <td>
-                          <div className="history-actions">
-                            {b.status === 'pending' ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="secondary-button"
-                                  title="Confirmar marcacao"
-                                  disabled={Boolean(actionLoading[b.id])}
-                                  onClick={() => {
-                                    void handleConfirmBooking(b.id);
-                                  }}
-                                >
-                                  Confirma
-                                </button>
-                                <button
-                                  type="button"
-                                  className="secondary-button"
-                                  disabled={Boolean(actionLoading[b.id])}
-                                  onClick={() => {
-                                    void handleRejectBooking(b.id);
-                                  }}
-                                >
-                                  Desmarcar
-                                </button>
-                                {canReschedule(b) ? (
-                                  <button
-                                    type="button"
-                                    className="secondary-button"
-                                    disabled={Boolean(actionLoading[b.id])}
-                                    onClick={() => {
-                                      openRescheduleModal(b);
-                                    }}
-                                  >
-                                    Reagendar
-                                  </button>
-                                ) : null}
-                              </>
-                            ) : null}
-                            {isFutureOrTodayConfirmed(b) ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="secondary-button"
-                                  disabled={Boolean(actionLoading[b.id])}
-                                  onClick={() => {
-                                    void handleCancelBooking(b.id);
-                                  }}
-                                >
-                                  Anular
-                                </button>
-                                {canReschedule(b) ? (
-                                  <button
-                                    type="button"
-                                    className="secondary-button"
-                                    disabled={Boolean(actionLoading[b.id])}
-                                    onClick={() => {
-                                      openRescheduleModal(b);
-                                    }}
-                                  >
-                                    Reagendar
-                                  </button>
-                                ) : null}
-                              </>
-                            ) : null}
-                            {canConfirmPaymentReceipt(b) ? (
-                              <button
-                                type="button"
-                                className="secondary-button"
-                                title="Confirmar pagamento"
-                                disabled={Boolean(actionLoading[b.id])}
-                                onClick={() => {
-                                  void handleConfirmPaymentReceipt(b.id);
-                                }}
-                              >
-                                Pagamento
-                              </button>
-                            ) : null}
-                            {podeUsarCheckmarkWhatsApp(b) ? renderWhatsAppOptIn(b.id, consegueAbrirWhatsApp(b)) : null}
-                          </div>
-                          {renderAssigneeSelect(b)}
+                          <button
+                            type="button"
+                            className="history-details-trigger"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openBookingModal(b.id, event.currentTarget);
+                            }}
+                          >
+                            Ver detalhes
+                            {b.customerMessage ? <MessageCircle aria-label="Tem mensagem da banda" size={14} /> : null}
+                            <ChevronRight aria-hidden="true" size={15} />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -3364,7 +3397,12 @@ function AdminHistoryPage() {
 
                 <ul className="history-mobile-list">
                   {filteredBookings.map((b) => (
-                    <li key={`${b.id}-mobile`} className={`history-mobile-card ${roomToneClass(b)}`}>
+                    <li key={`${b.id}-mobile`} className={`history-mobile-card history-row-${b.status} ${roomToneClass(b)}`}>
+                      <button
+                        type="button"
+                        className="history-mobile-card-trigger"
+                        onClick={(event) => openBookingModal(b.id, event.currentTarget)}
+                      >
                       <div className="team-item-top">
                         <strong>{b.roomName}</strong>
                         {renderStatusWithAssignee(b)}
@@ -3378,104 +3416,15 @@ function AdminHistoryPage() {
                       <p>
                         Pagamento: <span className={paymentStatusTone(b)}>{paymentStatusLabel(b)}</span>
                       </p>
-                      <p>
-                        Extras:{' '}
-                        {(b.extras ?? []).length > 0 ? (
-                          <span className="history-extras-value">
-                            {(b.extras ?? []).map((extraId) => formatExtraLabel(extraId)).join(', ')}
-                          </span>
-                        ) : (
-                          <span className="history-extras-empty">Sem extras</span>
-                        )}
-                      </p>
-
-                      <div className="history-log-lines">
-                        {b.confirmedBy ? <p>Confirmado por {b.confirmedBy.name}</p> : null}
-                        {b.rejectedBy ? <p>Desmarcado por {b.rejectedBy.name}</p> : null}
-                        {b.cancelledBy ? <p>Anulado por {b.cancelledBy.name}</p> : null}
-                        {b.refundedBy ? <p>Devolvido por {b.refundedBy.name}</p> : null}
-                      </div>
-
-                      <div className="history-actions">
-                        {b.status === 'pending' ? (
-                          <>
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              title="Confirmar marcacao"
-                              disabled={Boolean(actionLoading[b.id])}
-                              onClick={() => {
-                                void handleConfirmBooking(b.id);
-                              }}
-                            >
-                              Confirma
-                            </button>
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              disabled={Boolean(actionLoading[b.id])}
-                              onClick={() => {
-                                void handleRejectBooking(b.id);
-                              }}
-                            >
-                              Desmarcar
-                            </button>
-                            {canReschedule(b) ? (
-                              <button
-                                type="button"
-                                className="secondary-button"
-                                disabled={Boolean(actionLoading[b.id])}
-                                onClick={() => {
-                                  openRescheduleModal(b);
-                                }}
-                              >
-                                Reagendar
-                              </button>
-                            ) : null}
-                          </>
-                        ) : null}
-                        {isFutureOrTodayConfirmed(b) ? (
-                          <>
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              disabled={Boolean(actionLoading[b.id])}
-                              onClick={() => {
-                                void handleCancelBooking(b.id);
-                              }}
-                            >
-                              Anular
-                            </button>
-                            {canReschedule(b) ? (
-                              <button
-                                type="button"
-                                className="secondary-button"
-                                disabled={Boolean(actionLoading[b.id])}
-                                onClick={() => {
-                                  openRescheduleModal(b);
-                                }}
-                              >
-                                Reagendar
-                              </button>
-                            ) : null}
-                          </>
-                        ) : null}
-                        {canConfirmPaymentReceipt(b) ? (
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            title="Confirmar pagamento"
-                            disabled={Boolean(actionLoading[b.id])}
-                            onClick={() => {
-                              void handleConfirmPaymentReceipt(b.id);
-                            }}
-                          >
-                            Pagamento
-                          </button>
-                        ) : null}
-                        {podeUsarCheckmarkWhatsApp(b) ? renderWhatsAppOptIn(b.id, consegueAbrirWhatsApp(b)) : null}
-                      </div>
-                      {renderAssigneeSelect(b)}
+                        <span className="history-mobile-card-footer">
+                          {b.customerMessage ? (
+                            <span className="history-message-indicator">
+                              <MessageCircle aria-hidden="true" size={14} /> Mensagem da banda
+                            </span>
+                          ) : <span />}
+                          <ChevronRight aria-hidden="true" size={18} />
+                        </span>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -3516,6 +3465,120 @@ function AdminHistoryPage() {
         ) : null}
         </div>
       </main>
+
+      {selectedBooking ? (
+        <div
+          className="admin-modal-backdrop booking-detail-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="booking-detail-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeBookingModal();
+          }}
+        >
+          <section className="card admin-modal-card admin-modal-card-wide booking-detail-modal">
+            <header className="booking-detail-header">
+              <div className="booking-detail-header-content">
+                <div className="booking-detail-title-row">
+                  <p className="eyebrow">Detalhes do ensaio</p>
+                  <span className="booking-detail-header-reference">{formatBookingReference(selectedBooking)}</span>
+                </div>
+                <h2 id="booking-detail-title">{selectedBooking.bandName || selectedBooking.contactName}</h2>
+                <div className="booking-detail-header-meta">
+                  <span>{selectedBooking.roomName}</span>
+                  <span className="booking-detail-datetime-badge">
+                    {formatDateWithWeekday(selectedBooking.date)} · {selectedBooking.time}
+                  </span>
+                </div>
+              </div>
+              <button
+                ref={bookingModalCloseRef}
+                type="button"
+                className="secondary-button admin-modal-close"
+                aria-label="Fechar detalhes do ensaio"
+                onClick={closeBookingModal}
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </header>
+
+            <div className="booking-detail-body">
+              <div className="booking-detail-status-row">
+                {renderStatusWithAssignee(selectedBooking)}
+                <span className={`status-chip ${paymentStatusTone(selectedBooking)}`}>
+                  Pagamento: {paymentStatusLabel(selectedBooking)}
+                </span>
+              </div>
+
+              <dl className="booking-detail-grid">
+                <div>
+                  <dt>Duração</dt>
+                  <dd>{selectedBooking.duration}h</dd>
+                </div>
+                <div>
+                  <dt>Contacto</dt>
+                  <dd>{selectedBooking.contactName || '-'}</dd>
+                </div>
+                <div>
+                  <dt>Telemóvel</dt>
+                  <dd>{formatContactPhone(selectedBooking.contactPhone) || '-'}</dd>
+                </div>
+                <div>
+                  <dt>Email</dt>
+                  <dd className="booking-detail-email">{selectedBooking.email || '-'}</dd>
+                </div>
+                <div>
+                  <dt>Valor</dt>
+                  <dd>{formatCurrency(Number(selectedBooking.amount || 0))}</dd>
+                </div>
+              </dl>
+
+              <section className="booking-detail-section" aria-labelledby="booking-extras-title">
+                <h3 id="booking-extras-title">Extras</h3>
+                {(selectedBooking.extras ?? []).length > 0 ? (
+                  <ul className="booking-detail-extras">
+                    {(selectedBooking.extras ?? []).map((extraId) => {
+                      const service = services.find((item) => item.id === extraId);
+                      return <li key={extraId}>{service?.name || formatExtraLabel(extraId)}</li>;
+                    })}
+                  </ul>
+                ) : <p className="booking-detail-empty">Sem extras.</p>}
+              </section>
+
+              <section className="booking-detail-section" aria-labelledby="booking-message-title">
+                <div className="booking-detail-section-title">
+                  <MessageCircle aria-hidden="true" size={17} />
+                  <h3 id="booking-message-title">Mensagem da banda</h3>
+                </div>
+                <p className={selectedBooking.customerMessage ? 'booking-customer-message' : 'booking-detail-empty'}>
+                  {selectedBooking.customerMessage || 'Sem mensagem adicional nesta marcação.'}
+                </p>
+              </section>
+
+              <section className="booking-detail-section" aria-labelledby="booking-history-title">
+                <h3 id="booking-history-title">Registo</h3>
+                <div className="history-log-lines booking-detail-log">
+                  {selectedBooking.confirmedBy ? <p>Confirmado por {selectedBooking.confirmedBy.name}</p> : null}
+                  {selectedBooking.rejectedBy ? <p>Desmarcado por {selectedBooking.rejectedBy.name}</p> : null}
+                  {selectedBooking.cancelledBy ? <p>Anulado por {selectedBooking.cancelledBy.name}</p> : null}
+                  {selectedBooking.refundedBy ? <p>Devolvido por {selectedBooking.refundedBy.name}</p> : null}
+                  {selectedBooking.rescheduledBy ? <p>Reagendado por {selectedBooking.rescheduledBy.name}</p> : null}
+                  {!selectedBooking.confirmedBy && !selectedBooking.rejectedBy && !selectedBooking.cancelledBy
+                    && !selectedBooking.refundedBy && !selectedBooking.rescheduledBy
+                    ? <p className="booking-detail-empty">Ainda sem ações registadas.</p>
+                    : null}
+                </div>
+              </section>
+
+              {renderAssigneeSelect(selectedBooking)}
+            </div>
+
+            <footer className="booking-detail-footer">
+              {renderBookingActions(selectedBooking)}
+            </footer>
+          </section>
+        </div>
+      ) : null}
 
       {clearBookingsModalOpen ? (
         <div
@@ -3649,7 +3712,7 @@ function AdminHistoryPage() {
         </div>
       ) : null}
 
-      {rescheduleDraft ? (
+      {rescheduleDraft && customerNotificationDecision?.action !== 'reschedule' ? (
         <div className="admin-modal-backdrop" role="dialog" aria-modal="true" aria-label="Reagendar marcacao">
           <section className="card admin-modal-card">
             <h3>Reagendar marcacao</h3>
@@ -3718,22 +3781,85 @@ function AdminHistoryPage() {
                 />
               </label>
 
-                <div className="admin-reschedule-wa">
-                  {renderWhatsAppOptIn(
-                    rescheduleDraft.bookingId,
-                    consegueAbrirWhatsApp(bookings.find((item) => item.id === rescheduleDraft.bookingId) || ({} as PastBooking)),
-                  )}
-                </div>
-
               <div className="admin-modal-actions">
-                <button type="button" className="secondary-button" onClick={closeRescheduleModal}>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={Boolean(actionLoading[rescheduleDraft.bookingId])}
+                  onClick={closeRescheduleModal}
+                >
                   Cancelar
                 </button>
-                <button type="submit" className="primary-button">
-                  Guardar reagendamento
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={Boolean(actionLoading[rescheduleDraft.bookingId])}
+                >
+                  {actionLoading[rescheduleDraft.bookingId] ? 'A guardar...' : 'Guardar reagendamento'}
                 </button>
               </div>
             </form>
+          </section>
+        </div>
+      ) : null}
+
+      {customerNotificationDecision && customerNotificationBooking ? (
+        <div
+          className="admin-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="customer-notification-title"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget
+              && !actionLoading[customerNotificationDecision.bookingId]
+            ) {
+              closeCustomerNotificationDecision();
+            }
+          }}
+        >
+          <section className="card admin-modal-card customer-notification-modal">
+            <div className="customer-notification-modal-icon">
+              <MessageCircle aria-hidden="true" size={20} />
+            </div>
+            <h3 id="customer-notification-title">Enviar mensagem por WhatsApp?</h3>
+            <p>
+              Vais {customerNotificationActionLabel(customerNotificationDecision.action)} e enviar o email à banda.
+              Queres enviar também a mensagem por WhatsApp?
+            </p>
+            {!consegueAbrirWhatsApp(customerNotificationBooking) ? (
+              <p className="admin-helper-note">Esta marcação não tem um número válido para WhatsApp.</p>
+            ) : null}
+            <div className="admin-modal-actions customer-notification-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                autoFocus
+                disabled={Boolean(actionLoading[customerNotificationDecision.bookingId])}
+                onClick={() => { void executeCustomerNotificationDecision(false); }}
+              >
+                {actionLoading[customerNotificationDecision.bookingId] ? 'A processar...' : 'Não, só email'}
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={
+                  Boolean(actionLoading[customerNotificationDecision.bookingId])
+                  || !consegueAbrirWhatsApp(customerNotificationBooking)
+                }
+                onClick={() => { void executeCustomerNotificationDecision(true); }}
+              >
+                {actionLoading[customerNotificationDecision.bookingId] ? 'A processar...' : 'Sim, email + WhatsApp'}
+              </button>
+            </div>
+            <button
+              type="button"
+              className="admin-modal-cancel-link"
+              disabled={Boolean(actionLoading[customerNotificationDecision.bookingId])}
+              onClick={closeCustomerNotificationDecision}
+            >
+              Voltar sem executar
+            </button>
           </section>
         </div>
       ) : null}
@@ -3793,7 +3919,12 @@ function AdminHistoryPage() {
               </label>
 
               <div className="admin-modal-actions">
-                <button type="button" className="secondary-button" onClick={closePaymentModal}>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={Boolean(actionLoading[paymentDraft.bookingId])}
+                  onClick={closePaymentModal}
+                >
                   Cancelar
                 </button>
                 <button type="submit" className="primary-button" disabled={Boolean(actionLoading[paymentDraft.bookingId])}>

@@ -207,6 +207,16 @@ function buildMessage(booking, status) {
         signature,
     };
   }
+  if (status === 'rescheduled') {
+    return {
+      subject: '🔄 Reserva Reagendada.',
+      html:
+        head +
+        `<p>Olá ${user}, o seu ensaio foi reagendado.</p>` +
+        `<p>Novos detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>` +
+        signature,
+    };
+  }
   if (status === 'pending') {
     return {
       subject: '📩 Reserva Recebida. Aguarda confirmação.',
@@ -281,7 +291,7 @@ export default async function handler(req, res) {
   if (!booking || typeof booking !== 'object') {
     return res.status(400).json({ message: 'Booking payload is required.' });
   }
-  if (!['pending', 'confirmed', 'rejected', 'cancelled'].includes(status)) {
+  if (!['pending', 'confirmed', 'rejected', 'cancelled', 'rescheduled'].includes(status)) {
     return res.status(400).json({ message: 'Invalid notification status.' });
   }
 
