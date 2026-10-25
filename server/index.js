@@ -240,67 +240,6 @@ function emailSignature() {
   );
 }
 
-// Gera um ficheiro ICS (RFC 5545) para adicionar o ensaio ao calendário do cliente.
-function buildIcs(booking, status) {
-  if (!booking || !booking.date || !booking.time) return null;
-  if (status !== 'confirmed' && status !== 'rescheduled') return null;
-
-  const durationHours = Number(booking.duration) || 1;
-  const start = new Date(`${booking.date}T${booking.time}:00`);
-  if (Number.isNaN(start.getTime())) return null;
-  const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
-
-  const pad = (n) => String(n).padStart(2, '0');
-  const formatUtc = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
-  const now = new Date();
-  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
-
-  const uid = `booking-${booking.id || booking.date + booking.time}-${Date.now()}@ensaiosfeedback.pt`;
-  const band = String(booking.bandName || booking.contactName || 'Ensaio').trim();
-  const room = String(booking.roomName || 'Sala de Ensaios').trim();
-  const contact = String(booking.contactName || '').trim();
-  const phone = String(booking.contactPhone || '').trim();
-  const confirmer = booking.confirmedBy ? `${booking.confirmedBy.name || ''}${booking.confirmedBy.phone ? ' — ' + booking.confirmedBy.phone : ''}`.trim() : '';
-
-  const descriptionLines = [
-    `Ensaio: ${band}`,
-    `Sala: ${room}`,
-    `Data: ${formatDatePt(booking.date)}`,
-    `Hora: ${booking.time} (${durationHours}h)`,
-    contact ? `Contacto: ${contact}` : '',
-    phone ? `Telefone: ${phone}` : '',
-    confirmer ? `Confirmado por: ${confirmer}` : '',
-    '',
-    'Feedback Productions — Estúdios de Ensaio & Produção Musical',
-    'Parque de Exposições Acácio Dores — Montijo, Portugal',
-    'Tel: 91 817 62 67 / 93 232 1079 / 91 651 58 02',
-  ].filter(Boolean);
-
-  const ics = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Feedback Productions//FeedBook//PT',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'BEGIN:VEVENT',
-    `UID:${uid}`,
-    `DTSTAMP:${stamp}`,
-    `DTSTART:${formatUtc(start)}`,
-    `DTEND:${formatUtc(end)}`,
-    `SUMMARY:Ensaio — ${band} (${room})`,
-    `DESCRIPTION:${descriptionLines.join('\\n').replace(/\n/g, '\\n')}`,
-    `LOCATION:${room}, Parque de Exposições Acácio Dores — Montijo, Portugal`,
-    'ORGANIZER;CN=Feedback Productions:mailto:ensaios@feedbackproductions.pt',
-    'STATUS:CONFIRMED',
-    'SEQUENCE:0',
-    'TRANSP:OPAQUE',
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\r\n');
-
-  return ics;
-}
-
 function buildCalendarLinks(booking) {
   const durationHours = Number(booking.duration) || 1;
   const start = new Date(`${booking.date}T${booking.time}:00`);
