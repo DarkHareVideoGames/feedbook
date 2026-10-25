@@ -352,7 +352,6 @@ function App() {
   const [duration, setDuration] = useState(3);
   const [pricing, setPricing] = useState<PricingConfig>(defaultPricing);
   const [selectedExtras, setSelectedExtras] = useState<string[]>(['engineer']);
-  const [confirmation, setConfirmation] = useState<string>('');
   const [confirmationId, setConfirmationId] = useState<string>('');
   const [confirmationExtras, setConfirmationExtras] = useState<Array<{ id: string; price: number }>>([]);
   const [confirmationDetails, setConfirmationDetails] = useState<BookingConfirmationDetails | null>(null);
@@ -532,10 +531,10 @@ const [minDelayDone, setMinDelayDone] = useState(false);
   }, [bookingStep]);
 
   useEffect(() => {
-    if (!confirmation || !confirmationRef.current) return;
+    if (bookingStep !== 'confirmation' || !confirmationRef.current) return;
     confirmationRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     confirmationRef.current.focus({ preventScroll: true });
-  }, [confirmation]);
+  }, [bookingStep]);
 
   function goToNextStep() {
     if (selectedRoomContactOnly) {
@@ -711,11 +710,6 @@ const [minDelayDone, setMinDelayDone] = useState(false);
           : fallbackAmount;
       }
 
-      const message = selectedRoomContactOnly
-        ? `Recebemos o teu pedido de contacto para ${selectedRoom.name}. A nossa equipa irá contactar-te em breve.`
-        : translations.booking.confirmation;
-
-      setConfirmation(message);
       setConfirmationId(formatPublicBookingReference(confirmationRequestId, selectedRoom.name));
       setConfirmationExtras(selectedRoomContactOnly ? [] : extras
         .filter((extra) => selectedExtras.includes(extra.id))
@@ -1282,9 +1276,13 @@ const [minDelayDone, setMinDelayDone] = useState(false);
           <section className="booking-grid confirmation-grid">
             <div className="card booking-form confirmation-form">
               <div className="confirmation-banner" role="status" aria-live="polite" tabIndex={-1} ref={confirmationRef}>
-                <span className="confirmation-banner-badge">{selectedRoomContactOnly ? 'Aguarda!' : translations.booking.pendingBadge}</span>
+                <span className="confirmation-banner-badge">
+                  {selectedRoomContactOnly ? translations.booking.contactPendingBadge : translations.booking.pendingBadge}
+                </span>
                 <p className="confirmation-banner-message">
-                  {selectedRoomContactOnly ? confirmation : translations.booking.confirmation}
+                  {selectedRoomContactOnly
+                    ? formatTemplate(translations.booking.contactConfirmation, { room: selectedRoom.name })
+                    : translations.booking.confirmation}
                 </p>
                 {!selectedRoomContactOnly && confirmationDetails && (
                   <>
@@ -1319,7 +1317,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                           ))}
                         </ul>
                       ) : (
-                        <p className="confirmation-extras-empty">{translations.booking.noExtras ?? 'Apenas o ensaio'}</p>
+                        <p className="confirmation-extras-empty">{translations.booking.noExtras}</p>
                       )}
                     </section>
 
@@ -1336,13 +1334,13 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                 )}
                 {!selectedRoomContactOnly && (
                   <section className="confirmation-reference" aria-label={translations.booking.bookingIdLabel}>
-                    <span>{translations.booking.bookingIdLabel ?? 'Referência do pedido'}</span>
+                    <span>{translations.booking.bookingIdLabel}</span>
                     <strong className="confirmation-id-value">{confirmationId}</strong>
                   </section>
                 )}
                 {!selectedRoomContactOnly && (
                   <p className="confirmation-id-note">
-                    {translations.booking.bookingIdNote ?? 'Guarda esta referência até receberes a confirmação.'}
+                    {translations.booking.bookingIdNote}
                   </p>
                 )}
               </div>
