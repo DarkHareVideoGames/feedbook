@@ -157,10 +157,9 @@ const statusLabel: Record<BookingStatus, string> = {
 const HISTORY_FILTER_OPTIONS: Array<{ value: HistoryFilter; label: string }> = [
   { value: 'all', label: 'Todos' },
   { value: 'pending', label: 'Por confirmar' },
-  { value: 'confirmed', label: 'Confirmados' },
   { value: 'rejected', label: 'Desmarcados' },
   { value: 'rescheduled', label: 'Reagendados' },
-  { value: 'cancelled', label: 'Anulados' },
+  { value: 'unpaid', label: 'Sem pagamento' },
 ];
 
 // Escopos de arquivo: limitam registos passados; futuro/hoje fica sempre visivel.
@@ -172,7 +171,7 @@ const PERIOD_SCOPE_OPTIONS: Array<{ value: PeriodScope; label: string }> = [
   { value: 'all', label: 'Tudo' },
 ];
 
-type HistoryFilter = 'all' | 'pending' | 'confirmed' | 'rescheduled' | 'cancelled' | 'rejected';
+type HistoryFilter = 'all' | 'pending' | 'rejected' | 'rescheduled' | 'unpaid';
 
 // Escopo temporal: limita quantos registos passados sao mostrados.
 // Futuro/hoje fica sempre visivel; 'all' mostra o historico completo.
@@ -924,14 +923,15 @@ function AdminHistoryPage() {
 
     if (viewFilter === 'pending') {
       scoped = bookings.filter((booking) => booking.status === 'pending');
-    } else if (viewFilter === 'confirmed') {
-      scoped = bookings.filter((booking) => isFutureOrTodayConfirmed(booking));
     } else if (viewFilter === 'rejected') {
       scoped = bookings.filter((booking) => booking.status === 'rejected');
     } else if (viewFilter === 'rescheduled') {
       scoped = bookings.filter((booking) => Boolean(booking.rescheduledBy));
-    } else if (viewFilter === 'cancelled') {
-      scoped = bookings.filter((booking) => booking.status === 'cancelled');
+    } else if (viewFilter === 'unpaid') {
+      scoped = bookings.filter((booking) => {
+        const payment = String(booking.paymentStatus || '').toLowerCase();
+        return payment !== 'received' && payment !== 'refunded';
+      });
     } else {
       scoped = bookings;
     }
