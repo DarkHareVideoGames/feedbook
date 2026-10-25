@@ -328,7 +328,11 @@ function isFutureOrTodayConfirmed(booking: PastBooking): boolean {
 
 function canReschedule(booking: PastBooking): boolean {
   const payment = String(booking.paymentStatus || '').toLowerCase();
-  return booking.status !== 'cancelled' && booking.status !== 'rejected' && payment !== 'refunded';
+  if (booking.status === 'cancelled' || booking.status === 'rejected') return false;
+  if (payment === 'refunded') return false;
+  // Ensaio confirmado e pago: bloqueado para reagendamento.
+  if (booking.status === 'confirmed' && payment === 'received') return false;
+  return true;
 }
 
 function formatContactPhone(phone?: string): string {
@@ -891,7 +895,7 @@ function AdminHistoryPage() {
             {isLoading ? 'A processar...' : 'Confirmar ensaio'}
           </button>
         ) : null}
-        {booking.status === 'pending' || booking.status === 'confirmed' ? (
+        {booking.status === 'pending' || (booking.status === 'confirmed' && String(booking.paymentStatus || '').toLowerCase() !== 'received') ? (
           <button
             type="button"
             className="secondary-button"

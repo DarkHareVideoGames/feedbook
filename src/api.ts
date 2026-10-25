@@ -810,6 +810,10 @@ export async function bookingAction(
     };
     notifyStatus = 'confirmed';
   } else if (action === 'reject') {
+    const paymentStatus = normalizePaymentStatus(booking.paymentStatus);
+    if (booking.status === 'confirmed' && paymentStatus === 'received') {
+      throw new ApiError('Não é possível desmarcar um ensaio confirmado e pago.', 400);
+    }
     patch.status = 'rejected';
     patch.rejectedBy = actorStamp;
     auditAction = 'booking-rejected';
@@ -838,6 +842,9 @@ export async function bookingAction(
   } else if (action === 'reschedule') {
     if (normalizePaymentStatus(booking.paymentStatus) === 'refunded') {
       throw new ApiError('Cannot reschedule a refunded booking.', 400);
+    }
+    if (booking.status === 'confirmed' && normalizePaymentStatus(booking.paymentStatus) === 'received') {
+      throw new ApiError('Não é possível reagendar um ensaio confirmado e pago.', 400);
     }
 
     const nextDate = String(body?.date || '').trim();
