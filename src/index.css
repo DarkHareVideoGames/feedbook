@@ -971,7 +971,7 @@ textarea:focus {
 
 /* --- Rodapé público: links minimalistas Feedback Productions (Issue #10) --- */
 .site-footer {
-  margin-top: 40px;
+  margin-top: 16px;
   padding: 24px 16px 28px;
   background: #000000;
 }
@@ -3755,7 +3755,7 @@ textarea:focus {
 .about-section {
   display: grid;
   gap: 28px;
-  margin-top: 48px;
+  margin-top: 16px;
   padding: 34px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -3989,7 +3989,7 @@ textarea:focus {
 
 @media (max-width: 900px) {
   .about-section {
-    margin-top: 36px;
+    margin-top: 16px;
     padding: 26px;
     border-radius: 6px;
   }
@@ -4006,7 +4006,7 @@ textarea:focus {
 @media (max-width: 720px) {
   .about-section {
     gap: 22px;
-    margin-top: 28px;
+    margin-top: 12px;
     padding: 20px;
     border-radius: 6px;
   }
