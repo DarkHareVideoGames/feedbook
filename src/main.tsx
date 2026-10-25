@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import AdminHistoryPage from './AdminHistoryPage';
 import SetPasswordModal from './SetPasswordModal';
+import NotFoundPage from './NotFoundPage';
 import { I18nProvider } from './i18n';
 import './index.css';
 import './brand-overrides.css';
@@ -52,7 +53,13 @@ function Root() {
     <>
       {/* Modal de convite "define a tua password" — ativo em todas as páginas. */}
       <SetPasswordModal />
-      {path.startsWith('/admin') ? <AdminHistoryPage /> : <App />}
+      {path.startsWith('/admin') ? (
+        <AdminHistoryPage />
+      ) : path === '/' ? (
+        <App />
+      ) : (
+        <NotFoundPage />
+      )}
     </>
   );
 }
