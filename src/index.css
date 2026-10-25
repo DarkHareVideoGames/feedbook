@@ -971,7 +971,7 @@ textarea:focus {
 
 /* --- Rodapé público: links minimalistas Feedback Productions (Issue #10) --- */
 .site-footer {
-  margin-top: 40px;
+  margin-top: 16px;
   padding: 24px 16px 28px;
   background: #000000;
 }
@@ -1001,15 +1001,34 @@ textarea:focus {
   color: var(--text-muted);
   text-decoration: none;
   font-size: 0.92rem;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, filter 0.2s ease;
 }
 
 .site-footer-link:hover {
-  color: var(--text-main);
+  filter: brightness(1.2);
+}
+
+.site-footer-link-site {
+  color: #a78bfa;
+}
+
+.site-footer-link-instagram {
+  color: #f77737;
+}
+
+.site-footer-link-instagram span {
+  color: transparent;
+  background: linear-gradient(90deg, #feda75 0%, #fa7e1e 25%, #d62976 55%, #962fbf 78%, #4f5bd5 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+.site-footer-link-youtube {
+  color: #ff0033;
 }
 
 .site-footer-link:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid currentColor;
   outline-offset: 3px;
   border-radius: 4px;
 }
@@ -3755,7 +3774,7 @@ textarea:focus {
 .about-section {
   display: grid;
   gap: 28px;
-  margin-top: 48px;
+  margin-top: 16px;
   padding: 34px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -3989,7 +4008,7 @@ textarea:focus {
 
 @media (max-width: 900px) {
   .about-section {
-    margin-top: 36px;
+    margin-top: 16px;
     padding: 26px;
     border-radius: 6px;
   }
@@ -4006,7 +4025,7 @@ textarea:focus {
 @media (max-width: 720px) {
   .about-section {
     gap: 22px;
-    margin-top: 28px;
+    margin-top: 12px;
     padding: 20px;
     border-radius: 6px;
   }
