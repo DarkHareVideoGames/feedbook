@@ -1279,6 +1279,10 @@ textarea:focus {
   grid-column: 1 / -1;
 }
 
+.booking-nav-end {
+  justify-content: flex-end;
+}
+
 .booking-nav .primary-button,
 .booking-nav .secondary-button {
   min-width: 132px;

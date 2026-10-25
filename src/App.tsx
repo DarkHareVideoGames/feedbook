@@ -987,10 +987,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                 </div>
               </div>
 
-              <div className="booking-nav">
-                <button type="button" className="secondary-button" onClick={goToPreviousStep}>
-                  {translations.booking.back}
-                </button>
+              <div className="booking-nav booking-nav-end">
                 <button
                   type="button"
                   className="primary-button"
@@ -1197,10 +1194,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                 </div>
               ) : null}
 
-              <div className="booking-nav">
-                <button type="button" className="secondary-button" onClick={goToPreviousStep}>
-                  {translations.booking.back}
-                </button>
+              <div className="booking-nav booking-nav-end">
                 <button className="primary-button" type="submit" disabled={isSubmitting || backendOffline || !acceptedTerms || !contactValid}>
                   {isSubmitting ? translations.booking.submitting : (selectedRoomContactOnly ? translations.booking.submitContact : translations.booking.submit)}
                 </button>
