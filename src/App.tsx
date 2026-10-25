@@ -1225,7 +1225,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                         ))}
                       </ul>
                     ) : (
-                      <p className="confirmation-extras-empty">{translations.booking.noExtras ?? 'Sem servicos extra — so o ensaio.'}</p>
+                      <p className="confirmation-extras-empty">{translations.booking.noExtras ?? 'Apenas o ensaio'}</p>
                     )}
                   </>
                 )}
