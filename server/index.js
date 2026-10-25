@@ -250,7 +250,7 @@ function buildIcs(booking, status) {
   const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
 
   const pad = (n) => String(n).padStart(2, '0');
-  const formatLocal = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  const formatUtc = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
   const now = new Date();
   const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
 
@@ -280,12 +280,12 @@ function buildIcs(booking, status) {
     'VERSION:2.0',
     'PRODID:-//Feedback Productions//FeedBook//PT',
     'CALSCALE:GREGORIAN',
-    'METHOD:REQUEST',
+    'METHOD:PUBLISH',
     'BEGIN:VEVENT',
     `UID:${uid}`,
     `DTSTAMP:${stamp}`,
-    `DTSTART;TZID=Europe/Lisbon:${formatLocal(start)}`,
-    `DTEND;TZID=Europe/Lisbon:${formatLocal(end)}`,
+    `DTSTART:${formatUtc(start)}`,
+    `DTEND:${formatUtc(end)}`,
     `SUMMARY:Ensaio — ${band} (${room})`,
     `DESCRIPTION:${descriptionLines.join('\\n').replace(/\n/g, '\\n')}`,
     `LOCATION:${room}, Parque de Exposições Acácio Dores — Montijo, Portugal`,
@@ -345,7 +345,7 @@ async function sendBookingNotifications(booking, status) {
     bodyHTML += emailSignature();
     const icsContent = buildIcs(booking, status);
     await sendEmail(recipientEmail, subject, bodyHTML, icsContent
-      ? [{ filename: 'ensaio.ics', content: icsContent, contentType: 'text/calendar; charset=utf-8; method=REQUEST' }]
+      ? [{ filename: 'ensaio.ics', content: icsContent, contentType: 'text/calendar; charset=utf-8; method=PUBLISH' }]
       : undefined);
   }
 
