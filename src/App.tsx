@@ -331,7 +331,7 @@ function formatPublicBookingReference(bookingId: string, roomName: string): stri
   const roomInitial = distinctiveRoomName.replace(/[^a-z0-9]/gi, '').charAt(0).toUpperCase() || 'X';
   const shortId = bookingId.replace(/[^a-z0-9]/gi, '').slice(0, 6).toUpperCase().padEnd(6, '0');
 
-  return `FB-${roomInitial}${shortId}`;
+  return `FB-${roomInitial}-${shortId}`;
 }
 
 function App() {
@@ -668,13 +668,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
 
       const message = selectedRoomContactOnly
         ? `Recebemos o teu pedido de contacto para ${selectedRoom.name}. A nossa equipa irá contactar-te em breve.`
-        : formatTemplate(translations.booking.confirmation, {
-            bandName: draftForm.bandName || translations.booking.confirmationFallback,
-            roomName: selectedRoom.name,
-            date: displayDate,
-            time: selectedSlot,
-            duration,
-          });
+        : translations.booking.confirmation;
 
       setConfirmation(message);
       setConfirmationId(formatPublicBookingReference(confirmationRequestId, selectedRoom.name));
@@ -1288,23 +1282,16 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                 )}
                 {!selectedRoomContactOnly && (
                   <section className="confirmation-reference" aria-label={translations.booking.bookingIdLabel}>
-                    <span>{translations.booking.bookingIdLabel ?? 'N.º da reserva:'}</span>
+                    <span>{translations.booking.bookingIdLabel ?? 'Referência do pedido'}</span>
                     <strong className="confirmation-id-value">{confirmationId}</strong>
                   </section>
                 )}
                 {!selectedRoomContactOnly && (
                   <p className="confirmation-id-note">
-                    {translations.booking.bookingIdNote ?? 'Guarda este número para futuras referências.'}
+                    {translations.booking.bookingIdNote ?? 'Guarda esta referência até receberes a confirmação.'}
                   </p>
                 )}
               </div>
-
-              {!selectedRoomContactOnly && (
-                <div className="pending-box" role="status" aria-live="polite">
-                  <strong>{translations.booking.pendingBadge}</strong>
-                  <p>{translations.booking.pendingDescription}</p>
-                </div>
-              )}
             </div>
           </section>
         ) : null}

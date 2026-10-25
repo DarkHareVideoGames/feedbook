@@ -1138,28 +1138,6 @@ textarea:focus {
   flex-shrink: 0;
 }
 
-.pending-box {
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.pending-box strong {
-  display: block;
-  color: #ef3444;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.78rem;
-}
-
-.pending-box p {
-  margin: 8px 0 0;
-  color: var(--text-muted);
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-
 /* --- Fluxo de marcacao: titulo do wizard --- */
 .booking-heading {
   margin-bottom: 20px;
