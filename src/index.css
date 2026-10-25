@@ -1210,9 +1210,14 @@ textarea:focus {
   display: grid;
   gap: 12px;
   padding: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(251, 191, 36, 0.58);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.16), rgba(245, 158, 11, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.06), 0 12px 28px rgba(120, 53, 15, 0.14);
+}
+
+.booking-summary > .field-label {
+  color: #fbbf24;
 }
 
 .booking-summary-badges {
@@ -1248,8 +1253,12 @@ textarea:focus {
 }
 
 .booking-summary-list dt {
-  color: var(--text-muted);
+  color: #fde68a;
   font-size: 0.86rem;
+}
+
+.booking-summary .summary-copy {
+  color: #fef3c7;
 }
 
 .booking-summary-list dd {
