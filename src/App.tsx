@@ -753,7 +753,23 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                   <div className="room-card-header">
                     <div>
                       <p className="eyebrow">{room.capacity}</p>
-                      <h3>{room.name}</h3>
+                      <h3>
+                        {(() => {
+                          const parts = room.name.trim().split(/\s+/);
+                          const prefix = parts[0] || '';
+                          const rest = parts.slice(1).join(' ');
+                          const isRoomPrefix = /^(sala|room)$/i.test(prefix);
+                          if (!isRoomPrefix || !rest) {
+                            return <span style={{ color: room.accent }}>{room.name}</span>;
+                          }
+                          return (
+                            <>
+                              <span>{prefix}</span>{' '}
+                              <span style={{ color: room.accent }}>{rest}</span>
+                            </>
+                          );
+                        })()}
+                      </h3>
                     </div>
                     <strong>
                       {room.bookingMode === 'contact'
