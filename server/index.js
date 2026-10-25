@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import webpush from 'web-push';
 import { fileURLToPath } from 'url';
+import { generateIcs } from '../lib/generateIcs.js';
 import createBookingHandler from '../api/create-booking.js';
 
 // Carrega as variáveis do ficheiro .env (raiz do projeto) para process.env.
@@ -300,6 +301,19 @@ function buildIcs(booking, status) {
   return ics;
 }
 
+function buildCalendarLinks(booking) {
+  const durationHours = Number(booking.duration) || 1;
+  const start = new Date(`${booking.date}T${booking.time}:00`);
+  const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+  const toIso = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const text = encodeURIComponent(`Ensaio — ${booking.bandName || booking.contactName} (${booking.roomName})`);
+  const details = encodeURIComponent(`Ensaio: ${booking.bandName || booking.contactName}\nSala: ${booking.roomName}\nData: ${booking.date}\nHora: ${booking.time}`);
+  const location = encodeURIComponent(`${booking.roomName}, Parque de Exposições Acácio Dores — Montijo, Portugal`);
+  const google = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${toIso(start)}/${toIso(end)}&details=${details}&location=${location}`;
+  const outlook = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${text}&startdt=${start.toISOString()}&enddt=${end.toISOString()}&body=${details}&location=${location}`;
+  return { google, outlook };
+}
+
 async function sendBookingNotifications(booking, status) {
   // Alerta Discord em segundo plano para novas marcações (não bloqueia a resposta).
   if (status === 'pending') {
@@ -326,6 +340,8 @@ async function sendBookingNotifications(booking, status) {
       bodyHTML += `<p>Olá ${user}, o seu ensaio foi confirmado.</p>`;
       bodyHTML += `<p>Detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>`;
       if (confirmerLine) bodyHTML += `<p>Confirmado por: ${confirmerLine}</p>`;
+      const _links = buildCalendarLinks(booking);
+      bodyHTML += `<p><a href="${_links.google}">Adicionar ao Google Calendar</a> | <a href="${_links.outlook}">Adicionar ao Outlook</a></p>`;
     } else if (status === 'rejected') {
       subject = '❌ Reserva Rejeitada.';
       bodyHTML += `<p>Olá ${user}, a sua reserva foi rejeitada pela equipa.</p>`;
@@ -337,6 +353,8 @@ async function sendBookingNotifications(booking, status) {
       subject = '🔄 Reserva Reagendada.';
       bodyHTML += `<p>Olá ${user}, o seu ensaio foi reagendado.</p>`;
       bodyHTML += `<p>Novos detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>`;
+       const _links2 = buildCalendarLinks(booking);
+       bodyHTML += `<p><a href="${_links2.google}">Adicionar ao Google Calendar</a> | <a href="${_links2.outlook}">Adicionar ao Outlook</a></p>`;
     } else if (status === 'pending') {
       subject = '📩 Reserva Recebida. Aguarda confirmação.';
       bodyHTML += `<p>Olá ${user}, recebemos o pedido de ensaio dos ${band}.</p>`;
@@ -345,7 +363,22 @@ async function sendBookingNotifications(booking, status) {
     }
 
     bodyHTML += emailSignature();
-    const icsContent = buildIcs(booking, status);
+    const durationHours = Number(booking.duration) || 1;
+    const start = new Date(`${booking.date}T${booking.time}:00`);
+    const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+    const method = status === 'cancelled' ? 'CANCEL' : 'REQUEST';
+    const icsStatus = status === 'cancelled' ? 'CANCELLED' : 'CONFIRMED';
+    const sequence = status === 'cancelled' ? 1 : 0;
+    const icsContent = generateIcs({
+      uid: `booking-${booking.id || booking.date + booking.time}@ensaiosfeedback.pt`,
+      summary: `Ensaio — ${booking.bandName || booking.contactName} (${booking.roomName})`,
+      description: `Ensaio: ${booking.bandName || booking.contactName}\nSala: ${booking.roomName}\nData: ${booking.date}\nHora: ${booking.time}`,
+      location: `${booking.roomName}, Parque de Exposições Acácio Dores — Montijo, Portugal`,
+      start,
+      end,
+      organizerEmail: process.env.SMTP_USER,
+      attendeeEmail: booking.email,
+    }, { method, status: icsStatus, sequence, reminders: [{ minutes: 24 * 60 }, { minutes: 60 }] });
     await sendEmail(recipientEmail, subject, bodyHTML, icsContent
       ? [{ filename: 'ensaio.ics', content: icsContent, contentType: 'text/calendar; charset=utf-8; method=PUBLISH' }]
       : undefined);

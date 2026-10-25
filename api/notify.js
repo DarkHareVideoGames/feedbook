@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
+import { generateIcs } from '../lib/generateIcs.js';
 
 // ============================================================
 // Feedback - Ensaios — POST /api/notify (Vercel Serverless)
@@ -227,6 +228,18 @@ function buildIcs(booking, status) {
   return ics;
 }
 
+function buildCalendarLinks(booking) {
+  const durationHours = Number(booking.duration) || 1;
+  const start = new Date(`${booking.date}T${booking.time}:00`);
+  const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+  const toIso = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const text = encodeURIComponent(`Ensaio — ${booking.bandName || booking.contactName} (${booking.roomName})`);
+  const details = encodeURIComponent(`Ensaio: ${booking.bandName || booking.contactName}\nSala: ${booking.roomName}\nData: ${formatDatePt(booking.date)}\nHora: ${booking.time}`);
+  const location = encodeURIComponent(`${booking.roomName}, Parque de Exposições Acácio Dores — Montijo, Portugal`);
+  const google = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${toIso(start)}/${toIso(end)}&details=${details}&location=${location}`;
+  const outlook = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${text}&startdt=${start.toISOString()}&enddt=${end.toISOString()}&body=${details}&location=${location}`;
+  return { google, outlook };
+}
 function buildMessage(booking, status) {
   const head = '<h1 style="font-size: 24px;">Feedback - Ensaios Status da Reserva</h1>';
   const user = escapeHtml(booking.contactName);
@@ -246,6 +259,7 @@ function buildMessage(booking, status) {
         `<p>Olá ${user}, o seu ensaio foi confirmado.</p>` +
         `<p>Detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>` +
         (confirmerLine ? `<p>Confirmado por: ${confirmerLine}</p>` : '') +
+        `<p><a href="${'${'}buildCalendarLinks(booking).google${'}'}">Adicionar ao Google Calendar</a> | <a href="${'${'}buildCalendarLinks(booking).outlook${'}'}">Adicionar ao Outlook</a></p>` +
         signature,
     };
   }
@@ -275,6 +289,7 @@ function buildMessage(booking, status) {
         head +
         `<p>Olá ${user}, o seu ensaio foi reagendado.</p>` +
         `<p>Novos detalhes: Data: ${date} | Hora: ${time} | Sala: ${room}</p>` +
+        `<p><a href="${'${'}buildCalendarLinks(booking).google${'}'}">Adicionar ao Google Calendar</a> | <a href="${'${'}buildCalendarLinks(booking).outlook${'}'}">Adicionar ao Outlook</a></p>` +
         signature,
     };
   }
@@ -369,8 +384,34 @@ export default async function handler(req, res) {
     return res.json({ message: 'Email disabled (missing SMTP_PASS).' });
   }
 
+  const durationHours = Number(booking.duration) || 1;
+  const start = new Date(`${booking.date}T${booking.time}:00`);
+  const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+
+  const method = status === 'cancelled' ? 'CANCEL' : 'REQUEST';
+  const icsStatus = status === 'cancelled' ? 'CANCELLED' : 'CONFIRMED';
+  const sequence = status === 'cancelled' ? 1 : 0;
+
+  const icsContent = generateIcs({
+    uid: `booking-${booking.id || booking.date + booking.time}@ensaiosfeedback.pt`,
+    summary: `Ensaio — ${booking.bandName || booking.contactName} (${booking.roomName})`,
+    description: [
+      `Ensaio: ${booking.bandName || booking.contactName}`,
+      `Sala: ${booking.roomName}`,
+      `Data: ${formatDatePt(booking.date)}`,
+      `Hora: ${booking.time} (${durationHours}h)`,
+      booking.contactName ? `Contacto: ${booking.contactName}` : '',
+      booking.contactPhone ? `Telefone: ${booking.contactPhone}` : '',
+      booking.confirmedBy?.name ? `Confirmado por: ${booking.confirmedBy.name}${booking.confirmedBy.phone ? ' — ' + booking.confirmedBy.phone : ''}` : '',
+    ].filter(Boolean).join('\n'),
+    location: `${booking.roomName}, Parque de Exposições Acácio Dores — Montijo, Portugal`,
+    start,
+    end,
+    organizerEmail: SMTP_USER,
+    attendeeEmail: booking.email,
+  }, { method, status: icsStatus, sequence, reminders: [{ minutes: 24 * 60 }, { minutes: 60 }] });
+
   const message = buildMessage(booking, status);
-  const icsContent = buildIcs(booking, status);
   if (!booking.email || !message) {
     return res.json({ message: 'Nothing to send.' });
   }
