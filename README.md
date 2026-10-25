@@ -57,8 +57,6 @@ npm run build
 - `ADMIN_EMAIL` and `ADMIN_PASSWORD`: initial admin credentials when state file is first created.
 - `CLIENT_ORIGINS`: comma-separated list of allowed CORS origins.
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`: email delivery settings for booking notifications.
-- `WHATSAPP_TWILIO_ACCOUNT_SID`, `WHATSAPP_TWILIO_AUTH_TOKEN`, `WHATSAPP_TWILIO_FROM`: optional Twilio WhatsApp delivery settings.
-- WhatsApp notifications require a contact phone number in international format.
 
 ## Next product steps
 

@@ -769,7 +769,7 @@ export async function bookingAction(
   const patch: Record<string, unknown> = {};
   let auditAction = '';
   let auditDetails: Record<string, unknown> = {};
-  let notifyStatus: 'confirmed' | 'rejected' | 'cancelled' | null = null;
+  let notifyStatus: 'confirmed' | 'rejected' | 'cancelled' | 'rescheduled' | null = null;
 
   const baseDetails = {
     banda: booking.bandName || booking.contactName || '-',
@@ -867,6 +867,7 @@ export async function bookingAction(
     // Marcador persistente de reagendamento (nao e limpo na reconfirmacao),
     // usado pelo filtro "Reagendados" da administracao.
     patch.rescheduledBy = actorStamp;
+    notifyStatus = 'rescheduled';
 
     auditAction = 'booking-rescheduled';
     auditDetails = {
@@ -1848,7 +1849,7 @@ export async function resendPasswordReset(token: string, email: string, name: st
   return { message: payload.message || 'Link de redefinicao reenviado.' };
 }
 
-function notifyBooking(booking: ApiBooking, status: 'pending' | 'confirmed' | 'rejected' | 'cancelled'): void {
+function notifyBooking(booking: ApiBooking, status: 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'rescheduled'): void {
   void fetch('/api/notify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
