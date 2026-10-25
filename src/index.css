@@ -13,7 +13,7 @@
   --secondary: #cfd3da;
   --room-red: #d11323;
   --room-grey: #8e949f;
-  --room-purple: #2b004e;
+  --room-purple: #540099;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -205,13 +205,14 @@ button {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   outline: none;
+  background: #000000;
 }
 
 .language-switcher-buttons {
   display: inline-flex;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
+  background: #000000;
 }
 
 .language-button {
@@ -229,8 +230,10 @@ button {
 }
 
 .language-button-active {
-  background: rgba(119, 193, 184, 0.16);
-  color: var(--text-main);
+  background: #000000;
+  color: #ef3444;
+  outline: 1px solid #ef3444;
+  outline-offset: -1px;
 }
 
 .topbar-note span,
