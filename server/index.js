@@ -254,7 +254,7 @@ function buildIcs(booking, status) {
   const now = new Date();
   const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
 
-  const uid = `booking-${booking.id || booking.date + booking.time}@ensaiosfeedback.pt`;
+  const uid = `booking-${booking.id || booking.date + booking.time}-${Date.now()}@ensaiosfeedback.pt`;
   const band = String(booking.bandName || booking.contactName || 'Ensaio').trim();
   const room = String(booking.roomName || 'Sala de Ensaios').trim();
   const contact = String(booking.contactName || '').trim();
@@ -291,6 +291,8 @@ function buildIcs(booking, status) {
     `LOCATION:${room}, Parque de Exposições Acácio Dores — Montijo, Portugal`,
     'ORGANIZER;CN=Feedback Productions:mailto:ensaios@feedbackproductions.pt',
     'STATUS:CONFIRMED',
+    'SEQUENCE:0',
+    'TRANSP:OPAQUE',
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');
