@@ -1356,9 +1356,46 @@ textarea:focus {
   line-height: 1.5;
 }
 
-.confirmation-banner .confirmation-id-row,
 .confirmation-banner .confirmation-id-note {
   color: #d1fae5;
+}
+
+.confirmation-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 4px 0 0;
+}
+
+.confirmation-details-grid div,
+.confirmation-detail-section,
+.confirmation-reference {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(3, 20, 13, 0.38);
+}
+
+.confirmation-details-grid dt,
+.confirmation-detail-section h3,
+.confirmation-reference > span {
+  margin: 0 0 5px;
+  color: #a7f3d0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.confirmation-details-grid dd {
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.confirmation-detail-section h3 {
+  margin-bottom: 8px;
 }
 
 .confirmation-extras-list {
@@ -1388,12 +1425,38 @@ textarea:focus {
 
 .confirmation-extras-empty {
   margin: 0;
-  font-size: 0.88rem;
-  color: #d1fae5;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.confirmation-customer-message p {
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.confirmation-reference {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-color: rgba(251, 191, 36, 0.6);
+  background: rgba(251, 191, 36, 0.14);
+}
+
+.confirmation-reference > span {
+  margin: 0;
+  color: #fde68a;
 }
 
 .confirmation-banner .confirmation-id-value {
   color: #ffffff;
+  font-size: 1.18rem;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 @keyframes pending-blink {
@@ -1437,6 +1500,16 @@ textarea:focus {
 }
 
 @media (max-width: 480px) {
+  .confirmation-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .confirmation-reference {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
   .page-shell {
     padding: 12px 12px 28px;
   }

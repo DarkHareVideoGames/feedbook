@@ -32,6 +32,14 @@ type BookingForm = {
   focus: string;
 };
 
+type BookingConfirmationDetails = {
+  roomName: string;
+  date: string;
+  time: string;
+  duration: number;
+  customerMessage: string;
+};
+
 type BookingStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
 
 // Fluxo normal de marcação em três passos (Issues #4 e #37):
@@ -310,6 +318,22 @@ function formatDateForDisplay(locale: Locale, date: string): string {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(date));
 }
 
+function formatPublicBookingReference(bookingId: string, roomName: string): string {
+  const roomWords = roomName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const distinctiveRoomName = roomWords.find((word) => !['sala', 'room'].includes(word.toLowerCase()))
+    ?? roomWords[0]
+    ?? 'X';
+  const roomInitial = distinctiveRoomName.replace(/[^a-z0-9]/gi, '').charAt(0).toUpperCase() || 'X';
+  const shortId = bookingId.replace(/[^a-z0-9]/gi, '').slice(0, 6).toUpperCase().padEnd(6, '0');
+
+  return `FB-${roomInitial}${shortId}`;
+}
+
 function App() {
   const { locale, translations } = useI18n();
   const [logoVisible, setLogoVisible] = useState(true);
@@ -325,6 +349,7 @@ function App() {
   const [confirmation, setConfirmation] = useState<string>('');
   const [confirmationId, setConfirmationId] = useState<string>('');
   const [confirmationExtras, setConfirmationExtras] = useState<Array<{ id: string; label: string; price: number }>>([]);
+  const [confirmationDetails, setConfirmationDetails] = useState<BookingConfirmationDetails | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [backendOffline, setBackendOffline] = useState(false);
@@ -436,7 +461,6 @@ const [minDelayDone, setMinDelayDone] = useState(false);
     [locale, visibleMonth],
   );
   const calendarDays = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth]);
-  const paymentMethodLabel = translations.booking.paymentOnSite;
   const displayDate = formatDateForDisplay(locale, selectedDate);
   const todayIso = getToday();
   const selectedRoomContactOnly = selectedRoom.bookingMode === 'contact';
@@ -650,14 +674,20 @@ const [minDelayDone, setMinDelayDone] = useState(false);
             date: displayDate,
             time: selectedSlot,
             duration,
-            paymentMethod: paymentMethodLabel,
           });
 
       setConfirmation(message);
-      setConfirmationId(confirmationRequestId);
+      setConfirmationId(formatPublicBookingReference(confirmationRequestId, selectedRoom.name));
       setConfirmationExtras(selectedRoomContactOnly ? [] : extras
         .filter((extra) => selectedExtras.includes(extra.id))
         .map((extra) => ({ id: extra.id, label: extra.label, price: extra.price })));
+      setConfirmationDetails(selectedRoomContactOnly ? null : {
+        roomName: selectedRoom.name,
+        date: displayDate,
+        time: selectedSlot,
+        duration,
+        customerMessage: draftForm.focus.trim(),
+      });
       setBackendOffline(false);
       setBookingStep('confirmation');
 
@@ -1213,31 +1243,58 @@ const [minDelayDone, setMinDelayDone] = useState(false);
               <div className="confirmation-banner" role="status" aria-live="polite" tabIndex={-1} ref={confirmationRef}>
                 <span className="confirmation-banner-badge">{selectedRoomContactOnly ? 'Aguarda!' : translations.booking.pendingBadge}</span>
                 <p className="confirmation-banner-message">{confirmation}</p>
-                {!selectedRoomContactOnly && (
+                {!selectedRoomContactOnly && confirmationDetails && (
                   <>
-                    {confirmationExtras.length > 0 ? (
-                      <ul className="confirmation-extras-list" aria-label={translations.booking.addonsLabel}>
-                        {confirmationExtras.map((extra) => (
-                          <li key={extra.id}>
-                            <span>{extra.label}</span>
-                            <strong>{currency.format(extra.price)}</strong>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="confirmation-extras-empty">{translations.booking.noExtras ?? 'Apenas o ensaio'}</p>
-                    )}
+                    <dl className="confirmation-details-grid">
+                      <div>
+                        <dt>{translations.booking.confirmationRoomLabel}</dt>
+                        <dd>{confirmationDetails.roomName}</dd>
+                      </div>
+                      <div>
+                        <dt>{translations.booking.dateLabel}</dt>
+                        <dd>{confirmationDetails.date}</dd>
+                      </div>
+                      <div>
+                        <dt>{translations.booking.startTimeLabel}</dt>
+                        <dd>{confirmationDetails.time}</dd>
+                      </div>
+                      <div>
+                        <dt>{translations.booking.durationLabel}</dt>
+                        <dd>{formatTemplate(translations.booking.durationOption, { count: confirmationDetails.duration })}</dd>
+                      </div>
+                    </dl>
+
+                    <section className="confirmation-detail-section" aria-labelledby="confirmation-extras-title">
+                      <h3 id="confirmation-extras-title">{translations.booking.addonsLabel}</h3>
+                      {confirmationExtras.length > 0 ? (
+                        <ul className="confirmation-extras-list">
+                          {confirmationExtras.map((extra) => (
+                            <li key={extra.id}>
+                              <span>{extra.label}</span>
+                              <strong>{currency.format(extra.price)}</strong>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="confirmation-extras-empty">{translations.booking.noExtras ?? 'Apenas o ensaio'}</p>
+                      )}
+                    </section>
+
+                    <section className="confirmation-detail-section confirmation-customer-message" aria-labelledby="confirmation-message-title">
+                      <h3 id="confirmation-message-title">{translations.booking.customerMessageLabel}</h3>
+                      <p>{confirmationDetails.customerMessage || translations.booking.noCustomerMessage}</p>
+                    </section>
                   </>
                 )}
                 {!selectedRoomContactOnly && (
-                  <div className="confirmation-id-row">
+                  <section className="confirmation-reference" aria-label={translations.booking.bookingIdLabel}>
                     <span>{translations.booking.bookingIdLabel ?? 'N.º da reserva:'}</span>
                     <strong className="confirmation-id-value">{confirmationId}</strong>
-                  </div>
+                  </section>
                 )}
                 {!selectedRoomContactOnly && (
                   <p className="confirmation-id-note">
-                    {translations.booking.bookingIdNote ?? 'Guarda este numero para futuras referencias.'}
+                    {translations.booking.bookingIdNote ?? 'Guarda este número para futuras referências.'}
                   </p>
                 )}
               </div>
