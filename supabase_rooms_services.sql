@@ -26,6 +26,22 @@ create table if not exists public.rooms (
 -- Seed com as 2 salas que já existem no site.
 -- pricePerMemberHour: preço da sala em EUR/hora (obrigatório — não existe
 -- noção de "preço global"; ver supabase_migration_remove_global_price.sql).
+-- Migração para bases já existentes: garante colunas longDescription e longDescriptionEn
+-- (identificadores quoted para preservar camelCase; caso contrário o PostgreSQL
+-- converte para minúsculas e o PostgREST não encontra a coluna).
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'rooms' and column_name = 'longdescription') then
+    alter table public.rooms rename column longdescription to "longDescription";
+  end if;
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'rooms' and column_name = 'longdescriptionen') then
+    alter table public.rooms rename column longdescriptionen to "longDescriptionEn";
+  end if;
+end $$;
+alter table public.rooms add column if not exists "longDescription" text;
+alter table public.rooms add column if not exists "longDescriptionEn" text;
+notify pgrst, 'reload schema';
+
 insert into public.rooms (id, name, description, "descriptionEn", "maxMembers", "pricePerMemberHour", gear, "gearEn", accent, active)
 values
   (

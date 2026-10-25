@@ -71,6 +71,8 @@ type RoomFormDraft = {
   imageUrl: string;
   gear: string;
   gearEn: string;
+  longDescription: string;
+  longDescriptionEn: string;
   accent: string;
   active: boolean;
 };
@@ -94,6 +96,8 @@ const emptyRoomForm: RoomFormDraft = {
   imageUrl: '',
   gear: '',
   gearEn: '',
+  longDescription: '',
+  longDescriptionEn: '',
   accent: 'var(--room-red)',
   active: true,
 };
@@ -179,6 +183,8 @@ function roomToForm(room: AdminRoom): RoomFormDraft {
     imageUrl: room.imageUrl ?? '',
     gear: (room.gear ?? []).join('\n'),
     gearEn: (room.gearEn ?? []).join('\n'),
+    longDescription: room.longDescription,
+    longDescriptionEn: room.longDescriptionEn,
     accent: room.accent || 'var(--room-red)',
     active: room.active !== false,
   };
@@ -657,6 +663,8 @@ function AdminPage() {
         imageUrl,
         gear: roomForm.gear,
         gearEn: roomForm.gearEn,
+        longDescription: roomForm.longDescription,
+        longDescriptionEn: roomForm.longDescriptionEn,
         accent: roomForm.accent,
         active: roomForm.active,
       };
@@ -1456,24 +1464,43 @@ function AdminPage() {
                   onChange={(event) => setRoomForm((current) => ({ ...current, descriptionEn: event.target.value }))}
                 />
               </label>
-              <div className="field-row">
-                <label>
-                  Equipamento PT (um por linha)
-                  <textarea
-                    rows={3}
-                    value={roomForm.gear}
-                    onChange={(event) => setRoomForm((current) => ({ ...current, gear: event.target.value }))}
-                  />
-                </label>
-                <label>
-                  Equipamento EN (um por linha)
-                  <textarea
-                    rows={3}
-                    value={roomForm.gearEn}
-                    onChange={(event) => setRoomForm((current) => ({ ...current, gearEn: event.target.value }))}
-                  />
-                </label>
-              </div>
+              <label>
+                Descricao longa (PT)
+                <textarea
+                  rows={3}
+                  value={roomForm.longDescription}
+                  onChange={(event) => setRoomForm((current) => ({ ...current, longDescription: event.target.value }))}
+                />
+              </label>
+              <label>
+                Descricao longa (EN)
+                <textarea
+                  rows={3}
+                  value={roomForm.longDescriptionEn}
+                  onChange={(event) => setRoomForm((current) => ({ ...current, longDescriptionEn: event.target.value }))}
+                />
+              </label>
+              <details className="admin-collapsible">
+                <summary className="admin-collapsible-summary">Ver equipamento</summary>
+                <div className="field-row">
+                  <label>
+                    Equipamento PT (um por linha)
+                    <textarea
+                      rows={3}
+                      value={roomForm.gear}
+                      onChange={(event) => setRoomForm((current) => ({ ...current, gear: event.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    Equipamento EN (um por linha)
+                    <textarea
+                      rows={3}
+                      value={roomForm.gearEn}
+                      onChange={(event) => setRoomForm((current) => ({ ...current, gearEn: event.target.value }))}
+                    />
+                  </label>
+                </div>
+              </details>
               <div className="field-row">
                 <label>
                   Cor de destaque

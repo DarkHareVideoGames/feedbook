@@ -324,6 +324,7 @@ button {
 .booking-grid {
   display: grid;
   gap: 24px;
+  align-items: start;
 }
 
 .rooms-grid {
@@ -336,6 +337,7 @@ button {
   cursor: pointer;
   overflow: hidden;
   position: relative;
+  align-self: start;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
 }
 
@@ -360,6 +362,82 @@ button {
 
 .room-card:hover .room-card-arrow {
   transform: translateX(4px);
+}
+
+.room-card-long {
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-radius: 8px 8px 0 0;
+}
+
+.room-card-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-main);
+  user-select: none;
+  background: var(--surface-soft);
+  border: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  margin-top: 8px;
+  list-style: none;
+  outline: none;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.room-card-summary svg {
+  color: #ff5b69;
+}
+
+.room-card-summary:hover {
+  background: rgba(255, 255, 255, 0.09);
+  transform: translateY(-1px);
+}
+
+.room-card-summary:focus,
+.room-card-summary:focus-visible {
+  outline: none;
+}
+.room-card-long:focus,
+.room-card-long:focus-visible {
+  outline: none;
+}
+
+.room-card-details {
+  margin-top: 8px;
+  padding: 8px 0 4px 0;
+}
+
+.room-card-long-text {
+  font-size: 0.95rem;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.admin-collapsible {
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  padding-top: 12px;
+  border-radius: 8px 8px 0 0;
+}
+
+.admin-collapsible-summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+  user-select: none;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-collapsible summary::-webkit-details-marker {
+  display: none;
 }
 
 .room-card-image {
