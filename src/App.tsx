@@ -1200,7 +1200,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
           </section>
         ) : null}
 
-        <AboutSection />
+        {bookingStep === 'room' ? <AboutSection /> : null}
 
       </main>
 

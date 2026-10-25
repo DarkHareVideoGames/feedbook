@@ -58,6 +58,8 @@
     "eyebrow": "Quem somos",
     "title": "Feedback Studios, o teu hub criativo",
     "lede": "Somos um hub criativo “tudo-em-um”, desenvolvido especificamente para responder a todas as necessidades de bandas, músicos e criadores de conteúdos num único teto. O espaço foi desenhado para ligar de forma fluida todas as fases do teu projeto: as salas comunicam entre si, permitindo-te passar da imersão criativa de um ensaio para uma gravação de áudio multitrack, produção de videoclipe, transmissão em streaming ou um concerto intimista.",
+    "expand": "Ver mais",
+    "collapse": "Ver menos",
     "infrastructureTitle": "A nossa infraestrutura",
     "infrastructure": [
       {

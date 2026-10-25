@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import {
   CalendarCheck,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Coffee,
   Drama,
@@ -28,6 +31,7 @@ const ACTIVITY_ICONS: LucideIcon[] = [CalendarCheck, Mic, Radio, PartyPopper];
 export default function AboutSection() {
   const { translations } = useI18n();
   const { about } = translations;
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <section className="about-section" aria-labelledby="about-title">
@@ -37,73 +41,88 @@ export default function AboutSection() {
         <p className="about-lede">{about.lede}</p>
       </header>
 
-      <div className="about-columns">
-        <div className="about-block">
-          <h3 className="about-block-title">{about.infrastructureTitle}</h3>
-          <ul className="about-infrastructure-list">
-            {about.infrastructure.map((item, index) => {
-              const Icon = INFRASTRUCTURE_ICONS[index] ?? Guitar;
+      <button
+        type="button"
+        className="about-toggle"
+        aria-expanded={expanded}
+        aria-controls="about-details"
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <span>{expanded ? about.collapse : about.expand}</span>
+        {expanded ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
+      </button>
 
-              return (
-                <li className="about-infra-item" key={item.title}>
-                  <span className="about-icon" aria-hidden="true">
-                    <Icon size={20} />
-                  </span>
-                  <div className="about-item-body">
+      {expanded ? (
+        <div id="about-details" className="about-details">
+          <div className="about-columns">
+            <div className="about-block">
+              <h3 className="about-block-title">{about.infrastructureTitle}</h3>
+              <ul className="about-infrastructure-list">
+                {about.infrastructure.map((item, index) => {
+                  const Icon = INFRASTRUCTURE_ICONS[index] ?? Guitar;
+
+                  return (
+                    <li className="about-infra-item" key={item.title}>
+                      <span className="about-icon" aria-hidden="true">
+                        <Icon size={20} />
+                      </span>
+                      <div className="about-item-body">
+                        <h4>{item.title}</h4>
+                        <p>{item.description}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            <div className="about-block">
+              <h3 className="about-block-title">{about.amenitiesTitle}</h3>
+              <ul className="about-amenities-list">
+                {about.amenities.map((item, index) => {
+                  const Icon = AMENITY_ICONS[index] ?? Clock;
+
+                  return (
+                    <li className="about-amenity" key={item.label}>
+                      <span className="about-icon about-icon-compact" aria-hidden="true">
+                        <Icon size={16} />
+                      </span>
+                      <div className="about-item-body">
+                        <strong>{item.label}</strong>
+                        <span>{item.value}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+
+          <div className="about-block">
+            <h3 className="about-block-title">{about.activitiesTitle}</h3>
+            <div className="about-activities-grid">
+              {about.activities.map((item, index) => {
+                const Icon = ACTIVITY_ICONS[index] ?? PartyPopper;
+
+                return (
+                  <article className="about-activity" key={item.title}>
+                    <div className="about-activity-head">
+                      <span className="about-icon" aria-hidden="true">
+                        <Icon size={20} />
+                      </span>
+                      <span className="about-activity-index" aria-hidden="true">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                    </div>
                     <h4>{item.title}</h4>
                     <p>{item.description}</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
         </div>
-
-        <div className="about-block">
-          <h3 className="about-block-title">{about.amenitiesTitle}</h3>
-          <ul className="about-amenities-list">
-            {about.amenities.map((item, index) => {
-              const Icon = AMENITY_ICONS[index] ?? Clock;
-
-              return (
-                <li className="about-amenity" key={item.label}>
-                  <span className="about-icon about-icon-compact" aria-hidden="true">
-                    <Icon size={16} />
-                  </span>
-                  <div className="about-item-body">
-                    <strong>{item.label}</strong>
-                    <span>{item.value}</span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </div>
-
-      <div className="about-block">
-        <h3 className="about-block-title">{about.activitiesTitle}</h3>
-        <div className="about-activities-grid">
-          {about.activities.map((item, index) => {
-            const Icon = ACTIVITY_ICONS[index] ?? PartyPopper;
-
-            return (
-              <article className="about-activity" key={item.title}>
-                <div className="about-activity-head">
-                  <span className="about-icon" aria-hidden="true">
-                    <Icon size={20} />
-                  </span>
-                  <span className="about-activity-index" aria-hidden="true">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                </div>
-                <h4>{item.title}</h4>
-                <p>{item.description}</p>
-              </article>
-            );
-          })}
-        </div>
-      </div>
+      ) : null}
     </section>
   );
 }
