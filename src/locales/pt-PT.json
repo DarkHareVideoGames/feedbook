@@ -110,7 +110,9 @@
     "privacy": "Politica de privacidade"
   },
   "booking": {
-    "title": "Escolhe a tua sala!",
+    "roomTitle": "1- Escolhe a tua sala",
+    "dateTitle": "2- Escolhe o dia e a hora",
+    "detailsTitle": "3- Preenche os teus dados",
     "contactTitle": "Contata-nos agora!",
     "next": "Continuar",
     "back": "Voltar",

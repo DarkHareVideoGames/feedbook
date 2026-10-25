@@ -729,7 +729,13 @@ const [minDelayDone, setMinDelayDone] = useState(false);
       <main className="layout">
         {bookingStep !== 'confirmation' ? (
           <div className="booking-heading">
-            <h1>{selectedRoomContactOnly ? translations.booking.contactTitle : translations.booking.title}</h1>
+            <h1>
+              {bookingStep === 'room'
+                ? translations.booking.roomTitle
+                : bookingStep === 'date'
+                  ? translations.booking.dateTitle
+                  : translations.booking.detailsTitle}
+            </h1>
           </div>
         ) : null}
 
