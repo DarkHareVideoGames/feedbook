@@ -80,6 +80,7 @@ export default async function handler(req, res) {
     const contactPhone = text(body.contactPhone, 40) || null;
     const email = text(body.email, 254).toLowerCase();
     const bandName = text(body.bandName, 120) || contactName;
+    const customerMessage = text(body.customerMessage, 2000) || null;
     const paymentMethod = text(body.paymentMethod, 40) || 'on-site';
     const requestedExtras = Array.isArray(body.extras)
       ? [...new Set(body.extras.map((item) => text(item, 100)).filter(Boolean))]
@@ -122,7 +123,7 @@ export default async function handler(req, res) {
     const createdAt = new Date().toISOString();
     const booking = {
       id: randomUUID(), roomId, roomName: text(room.name, 160), status: 'pending', date, time, duration,
-      bandName, contactName, contactPhone, email, paymentMethod, paymentStatus: 'pending', amount,
+      bandName, contactName, contactPhone, email, customerMessage, paymentMethod, paymentStatus: 'pending', amount,
       extras: requestedExtras, createdAt,
     };
 

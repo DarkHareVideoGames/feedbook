@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, MessageCircle, Plus, Wallet } from 'lucide-react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, Check, ChevronRight, MessageCircle, Plus, Wallet, X } from 'lucide-react';
 import * as api from './api';
 import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
@@ -56,6 +56,7 @@ type PastBooking = {
   contactName: string;
   contactPhone?: string;
   email: string;
+  customerMessage?: string | null;
   paymentMethod?: 'on-site';
   paymentStatus?: string;
   amount?: number;
@@ -709,6 +710,9 @@ function AdminHistoryPage() {
   const [contactRequestToDelete, setContactRequestToDelete] = useState<string | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
   const [extrasVisible, setExtrasVisible] = useState<Record<string, boolean>>({});
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const bookingModalTriggerRef = useRef<HTMLElement | null>(null);
+  const bookingModalCloseRef = useRef<HTMLButtonElement | null>(null);
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
     name: '',
     email: '',
@@ -873,6 +877,68 @@ function AdminHistoryPage() {
     return booking.status === 'confirmed' && paymentStatus !== 'received' && paymentStatus !== 'refunded';
   };
 
+  const renderBookingActions = (booking: PastBooking) => {
+    const isLoading = Boolean(actionLoading[booking.id]);
+
+    return (
+      <div className="booking-detail-actions">
+        {booking.status === 'pending' ? (
+          <>
+            <button
+              type="button"
+              className="primary-button"
+              disabled={isLoading}
+              onClick={() => void handleConfirmBooking(booking.id)}
+            >
+              {isLoading ? 'A processar...' : 'Confirmar ensaio'}
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={isLoading}
+              onClick={() => void handleRejectBooking(booking.id)}
+            >
+              {isLoading ? 'A processar...' : 'Desmarcar'}
+            </button>
+          </>
+        ) : null}
+        {isFutureOrTodayConfirmed(booking) ? (
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={isLoading}
+            onClick={() => void handleCancelBooking(booking.id)}
+          >
+            {isLoading ? 'A processar...' : 'Anular'}
+          </button>
+        ) : null}
+        {canReschedule(booking) ? (
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={isLoading}
+            onClick={() => openRescheduleModal(booking)}
+          >
+            Reagendar
+          </button>
+        ) : null}
+        {canConfirmPaymentReceipt(booking) ? (
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={isLoading}
+            onClick={() => handleConfirmPaymentReceipt(booking.id)}
+          >
+            Confirmar pagamento
+          </button>
+        ) : null}
+        {podeUsarCheckmarkWhatsApp(booking)
+          ? renderWhatsAppOptIn(booking.id, consegueAbrirWhatsApp(booking))
+          : null}
+      </div>
+    );
+  };
+
   const filteredBookings = useMemo(() => {
     let scoped: PastBooking[];
 
@@ -904,6 +970,35 @@ function AdminHistoryPage() {
       return a.id.localeCompare(b.id);
     });
   }, [bookings, viewFilter, periodScope]);
+
+  const selectedBooking = useMemo(
+    () => bookings.find((booking) => booking.id === selectedBookingId) || null,
+    [bookings, selectedBookingId],
+  );
+
+  const openBookingModal = (bookingId: string, trigger: HTMLElement) => {
+    bookingModalTriggerRef.current = trigger;
+    setSelectedBookingId(bookingId);
+    setError('');
+  };
+
+  const closeBookingModal = () => {
+    setSelectedBookingId(null);
+    window.requestAnimationFrame(() => bookingModalTriggerRef.current?.focus());
+  };
+
+  useEffect(() => {
+    if (!selectedBookingId) return undefined;
+
+    window.requestAnimationFrame(() => bookingModalCloseRef.current?.focus());
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeBookingModal();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedBookingId]);
 
   const historyCountLabel = filteredBookings.length === 1 ? '1 registo' : `${filteredBookings.length} registos`;
 
@@ -1473,6 +1568,7 @@ function AdminHistoryPage() {
     // Abre o modal inline (em vez do window.confirm nativo) com o valor esperado
     // pre-preenchido, para o colaborador/admin confirmar ou ajustar o recebido.
     setError('');
+    setSelectedBookingId(null);
     setPaymentDraft({
       bookingId,
       expected: String(Number(booking.amount || 0).toFixed(2)),
@@ -1570,6 +1666,7 @@ function AdminHistoryPage() {
   };
 
   const openRescheduleModal = (booking: PastBooking) => {
+    setSelectedBookingId(null);
     setRescheduleDraft({
       bookingId: booking.id,
       date: booking.date,
@@ -3216,14 +3313,24 @@ function AdminHistoryPage() {
                       <th>Duracao</th>
                       <th>Pagamento</th>
                       <th>Estado</th>
-                      <th>Acoes</th>
+                      <th>Detalhes</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredBookings.map((b) => (
                       <tr
                         key={b.id}
-                        className={`history-row-${b.status} ${isPastConfirmed(b) ? 'history-row-past' : ''} ${roomToneClass(b)}`}
+                        className={`history-booking-row history-row-${b.status} ${isPastConfirmed(b) ? 'history-row-past' : ''} ${roomToneClass(b)}`}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Ver detalhes do ensaio de ${b.bandName || b.contactName}`}
+                        onClick={(event) => openBookingModal(b.id, event.currentTarget)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openBookingModal(b.id, event.currentTarget);
+                          }
+                        }}
                       >
                         <td>{formatDateWithWeekday(b.date)}</td>
                         <td>{b.time}</td>
@@ -3244,12 +3351,14 @@ function AdminHistoryPage() {
                                 className="history-extras-trigger"
                                 aria-expanded={extrasVisible[b.id] ? 'true' : 'false'}
                                 aria-label="Ver extras"
-                                onClick={() => {
+                                onClick={(event) => {
+                                  event.stopPropagation();
                                   setExtrasVisible((prev) => ({
                                     ...prev,
                                     [b.id]: !(prev[b.id] ?? false),
                                   }));
                                 }}
+                                onKeyDown={(event) => event.stopPropagation()}
                               >
                                 <span className="history-extras-label">
                                   {(() => { const c = b.extras?.length ?? 0; return c > 1 ? `${c} extras` : '1 extra'; })()}
@@ -3276,86 +3385,18 @@ function AdminHistoryPage() {
                         </td>
                         <td>{renderStatusWithAssignee(b)}</td>
                         <td>
-                          <div className="history-actions">
-                            {b.status === 'pending' ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="secondary-button"
-                                  title="Confirmar marcacao"
-                                  disabled={Boolean(actionLoading[b.id])}
-                                  onClick={() => {
-                                    void handleConfirmBooking(b.id);
-                                  }}
-                                >
-                                  Confirma
-                                </button>
-                                <button
-                                  type="button"
-                                  className="secondary-button"
-                                  disabled={Boolean(actionLoading[b.id])}
-                                  onClick={() => {
-                                    void handleRejectBooking(b.id);
-                                  }}
-                                >
-                                  Desmarcar
-                                </button>
-                                {canReschedule(b) ? (
-                                  <button
-                                    type="button"
-                                    className="secondary-button"
-                                    disabled={Boolean(actionLoading[b.id])}
-                                    onClick={() => {
-                                      openRescheduleModal(b);
-                                    }}
-                                  >
-                                    Reagendar
-                                  </button>
-                                ) : null}
-                              </>
-                            ) : null}
-                            {isFutureOrTodayConfirmed(b) ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="secondary-button"
-                                  disabled={Boolean(actionLoading[b.id])}
-                                  onClick={() => {
-                                    void handleCancelBooking(b.id);
-                                  }}
-                                >
-                                  Anular
-                                </button>
-                                {canReschedule(b) ? (
-                                  <button
-                                    type="button"
-                                    className="secondary-button"
-                                    disabled={Boolean(actionLoading[b.id])}
-                                    onClick={() => {
-                                      openRescheduleModal(b);
-                                    }}
-                                  >
-                                    Reagendar
-                                  </button>
-                                ) : null}
-                              </>
-                            ) : null}
-                            {canConfirmPaymentReceipt(b) ? (
-                              <button
-                                type="button"
-                                className="secondary-button"
-                                title="Confirmar pagamento"
-                                disabled={Boolean(actionLoading[b.id])}
-                                onClick={() => {
-                                  void handleConfirmPaymentReceipt(b.id);
-                                }}
-                              >
-                                Pagamento
-                              </button>
-                            ) : null}
-                            {podeUsarCheckmarkWhatsApp(b) ? renderWhatsAppOptIn(b.id, consegueAbrirWhatsApp(b)) : null}
-                          </div>
-                          {renderAssigneeSelect(b)}
+                          <button
+                            type="button"
+                            className="history-details-trigger"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openBookingModal(b.id, event.currentTarget);
+                            }}
+                          >
+                            Ver detalhes
+                            {b.customerMessage ? <MessageCircle aria-label="Tem mensagem do cliente" size={14} /> : null}
+                            <ChevronRight aria-hidden="true" size={15} />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -3365,6 +3406,11 @@ function AdminHistoryPage() {
                 <ul className="history-mobile-list">
                   {filteredBookings.map((b) => (
                     <li key={`${b.id}-mobile`} className={`history-mobile-card ${roomToneClass(b)}`}>
+                      <button
+                        type="button"
+                        className="history-mobile-card-trigger"
+                        onClick={(event) => openBookingModal(b.id, event.currentTarget)}
+                      >
                       <div className="team-item-top">
                         <strong>{b.roomName}</strong>
                         {renderStatusWithAssignee(b)}
@@ -3389,93 +3435,15 @@ function AdminHistoryPage() {
                         )}
                       </p>
 
-                      <div className="history-log-lines">
-                        {b.confirmedBy ? <p>Confirmado por {b.confirmedBy.name}</p> : null}
-                        {b.rejectedBy ? <p>Desmarcado por {b.rejectedBy.name}</p> : null}
-                        {b.cancelledBy ? <p>Anulado por {b.cancelledBy.name}</p> : null}
-                        {b.refundedBy ? <p>Devolvido por {b.refundedBy.name}</p> : null}
-                      </div>
-
-                      <div className="history-actions">
-                        {b.status === 'pending' ? (
-                          <>
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              title="Confirmar marcacao"
-                              disabled={Boolean(actionLoading[b.id])}
-                              onClick={() => {
-                                void handleConfirmBooking(b.id);
-                              }}
-                            >
-                              Confirma
-                            </button>
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              disabled={Boolean(actionLoading[b.id])}
-                              onClick={() => {
-                                void handleRejectBooking(b.id);
-                              }}
-                            >
-                              Desmarcar
-                            </button>
-                            {canReschedule(b) ? (
-                              <button
-                                type="button"
-                                className="secondary-button"
-                                disabled={Boolean(actionLoading[b.id])}
-                                onClick={() => {
-                                  openRescheduleModal(b);
-                                }}
-                              >
-                                Reagendar
-                              </button>
-                            ) : null}
-                          </>
-                        ) : null}
-                        {isFutureOrTodayConfirmed(b) ? (
-                          <>
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              disabled={Boolean(actionLoading[b.id])}
-                              onClick={() => {
-                                void handleCancelBooking(b.id);
-                              }}
-                            >
-                              Anular
-                            </button>
-                            {canReschedule(b) ? (
-                              <button
-                                type="button"
-                                className="secondary-button"
-                                disabled={Boolean(actionLoading[b.id])}
-                                onClick={() => {
-                                  openRescheduleModal(b);
-                                }}
-                              >
-                                Reagendar
-                              </button>
-                            ) : null}
-                          </>
-                        ) : null}
-                        {canConfirmPaymentReceipt(b) ? (
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            title="Confirmar pagamento"
-                            disabled={Boolean(actionLoading[b.id])}
-                            onClick={() => {
-                              void handleConfirmPaymentReceipt(b.id);
-                            }}
-                          >
-                            Pagamento
-                          </button>
-                        ) : null}
-                        {podeUsarCheckmarkWhatsApp(b) ? renderWhatsAppOptIn(b.id, consegueAbrirWhatsApp(b)) : null}
-                      </div>
-                      {renderAssigneeSelect(b)}
+                        <span className="history-mobile-card-footer">
+                          {b.customerMessage ? (
+                            <span className="history-message-indicator">
+                              <MessageCircle aria-hidden="true" size={14} /> Mensagem do cliente
+                            </span>
+                          ) : <span />}
+                          <ChevronRight aria-hidden="true" size={18} />
+                        </span>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -3516,6 +3484,124 @@ function AdminHistoryPage() {
         ) : null}
         </div>
       </main>
+
+      {selectedBooking ? (
+        <div
+          className="admin-modal-backdrop booking-detail-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="booking-detail-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeBookingModal();
+          }}
+        >
+          <section className="card admin-modal-card admin-modal-card-wide booking-detail-modal">
+            <header className="booking-detail-header">
+              <div>
+                <p className="eyebrow">Detalhes do ensaio</p>
+                <h2 id="booking-detail-title">{selectedBooking.bandName || selectedBooking.contactName}</h2>
+                <p>{selectedBooking.roomName} · {formatDateWithWeekday(selectedBooking.date)} · {selectedBooking.time}</p>
+              </div>
+              <button
+                ref={bookingModalCloseRef}
+                type="button"
+                className="secondary-button admin-modal-close"
+                aria-label="Fechar detalhes do ensaio"
+                onClick={closeBookingModal}
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </header>
+
+            <div className="booking-detail-body">
+              <div className="booking-detail-status-row">
+                {renderStatusWithAssignee(selectedBooking)}
+                <span className={`status-chip ${paymentStatusTone(selectedBooking)}`}>
+                  Pagamento: {paymentStatusLabel(selectedBooking)}
+                </span>
+              </div>
+
+              <dl className="booking-detail-grid">
+                <div>
+                  <dt>Data e hora</dt>
+                  <dd>{formatDateWithWeekday(selectedBooking.date)} · {selectedBooking.time}</dd>
+                </div>
+                <div>
+                  <dt>Duração</dt>
+                  <dd>{selectedBooking.duration}h</dd>
+                </div>
+                <div>
+                  <dt>Contacto</dt>
+                  <dd>{selectedBooking.contactName || '-'}</dd>
+                </div>
+                <div>
+                  <dt>Telemóvel</dt>
+                  <dd>{formatContactPhone(selectedBooking.contactPhone) || '-'}</dd>
+                </div>
+                <div>
+                  <dt>Email</dt>
+                  <dd>{selectedBooking.email || '-'}</dd>
+                </div>
+                <div>
+                  <dt>Participantes</dt>
+                  <dd>{selectedBooking.participants || '-'}</dd>
+                </div>
+                <div>
+                  <dt>Valor</dt>
+                  <dd>{formatCurrency(Number(selectedBooking.amount || 0))}</dd>
+                </div>
+                <div>
+                  <dt>Referência</dt>
+                  <dd className="booking-detail-reference">{selectedBooking.id}</dd>
+                </div>
+              </dl>
+
+              <section className="booking-detail-section" aria-labelledby="booking-message-title">
+                <div className="booking-detail-section-title">
+                  <MessageCircle aria-hidden="true" size={17} />
+                  <h3 id="booking-message-title">Mensagem do cliente</h3>
+                </div>
+                <p className={selectedBooking.customerMessage ? 'booking-customer-message' : 'booking-detail-empty'}>
+                  {selectedBooking.customerMessage || 'Sem mensagem adicional nesta marcação.'}
+                </p>
+              </section>
+
+              <section className="booking-detail-section" aria-labelledby="booking-extras-title">
+                <h3 id="booking-extras-title">Extras</h3>
+                {(selectedBooking.extras ?? []).length > 0 ? (
+                  <ul className="booking-detail-extras">
+                    {(selectedBooking.extras ?? []).map((extraId) => {
+                      const service = services.find((item) => item.id === extraId);
+                      return <li key={extraId}>{service?.name || formatExtraLabel(extraId)}</li>;
+                    })}
+                  </ul>
+                ) : <p className="booking-detail-empty">Sem extras.</p>}
+              </section>
+
+              <section className="booking-detail-section" aria-labelledby="booking-history-title">
+                <h3 id="booking-history-title">Registo</h3>
+                <div className="history-log-lines booking-detail-log">
+                  {selectedBooking.confirmedBy ? <p>Confirmado por {selectedBooking.confirmedBy.name}</p> : null}
+                  {selectedBooking.rejectedBy ? <p>Desmarcado por {selectedBooking.rejectedBy.name}</p> : null}
+                  {selectedBooking.cancelledBy ? <p>Anulado por {selectedBooking.cancelledBy.name}</p> : null}
+                  {selectedBooking.refundedBy ? <p>Devolvido por {selectedBooking.refundedBy.name}</p> : null}
+                  {selectedBooking.rescheduledBy ? <p>Reagendado por {selectedBooking.rescheduledBy.name}</p> : null}
+                  {!selectedBooking.confirmedBy && !selectedBooking.rejectedBy && !selectedBooking.cancelledBy
+                    && !selectedBooking.refundedBy && !selectedBooking.rescheduledBy
+                    ? <p className="booking-detail-empty">Ainda sem ações registadas.</p>
+                    : null}
+                </div>
+              </section>
+
+              {renderAssigneeSelect(selectedBooking)}
+            </div>
+
+            <footer className="booking-detail-footer">
+              {renderBookingActions(selectedBooking)}
+            </footer>
+          </section>
+        </div>
+      ) : null}
 
       {clearBookingsModalOpen ? (
         <div
@@ -3726,11 +3812,20 @@ function AdminHistoryPage() {
                 </div>
 
               <div className="admin-modal-actions">
-                <button type="button" className="secondary-button" onClick={closeRescheduleModal}>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={Boolean(actionLoading[rescheduleDraft.bookingId])}
+                  onClick={closeRescheduleModal}
+                >
                   Cancelar
                 </button>
-                <button type="submit" className="primary-button">
-                  Guardar reagendamento
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={Boolean(actionLoading[rescheduleDraft.bookingId])}
+                >
+                  {actionLoading[rescheduleDraft.bookingId] ? 'A guardar...' : 'Guardar reagendamento'}
                 </button>
               </div>
             </form>

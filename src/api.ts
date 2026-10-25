@@ -60,6 +60,7 @@ export type ApiBooking = {
   contactName: string;
   contactPhone?: string | null;
   email: string;
+  customerMessage?: string | null;
   participants?: number | null;
   paymentMethod?: string | null;
   paymentStatus?: string;
@@ -384,6 +385,9 @@ function mapBookingRow(row: Record<string, unknown>): ApiBooking {
     contactName: String(row.contactName ?? row.contact_name ?? ''),
     contactPhone: row.contactPhone === undefined ? null : (row.contactPhone as string | null),
     email: String(row.email ?? ''),
+    customerMessage: row.customerMessage === undefined && row.customer_message === undefined
+      ? null
+      : String(row.customerMessage ?? row.customer_message ?? ''),
     participants: row.participants === null || row.participants === undefined ? null : Number(row.participants),
     amount: row.amount === null || row.amount === undefined ? null : Number(row.amount),
     extras: Array.isArray(row.extras) ? (row.extras as string[]) : [],
@@ -534,6 +538,7 @@ export async function createBooking(draft: CreateBookingDraft): Promise<{ bookin
       contactName: draft.contactName,
       contactPhone: draft.contactPhone,
       email: draft.email,
+      customerMessage: draft.focus?.trim() || null,
       paymentMethod: draft.paymentMethod,
     }),
   });

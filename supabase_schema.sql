@@ -31,6 +31,7 @@ create table public.bookings (
   "contactName"         text        not null,
   "contactPhone"        text,
   email                 text        not null,
+  "customerMessage"     text,
   participants          integer     check (participants is null or participants > 0),
 
   "paymentMethod"       text        not null default 'on-site'
