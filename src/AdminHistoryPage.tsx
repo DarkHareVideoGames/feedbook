@@ -3382,7 +3382,7 @@ function AdminHistoryPage() {
                             }}
                           >
                             Ver detalhes
-                            {b.customerMessage ? <MessageCircle aria-label="Tem mensagem do cliente" size={14} /> : null}
+                            {b.customerMessage ? <MessageCircle aria-label="Tem mensagem da banda" size={14} /> : null}
                             <ChevronRight aria-hidden="true" size={15} />
                           </button>
                         </td>
@@ -3415,7 +3415,7 @@ function AdminHistoryPage() {
                         <span className="history-mobile-card-footer">
                           {b.customerMessage ? (
                             <span className="history-message-indicator">
-                              <MessageCircle aria-hidden="true" size={14} /> Mensagem do cliente
+                              <MessageCircle aria-hidden="true" size={14} /> Mensagem da banda
                             </span>
                           ) : <span />}
                           <ChevronRight aria-hidden="true" size={18} />
@@ -3544,7 +3544,7 @@ function AdminHistoryPage() {
               <section className="booking-detail-section" aria-labelledby="booking-message-title">
                 <div className="booking-detail-section-title">
                   <MessageCircle aria-hidden="true" size={17} />
-                  <h3 id="booking-message-title">Mensagem do cliente</h3>
+                  <h3 id="booking-message-title">Mensagem da banda</h3>
                 </div>
                 <p className={selectedBooking.customerMessage ? 'booking-customer-message' : 'booking-detail-empty'}>
                   {selectedBooking.customerMessage || 'Sem mensagem adicional nesta marcação.'}
@@ -3820,7 +3820,7 @@ function AdminHistoryPage() {
             </div>
             <h3 id="customer-notification-title">Enviar mensagem por WhatsApp?</h3>
             <p>
-              Vais {customerNotificationActionLabel(customerNotificationDecision.action)} e enviar o email ao cliente.
+              Vais {customerNotificationActionLabel(customerNotificationDecision.action)} e enviar o email à banda.
               Queres enviar também a mensagem por WhatsApp?
             </p>
             {!consegueAbrirWhatsApp(customerNotificationBooking) ? (
