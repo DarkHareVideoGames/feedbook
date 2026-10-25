@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, Globe, PlayCircle } from 'lucide-react';
+import { Camera, ChevronDown, ChevronUp, Globe, PlayCircle } from 'lucide-react';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
 import LanguageSwitcher from './components/ui/LanguageSwitcher';
@@ -76,6 +76,8 @@ const fallbackRooms: RoomDefinition[] = [
     pricePerMemberHour: null,
     gear: [],
     gearEn: [],
+    longDescription: '',
+    longDescriptionEn: '',
     accent: 'var(--room-red)',
     active: true,
     bookingMode: 'booking',
@@ -89,6 +91,8 @@ const fallbackRooms: RoomDefinition[] = [
     pricePerMemberHour: null,
     gear: [],
     gearEn: [],
+    longDescription: '',
+    longDescriptionEn: '',
     accent: 'var(--room-grey)',
     active: true,
     bookingMode: 'booking',
@@ -328,6 +332,12 @@ const [dataReady, setDataReady] = useState(false);
 const [minDelayDone, setMinDelayDone] = useState(false);
   const [teamBookings, setTeamBookings] = useState<TeamBooking[]>([]);
   const [bookingStep, setBookingStep] = useState<BookingStep>('room');
+
+  const [expandedRoomIds, setExpandedRoomIds] = useState<Record<string, boolean>>({});
+
+  const toggleRoom = (roomId: string) => {
+    setExpandedRoomIds(prev => ({ ...prev, [roomId]: !prev[roomId] }));
+  };
   const [betaEnabled, setBetaEnabled] = useState(true);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   // Campos de contacto controlados para validação em tempo real (Issue #5).
@@ -362,6 +372,8 @@ const [minDelayDone, setMinDelayDone] = useState(false);
             : `Up to ${room.maxMembers} members`
           : legacy?.capacity || '',
       gear: ((isPt ? room.gear : room.gearEn).length > 0 ? (isPt ? room.gear : room.gearEn) : room.gear.length > 0 ? room.gear : legacy?.gear) || [],
+      longDescription: isPt ? room.longDescription : room.longDescriptionEn,
+      isExpanded: expandedRoomIds[room.id] || false,
     };
   });
   const selectedRoom = localizedRooms.find((room) => room.id === selectedRoomId) ?? localizedRooms[0];
@@ -778,11 +790,31 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                     </strong>
                   </div>
                   <p>{room.vibe}</p>
-                  <ul className="gear-list">
-                    {room.gear.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
+                  <button
+                      type="button"
+                      className="room-card-summary"
+                      aria-expanded={room.isExpanded}
+                      aria-controls={`room-details-${room.id}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleRoom(room.id);
+                      }}
+                    >
+                      <span>{room.isExpanded ? translations.about.collapse : translations.about.expand}</span>
+                      {room.isExpanded ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
+                    </button>
+                    {room.isExpanded ? (
+                      <div id={`room-details-${room.id}`} className="room-card-details">
+                        {room.longDescription ? (
+                          <p className="room-card-long-text">{room.longDescription}</p>
+                        ) : null}
+                        <ul className="gear-list">
+                          {room.gear.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
                   <span className="room-card-arrow">&gt;</span>
                 </article>
               );

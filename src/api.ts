@@ -95,6 +95,8 @@ export type ApiRoom = {
   name: string;
   description: string;
   descriptionEn: string;
+  longDescription: string;
+  longDescriptionEn: string;
   maxMembers: number;
   pricePerMemberHour: number | null;
   imageUrl?: string | null;
@@ -126,6 +128,8 @@ export type RoomDraft = {
   imageUrl?: string | null;
   gear?: string;
   gearEn?: string;
+  longDescription?: string;
+  longDescriptionEn?: string;
   accent?: string;
   active?: boolean;
   bookingMode?: 'booking' | 'contact';
@@ -211,6 +215,8 @@ const fallbackRooms: ApiRoom[] = [
     pricePerMemberHour: null,
     gear: ['Bateria completa', '2 amps de guitarra', 'PA com monitores'],
     gearEn: ['Full drum kit', '2 guitar amps', 'PA with monitors'],
+    longDescription: '',
+    longDescriptionEn: '',
     accent: 'var(--room-red)',
     active: true,
     bookingMode: 'booking',
@@ -224,6 +230,8 @@ const fallbackRooms: ApiRoom[] = [
     pricePerMemberHour: null,
     gear: ['Bateria compacta', 'Amp de baixo', 'PA com efeitos de voz'],
     gearEn: ['Compact drum kit', 'Bass amp', 'PA with vocal FX'],
+    longDescription: '',
+    longDescriptionEn: '',
     accent: 'var(--room-grey)',
     active: true,
     bookingMode: 'booking',
@@ -1120,6 +1128,8 @@ function mapRoomRow(row: Record<string, unknown>): ApiRoom {
     name: String(row.name ?? ''),
     description: String(row.description ?? ''),
     descriptionEn: String(row.descriptionEn ?? (row as Record<string, unknown>).description_en ?? ''),
+    longDescription: String(row.longDescription ?? (row as Record<string, unknown>).long_description ?? (row as Record<string, unknown>).longdescription ?? ''),
+    longDescriptionEn: String(row.longDescriptionEn ?? (row as Record<string, unknown>).long_description_en ?? (row as Record<string, unknown>).longdescriptionen ?? ''),
     maxMembers: Number(row.maxMembers ?? (row as Record<string, unknown>).max_members ?? 4),
     pricePerMemberHour: rawPrice === null || rawPrice === undefined || rawPrice === '' ? null : Number(rawPrice),
     imageUrl: normalizeRoomImageUrl(row.imageUrl ?? (row as Record<string, unknown>).image_url),
@@ -1220,6 +1230,8 @@ export async function createRoom(token: string, draft: RoomDraft): Promise<{ roo
     imageUrl: normalizeRoomImageUrl(draft?.imageUrl),
     gear: splitLines(draft?.gear),
     gearEn: splitLines(draft?.gearEn),
+    longDescription: String(draft?.longDescription ?? ''),
+    longDescriptionEn: String(draft?.longDescriptionEn ?? ''),
     accent: String(draft?.accent || 'var(--room-red)'),
     active: draft?.active !== false,
     bookingMode: draft?.bookingMode === 'contact' ? 'contact' : 'booking',
@@ -1255,6 +1267,8 @@ export async function updateRoom(token: string, roomId: string, draft: RoomDraft
     pricePerMemberHour,
     gear: splitLines(draft?.gear),
     gearEn: splitLines(draft?.gearEn),
+    longDescription: String(draft?.longDescription ?? ''),
+    longDescriptionEn: String(draft?.longDescriptionEn ?? ''),
     accent: String(draft?.accent || 'var(--room-red)'),
     active: draft?.active !== false,
     bookingMode: draft?.bookingMode === 'contact' ? 'contact' : 'booking',
