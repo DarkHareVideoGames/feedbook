@@ -143,6 +143,8 @@
     "submit": "Request booking",
     "submitContact": "REQUEST CONTACT",
     "contactSummary": "This room works by contact only. Send your details and our team will get in touch to arrange all the details.",
+    "contactPendingBadge": "Please wait!",
+    "contactConfirmation": "We received your contact request for {{room}}. Our team will contact you shortly.",
     "defaultFocus": "Full band rehearsal",
     "confirmation": "Your booking is not confirmed yet. We will notify you by email or WhatsApp as soon as the team validates your request.",
     "pendingBadge": "Request received",

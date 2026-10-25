@@ -143,6 +143,8 @@
     "submit": "Pedir marcacao",
     "submitContact": "PEDIR CONTATO",
     "contactSummary": "Esta sala funciona apenas por contacto. Envia os teus dados e a equipa irá falar contigo para combinar todos os detalhes.",
+    "contactPendingBadge": "Aguarda!",
+    "contactConfirmation": "Recebemos o teu pedido de contacto para {{room}}. A nossa equipa irá contactar-te em breve.",
     "defaultFocus": "Ensaio com banda completa",
     "confirmation": "A tua reserva ainda não está confirmada. Vamos avisar-te por email ou WhatsApp assim que a equipa validar o pedido.",
     "pendingBadge": "Pedido recebido",
