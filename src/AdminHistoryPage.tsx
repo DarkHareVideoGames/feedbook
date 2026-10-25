@@ -930,7 +930,7 @@ function AdminHistoryPage() {
     } else if (viewFilter === 'unpaid') {
       scoped = bookings.filter((booking) => {
         const payment = String(booking.paymentStatus || '').toLowerCase();
-        return payment !== 'received' && payment !== 'refunded';
+        return booking.status === 'confirmed' && payment !== 'received' && payment !== 'refunded';
       });
     } else {
       scoped = bookings;
