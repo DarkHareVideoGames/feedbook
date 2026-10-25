@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, ChevronDown, ChevronUp, Globe, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Camera, ChevronDown, ChevronUp, Globe, PlayCircle } from 'lucide-react';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
 import LanguageSwitcher from './components/ui/LanguageSwitcher';
@@ -831,6 +831,10 @@ const [minDelayDone, setMinDelayDone] = useState(false);
         {bookingStep === 'date' || bookingStep === 'details' ? (
           <section className="booking-grid">
             <form className="card booking-form" onSubmit={handleSubmit} autoComplete="off">
+              <button type="button" className="booking-top-back" onClick={goToPreviousStep}>
+                <ArrowLeft size={18} aria-hidden="true" />
+                <span>{translations.booking.back}</span>
+              </button>
             {bookingStep === 'date' ? (
               <div className="booking-step">
               <div className="field-row booking-datetime-row">
