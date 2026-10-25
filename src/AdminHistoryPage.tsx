@@ -707,6 +707,7 @@ function AdminHistoryPage() {
   const [showFinance, setShowFinance] = useState(false);
   const [activePanel, setActivePanel] = useState<AdminPanel>('unified');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [rooms, setRooms] = useState<api.ApiRoom[]>([]);
   const [services, setServices] = useState<api.ApiService[]>([]);
   const [roomForm, setRoomForm] = useState<RoomFormDraft>(emptyRoomForm);
@@ -2410,13 +2411,18 @@ function AdminHistoryPage() {
         <div className="admin-content">
           <div className="admin-content-bar">
             {currentUser ? (
-              <div className="admin-user-chip" title={currentUser.email}>
+              <button
+                type="button"
+                className="admin-user-chip admin-user-chip-button"
+                title={currentUser.email}
+                onClick={() => setLogoutModalOpen(true)}
+              >
                 <span className="admin-user-chip-name">{currentUser.name}</span>
                 <span className={`admin-user-chip-role admin-role-${currentUser.role}`}>
                   {roleLabel[currentUser.role]}
                   {currentUser.function ? ` · ${staffFunctionLabels[currentUser.function]}` : ''}
                 </span>
-              </div>
+              </button>
             ) : null}
           </div>
           {error ? <p className="admin-message-error">{error}</p> : null}
@@ -3706,6 +3712,41 @@ function AdminHistoryPage() {
                 onClick={() => { void handleDeleteService(); }}
               >
                 {actionLoading[serviceToDelete] ? 'A apagar...' : 'Apagar definitivamente'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {logoutModalOpen ? (
+        <div
+          className="admin-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="logout-modal-title"
+        >
+          <section className="card admin-modal-card clear-bookings-modal">
+            <h3 id="logout-modal-title">Sair da conta?</h3>
+            <p>
+              Vais terminar a sessão atual. Tens a certeza que queres sair?
+            </p>
+            <div className="admin-modal-actions clear-bookings-modal-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setLogoutModalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => {
+                  setLogoutModalOpen(false);
+                  handleLogout();
+                }}
+              >
+                Sair
               </button>
             </div>
           </section>
