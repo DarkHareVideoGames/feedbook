@@ -76,8 +76,8 @@ const NotFoundPage: React.FC = () => {
 
       // colisão
       const playerX = 60;
-      const playerW = 40;
-      const playerH = 54;
+      const playerW = 48;
+      const playerH = 64;
       const playerBottom = s.y;
       for (const o of s.obstacles) {
         const obsW = 26;
@@ -220,8 +220,8 @@ const NotFoundPage: React.FC = () => {
                 position: 'absolute',
                 left: 60,
                 bottom: 40,
-                width: 40,
-                height: 54,
+                width: 48,
+                height: 64,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -231,7 +231,7 @@ const NotFoundPage: React.FC = () => {
               <img
                 src="/guitarrist.png"
                 alt="Guitarrista"
-                style={{ width: 40, height: 54, objectFit: 'contain' }}
+                style={{ width: 48, height: 64, objectFit: 'contain' }}
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = 'none';
                   const parent = e.currentTarget.parentElement;
