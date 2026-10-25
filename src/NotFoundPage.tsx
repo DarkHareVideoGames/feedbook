@@ -106,7 +106,10 @@ const NotFoundPage: React.FC = () => {
         if (player) player.style.bottom = `${40 + s.y}px`;
         if (obsContainer) {
           obsContainer.innerHTML = s.obstacles
-            .map((o) => `<div class="game-obstacle" style="left:${o.x}px"></div>`)
+            .map(
+              (o) =>
+                `<div class="game-obstacle" style="left:${o.x}px"><img src="/amp.png" alt="Amp" style="width:22px;height:38px;object-fit:contain" onerror="this.style.display='none';this.parentElement.classList.add('fallback-amp')" /></div>`
+            )
             .join('');
         }
       }
@@ -219,15 +222,28 @@ const NotFoundPage: React.FC = () => {
                 bottom: 40,
                 width: 34,
                 height: 46,
-                background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-                borderRadius: 6,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 20,
               }}
             >
-              🎸
+              <img
+                src="/guitarrist.png"
+                alt="Guitarrista"
+                style={{ width: 34, height: 46, objectFit: 'contain' }}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent && !parent.querySelector('.fallback-guitar')) {
+                    const span = document.createElement('span');
+                    span.className = 'fallback-guitar';
+                    span.textContent = '🎸';
+                    span.style.fontSize = '20px';
+                    parent.appendChild(span);
+                  }
+                }}
+              />
             </div>
             <div className="game-obstacles" style={{ position: 'absolute', inset: 0 }} />
             <div
@@ -293,8 +309,10 @@ const NotFoundPage: React.FC = () => {
               bottom: 40px;
               width: 22px;
               height: 38px;
-              background: linear-gradient(135deg, #6b7280, #374151);
               border-radius: 4px;
+            }
+            .game-obstacle.fallback-amp {
+              background: linear-gradient(135deg, #6b7280, #374151);
             }
           `}</style>
 
