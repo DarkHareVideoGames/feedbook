@@ -1258,7 +1258,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
             {FOOTER_LINKS.map(({ id, href, labelKey, Icon }) => (
               <a
                 key={id}
-                className="site-footer-link"
+                className={`site-footer-link site-footer-link-${id}`}
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
