@@ -58,6 +58,8 @@
     "eyebrow": "About us",
     "title": "Feedback Studios, your creative hub",
     "lede": "We are an all-in-one creative hub built specifically to answer every need of bands, musicians and content creators under a single roof. The space was designed to connect every stage of your project fluidly: the rooms talk to each other, letting you move from the creative immersion of a rehearsal to a multitrack audio recording, a music video shoot, a live stream or an intimate concert.",
+    "expand": "See more",
+    "collapse": "See less",
     "infrastructureTitle": "Our infrastructure",
     "infrastructure": [
       {
