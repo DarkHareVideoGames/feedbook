@@ -169,9 +169,8 @@ async function sendContactRequestDiscordAlert(contactRequest) {
 // Gera um ficheiro ICS (RFC 5545) para adicionar o ensaio ao calendário do cliente.
 function buildIcs(booking, status) {
   if (!booking || !booking.date || !booking.time) return null;
-  if (status !== 'pending' && status !== 'confirmed' && status !== 'rescheduled') return null;
+  if (status !== 'confirmed') return null;
 
-  const isCancelled = status === 'cancelled';
   const durationHours = Number(booking.duration) || 1;
   const start = new Date(`${booking.date}T${booking.time}:00`);
   if (Number.isNaN(start.getTime())) return null;
@@ -218,7 +217,7 @@ function buildIcs(booking, status) {
     `DESCRIPTION:${descriptionLines.join('\\n').replace(/\n/g, '\\n')}`,
     `LOCATION:${room}, Parque de Exposições Acácio Dores — Montijo, Portugal`,
     'ORGANIZER;CN=Feedback Productions:mailto:ensaios@feedbackproductions.pt',
-    `STATUS:${isCancelled ? 'CANCELLED' : 'CONFIRMED'}`,
+    'STATUS:CONFIRMED',
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');
