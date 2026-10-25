@@ -28,7 +28,6 @@ const NotFoundPage: React.FC = () => {
     spawnTimer: 0,
   });
 
-  const GROUND = 0;
   const GRAVITY = 1800;
   const JUMP = 620;
   const SPEED = 260;
@@ -86,7 +85,6 @@ const NotFoundPage: React.FC = () => {
       // colisão
       const playerX = 60;
       const playerW = 48;
-      const playerH = 64;
       const playerBottom = s.y;
       for (const o of s.obstacles) {
         const obsW = 26;
