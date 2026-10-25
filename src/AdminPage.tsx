@@ -904,7 +904,7 @@ function AdminPage() {
             </form>
 
             <p className="admin-helper-note">Conta inicial: admin@feedbook.local / admin123</p>
-            <a href="/" className="secondary-button admin-link-home">
+            <a href="https://www.ensaiosfeedback.pt/" className="secondary-button admin-link-home">
               Voltar ao site
             </a>
           </section>
@@ -961,7 +961,7 @@ function AdminPage() {
           </div>
 
           <div className="admin-top-actions">
-            <a href="/" className="secondary-button admin-link-home">
+            <a href="https://www.ensaiosfeedback.pt/" className="secondary-button admin-link-home">
               Site publico
             </a>
             <a href="/admin" className="secondary-button">
