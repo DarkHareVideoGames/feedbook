@@ -76,12 +76,12 @@ const NotFoundPage: React.FC = () => {
 
       // colisão
       const playerX = 60;
-      const playerW = 34;
-      const playerH = 46;
+      const playerW = 40;
+      const playerH = 54;
       const playerBottom = s.y;
       for (const o of s.obstacles) {
-        const obsW = 22;
-        const obsH = 38;
+        const obsW = 26;
+        const obsH = 46;
         if (
           playerX + playerW > o.x &&
           playerX < o.x + obsW &&
@@ -108,7 +108,7 @@ const NotFoundPage: React.FC = () => {
           obsContainer.innerHTML = s.obstacles
             .map(
               (o) =>
-                `<div class="game-obstacle" style="left:${o.x}px"><img src="/amp.png" alt="Amp" style="width:22px;height:38px;object-fit:contain" onerror="this.style.display='none';this.parentElement.classList.add('fallback-amp')" /></div>`
+                `<div class="game-obstacle" style="left:${o.x}px"><img src="/amp.png" alt="Amp" style="width:26px;height:46px;object-fit:contain" onerror="this.style.display='none';this.parentElement.classList.add('fallback-amp')" /></div>`
             )
             .join('');
         }
@@ -220,8 +220,8 @@ const NotFoundPage: React.FC = () => {
                 position: 'absolute',
                 left: 60,
                 bottom: 40,
-                width: 34,
-                height: 46,
+                width: 40,
+                height: 54,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -231,7 +231,7 @@ const NotFoundPage: React.FC = () => {
               <img
                 src="/guitarrist.png"
                 alt="Guitarrista"
-                style={{ width: 34, height: 46, objectFit: 'contain' }}
+                style={{ width: 40, height: 54, objectFit: 'contain' }}
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = 'none';
                   const parent = e.currentTarget.parentElement;
@@ -307,8 +307,8 @@ const NotFoundPage: React.FC = () => {
             .game-obstacle {
               position: absolute;
               bottom: 40px;
-              width: 22px;
-              height: 38px;
+              width: 26px;
+              height: 46px;
               border-radius: 4px;
             }
             .game-obstacle.fallback-amp {
