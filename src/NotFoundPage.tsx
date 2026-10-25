@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useI18n } from './i18n';
+import { Globe, Camera, PlayCircle } from 'lucide-react';
+
+const FOOTER_LINKS = [
+  { id: 'site', href: 'https://www.feedbackproductions.pt/', labelKey: 'site' as const, Icon: Globe },
+  { id: 'instagram', href: 'https://www.instagram.com/feedbackproductions/', labelKey: 'instagram' as const, Icon: Camera },
+  { id: 'youtube', href: 'https://www.youtube.com/playlist?list=PLaTuYjte7L3UDZq7x0etlaHAkDmO7LXAX', labelKey: 'youtube' as const, Icon: PlayCircle },
+];
 
 const NotFoundPage: React.FC = () => {
+  const { translations } = useI18n();
   const [logoVisible, setLogoVisible] = useState(true);
 
   // Mini-jogo: guitarrista que salta
@@ -330,7 +339,21 @@ const NotFoundPage: React.FC = () => {
 
       <footer className="site-footer">
         <div className="site-footer-inner">
-          <p className="site-footer-credit">Feedback - Ensaios</p>
+          <nav className="site-footer-links" aria-label={translations.footer.linksLabel}>
+            {FOOTER_LINKS.map(({ id, href, labelKey, Icon }) => (
+              <a
+                key={id}
+                className={`site-footer-link site-footer-link-${id}`}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Icon size={18} aria-hidden="true" />
+                <span>{translations.footer[labelKey]}</span>
+              </a>
+            ))}
+          </nav>
+          <p className="site-footer-credit">{translations.footer.credit}</p>
         </div>
       </footer>
     </div>
