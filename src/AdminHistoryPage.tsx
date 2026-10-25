@@ -2242,7 +2242,7 @@ function AdminHistoryPage() {
               {authError ? <p className="admin-message-error">{authError}</p> : null}
             </form>
 
-            <a href="https://feedbook-kappa.vercel.app/" className="secondary-button admin-link-home">
+            <a href="https://www.ensaiosfeedback.pt/" className="secondary-button admin-link-home">
               Voltar ao site
             </a>
           </section>
@@ -2397,7 +2397,7 @@ function AdminHistoryPage() {
             </button>
 
             <div className="admin-sidebar-footer">
-              <a href="https://feedbook-kappa.vercel.app/" className="admin-sidebar-item admin-sidebar-link" onClick={() => setSidebarOpen(false)}>
+              <a href="https://www.ensaiosfeedback.pt/" className="admin-sidebar-item admin-sidebar-link" onClick={() => setSidebarOpen(false)}>
                 Site publico
               </a>
               <button type="button" className="admin-sidebar-item" onClick={handleLogout}>
