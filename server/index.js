@@ -184,7 +184,7 @@ const emailTransport = SMTP_HOST && SMTP_PASS
     })
   : null;
 
-async function sendEmail(to, subject, htmlContent) {
+async function sendEmail(to, subject, htmlContent, attachments) {
   if (!emailTransport) return;
   try {
     await emailTransport.sendMail({
@@ -192,6 +192,7 @@ async function sendEmail(to, subject, htmlContent) {
       to,
       subject,
       html: htmlContent,
+      attachments,
     });
     console.log(`Email sent to ${to}`);
   } catch (e) {
@@ -236,6 +237,65 @@ function emailSignature() {
     `Este é um e-mail automático enviado a partir do sistema de marcações. Por favor, não responda diretamente para este endereço.` +
     `</p>`
   );
+}
+
+// Gera um ficheiro ICS (RFC 5545) para adicionar o ensaio ao calendário do cliente.
+function buildIcs(booking, status) {
+  if (!booking || !booking.date || !booking.time) return null;
+  if (status !== 'pending' && status !== 'confirmed' && status !== 'rescheduled') return null;
+
+  const durationHours = Number(booking.duration) || 1;
+  const start = new Date(`${booking.date}T${booking.time}:00`);
+  if (Number.isNaN(start.getTime())) return null;
+  const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const formatLocal = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  const now = new Date();
+  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
+
+  const uid = `booking-${booking.id || booking.date + booking.time}@ensaiosfeedback.pt`;
+  const band = String(booking.bandName || booking.contactName || 'Ensaio').trim();
+  const room = String(booking.roomName || 'Sala de Ensaios').trim();
+  const contact = String(booking.contactName || '').trim();
+  const phone = String(booking.contactPhone || '').trim();
+  const confirmer = booking.confirmedBy ? `${booking.confirmedBy.name || ''}${booking.confirmedBy.phone ? ' — ' + booking.confirmedBy.phone : ''}`.trim() : '';
+
+  const descriptionLines = [
+    `Ensaio: ${band}`,
+    `Sala: ${room}`,
+    `Data: ${formatDatePt(booking.date)}`,
+    `Hora: ${booking.time} (${durationHours}h)`,
+    contact ? `Contacto: ${contact}` : '',
+    phone ? `Telefone: ${phone}` : '',
+    confirmer ? `Confirmado por: ${confirmer}` : '',
+    '',
+    'Feedback Productions — Estúdios de Ensaio & Produção Musical',
+    'Parque de Exposições Acácio Dores — Montijo, Portugal',
+    'Tel: 91 817 62 67 / 93 232 1079 / 91 651 58 02',
+  ].filter(Boolean);
+
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Feedback Productions//FeedBook//PT',
+    'CALSCALE:GREGORIAN',
+    'METHOD:REQUEST',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART;TZID=Europe/Lisbon:${formatLocal(start)}`,
+    `DTEND;TZID=Europe/Lisbon:${formatLocal(end)}`,
+    `SUMMARY:Ensaio — ${band} (${room})`,
+    `DESCRIPTION:${descriptionLines.join('\\n').replace(/\n/g, '\\n')}`,
+    `LOCATION:${room}, Parque de Exposições Acácio Dores — Montijo, Portugal`,
+    'ORGANIZER;CN=Feedback Productions:mailto:ensaios@feedbackproductions.pt',
+    'STATUS:CONFIRMED',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+
+  return ics;
 }
 
 async function sendBookingNotifications(booking, status) {
@@ -283,7 +343,10 @@ async function sendBookingNotifications(booking, status) {
     }
 
     bodyHTML += emailSignature();
-    await sendEmail(recipientEmail, subject, bodyHTML);
+    const icsContent = buildIcs(booking, status);
+    await sendEmail(recipientEmail, subject, bodyHTML, icsContent
+      ? [{ filename: 'ensaio.ics', content: icsContent, contentType: 'text/calendar; charset=utf-8; method=REQUEST' }]
+      : undefined);
   }
 
 }
