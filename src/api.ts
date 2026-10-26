@@ -41,6 +41,7 @@ export type ApiUser = {
   phone: string;
   role: Role;
   function: StaffFunction | null;
+  isDeveloper: boolean;
   createdAt: string;
 };
 
@@ -417,13 +418,14 @@ async function profileFor(user: User): Promise<ApiUser> {
   }
 
   if (!data) {
-    const metadata = (user.user_metadata ?? {}) as { name?: string; role?: string; function?: string };
+    const metadata = (user.user_metadata ?? {}) as { name?: string; role?: string; function?: string; isDeveloper?: boolean };
     return {
       id: user.id,
       name: metadata.name || String(user.email ?? '').split('@')[0],
       email: String(user.email ?? ''),
       role: normalizeRole(metadata.role),
       function: normalizeFunction(metadata.function),
+      isDeveloper: metadata.isDeveloper === true,
       phone: '',
       createdAt: user.created_at ?? new Date().toISOString(),
     };
@@ -435,6 +437,7 @@ async function profileFor(user: User): Promise<ApiUser> {
     email: String(data.email ?? ''),
     role: normalizeRole(data.role),
     function: normalizeFunction(data.function),
+    isDeveloper: data.isDeveloper === true,
     phone: String(data.phone ?? ''),
     createdAt: String(data.createdAt ?? ''),
   };
@@ -1573,6 +1576,7 @@ export async function adminUsers(token: string): Promise<{ users: ApiUser[] }> {
       phone: String(row.phone ?? ''),
       role: normalizeRole(row.role),
       function: normalizeFunction(row.function),
+      isDeveloper: row.isDeveloper === true,
       createdAt: String(row.createdAt ?? ''),
     })),
   };
@@ -1589,7 +1593,7 @@ function generateProvisionalPassword(): string {
 
 export async function createUser(
   token: string,
-  draft: { name: string; email: string; password?: string; phone: string; role: Role; function?: StaffFunction | null },
+  draft: { name: string; email: string; password?: string; phone: string; role: Role; function?: StaffFunction | null; isDeveloper?: boolean },
 ): Promise<{ message: string; user: ApiUser }> {
   const actor = await requireActor(token, ['admin', 'superuser']);
   const email = String(draft?.email || '').trim().toLowerCase();
@@ -1610,7 +1614,7 @@ export async function createUser(
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name: draft.name, phone, role: draft.role, function: staffFunction } },
+    options: { data: { name: draft.name, phone, role: draft.role, function: staffFunction, isDeveloper: draft.isDeveloper === true } },
   });
 
   if (error || !data.user) {
@@ -1623,7 +1627,7 @@ export async function createUser(
     action: 'user-created',
     actor: { id: actor.id, name: actor.name, role: actor.role },
     target: profile.id,
-    details: { name: profile.name, email: profile.email, phone: profile.phone },
+    details: { name: profile.name, email: profile.email, phone: profile.phone, isDeveloper: profile.isDeveloper },
   });
 
   // Convite "define a tua password" (envia email com link de recuperação).
@@ -1636,7 +1640,7 @@ export async function createUser(
 
 export async function updateUser(
   token: string,
-  draft: { id: string; name: string; email: string; password?: string; role: Role; phone?: string; function?: StaffFunction | null },
+  draft: { id: string; name: string; email: string; password?: string; role: Role; phone?: string; function?: StaffFunction | null; isDeveloper?: boolean },
 ): Promise<{ message: string; user: ApiUser }> {
   const actor = await requireActor(token, ['admin', 'superuser']);
   const staffFunction = draft.function ? normalizeFunction(draft.function) : null;
@@ -1668,6 +1672,7 @@ export async function updateUser(
     p_phone: phone,
     p_role: draft.role,
     p_function: staffFunction,
+    p_is_developer: draft.isDeveloper === true,
     p_password: draft.password && draft.password.trim() ? draft.password.trim() : null,
   });
 
@@ -1675,7 +1680,7 @@ export async function updateUser(
     throw toError(error.message, 'Could not update user', 400);
   }
 
-  const row = data as { id: string; name: string; email: string; role: string; phone: string; function?: string; createdAt: string };
+  const row = data as { id: string; name: string; email: string; role: string; phone: string; function?: string; isDeveloper?: boolean; createdAt: string };
   const user: ApiUser = {
     id: String(row.id),
     name: String(row.name ?? ''),
@@ -1683,6 +1688,7 @@ export async function updateUser(
     phone: String(row.phone ?? ''),
     role: normalizeRole(row.role),
     function: normalizeFunction(row.function),
+    isDeveloper: row.isDeveloper === true,
     createdAt: String(row.createdAt ?? ''),
   };
 
@@ -1690,7 +1696,7 @@ export async function updateUser(
     action: 'user-updated',
     actor: { id: actor.id, name: actor.name, role: actor.role },
     target: user.id,
-    details: { name: user.name, role: user.role },
+    details: { name: user.name, role: user.role, isDeveloper: user.isDeveloper },
   });
 
   return { message: 'User updated successfully', user };

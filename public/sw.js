@@ -4,6 +4,7 @@ const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const SHELL_CACHE = CACHE_VERSION + '-shell';
 
 const SHELL_URLS = ['/admin', '/index.html'];
+let devMode = false;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -16,6 +17,11 @@ self.addEventListener('message', (event) => {
   if (!event.data) return;
   if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  } else if (event.data.type === 'DEV_MODE') {
+    devMode = true;
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((key) => key.startsWith('fb-admin-')).map((key) => caches.delete(key))),
+    ).catch(() => {});
   } else if (event.data.type === 'LOGOUT') {
     // Limpar caches de runtime para não deixar dados acessíveis a outra sessão
     caches.delete(RUNTIME_CACHE).catch(() => {});
@@ -86,6 +92,7 @@ function isStaticAsset(request, url) {
 }
 
 self.addEventListener('fetch', (event) => {
+  if (devMode) return;
   const request = event.request;
   if (request.method !== 'GET') return;
 

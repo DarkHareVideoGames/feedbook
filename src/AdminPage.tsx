@@ -13,6 +13,7 @@ type AuthUser = {
   phone: string;
   role: Role;
   function: StaffFunction | null;
+  isDeveloper: boolean;
   createdAt: string;
 };
 

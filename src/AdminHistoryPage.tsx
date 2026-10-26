@@ -38,6 +38,7 @@ type AuthUser = {
   phone: string;
   role: Role;
   function: StaffFunction | null;
+  isDeveloper: boolean;
   createdAt: string;
 };
 
@@ -186,6 +187,7 @@ type NewUserDraft = {
   phone: string;
   role: Role;
   function: StaffFunction | null;
+  isDeveloper: boolean;
 };
 
 type EditUserDraft = {
@@ -196,6 +198,7 @@ type EditUserDraft = {
   password: string;
   role: Role;
   function: StaffFunction | null;
+  isDeveloper: boolean;
 };
 
 type RoomFormDraft = {
@@ -739,6 +742,7 @@ function AdminHistoryPage() {
     phone: '',
     role: 'collaborator',
     function: null,
+    isDeveloper: false,
   });
   const [editUserDraft, setEditUserDraft] = useState<EditUserDraft | null>(null);
   // Superuser e admin têm acesso total (utilizadores, salas, serviços, preços, contas).
@@ -1181,7 +1185,7 @@ function AdminHistoryPage() {
     setActivePanel('unified');
     setCatalogNotice('');
     setUsers([]);
-    setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null });
+    setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null, isDeveloper: false });
     setEditUserDraft(null);
     setShowNewUserForm(false);
     setShowNewRoomForm(false);
@@ -1215,8 +1219,8 @@ function AdminHistoryPage() {
     setError('');
     setUserActionLoading(true);
     try {
-      await api.createUser(sessionToken, { name, email, password, phone, role: newUserDraft.role, function: newUserDraft.function });
-      setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null });
+      await api.createUser(sessionToken, { name, email, password, phone, role: newUserDraft.role, function: newUserDraft.function, isDeveloper: newUserDraft.isDeveloper });
+      setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null, isDeveloper: false });
       setShowNewUserForm(false);
       await loadUsers(sessionToken);
       setCatalogNotice('Utilizador criado. Enviamos um convite por email para o utilizador definir a password.');
@@ -1237,6 +1241,7 @@ function AdminHistoryPage() {
       password: '',
       role: user.role,
       function: user.function ?? null,
+      isDeveloper: user.isDeveloper,
     });
     setCatalogNotice('');
     setError('');
@@ -1277,6 +1282,7 @@ function AdminHistoryPage() {
         password: editUserDraft.password,
         role: editUserDraft.role,
         function: editUserDraft.function,
+        isDeveloper: editUserDraft.isDeveloper,
       });
       setEditUserDraft(null);
       await loadUsers(sessionToken);
@@ -2501,7 +2507,15 @@ function AdminHistoryPage() {
                 className="secondary-button catalog-create-action"
                 onClick={() => {
                   setEditUserDraft(null);
-                  setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null });
+                  setNewUserDraft({
+                    name: '',
+                    email: '',
+                    password: '',
+                    phone: '',
+                    role: 'collaborator',
+                    function: null,
+                    isDeveloper: false,
+                  });
                   setShowNewUserForm(true);
                 }}
                 disabled={userActionLoading}
@@ -2637,6 +2651,21 @@ function AdminHistoryPage() {
                   </select>
                 </label>
 
+                <label className="extra-toggle">
+                  <input
+                    type="checkbox"
+                    checked={editUserDraft ? editUserDraft.isDeveloper : newUserDraft.isDeveloper}
+                    onChange={(event) =>
+                      editUserDraft
+                        ? setEditUserDraft((current) =>
+                            current ? { ...current, isDeveloper: event.target.checked } : current,
+                          )
+                        : setNewUserDraft((current) => ({ ...current, isDeveloper: event.target.checked }))
+                    }
+                  />
+                  <span>Desenvolvedor</span>
+                </label>
+
                 <div className="admin-user-form-actions">
                   <button
                     type="submit"
@@ -2679,6 +2708,9 @@ function AdminHistoryPage() {
                         <span className="admin-user-badge admin-user-function-badge">
                           {staffFunctionLabels[user.function]}
                         </span>
+                      ) : null}
+                      {user.isDeveloper ? (
+                        <span className="admin-user-badge admin-user-function-badge">Desenvolvedor</span>
                       ) : null}
                     </div>
                     {user.role === 'superuser' && currentUser?.role !== 'superuser' ? null : (

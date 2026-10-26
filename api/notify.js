@@ -14,7 +14,6 @@ import { generateIcs } from '../lib/generateIcs.js';
 //   SMTP_PASS (obrigatória; lida de process.env.SMTP_PASS)
 //   SMTP_FROM (default "Feedback - Ensaios <ensaios@feedbackproductions.pt>")
 //   SMTP_SECURE (default segue a porta: 465 = SSL/TLS direto)
-//   DISCORD_WEBHOOK_URL (webhook do canal #marcação-de-ensaios; sem ele o alerta Discord é ignorado)
 // ============================================================
 
 const SMTP_HOST = String(process.env.SMTP_HOST || 'mail.feedbackproductions.pt').trim();
@@ -24,10 +23,6 @@ const SMTP_PASS = String(process.env.SMTP_PASS || '');
 const SMTP_FROM = String(process.env.SMTP_FROM || 'Feedback - Ensaios <ensaios@feedbackproductions.pt>').trim();
 // Porta 465 = SSL/TLS direto (secure); 587 = STARTTLS. Força sempre canal encriptado.
 const SMTP_SECURE = String(process.env.SMTP_SECURE || (SMTP_PORT === 465 ? 'true' : 'false')).toLowerCase() === 'true';
-
-// Discord — alerta da equipa para novas marcações (canal #marcação-de-ensaios).
-// Sem esta variável o alerta é ignorado e o resto do fluxo não é afetado.
-const DISCORD_WEBHOOK_URL = String(process.env.DISCORD_WEBHOOK_URL || '').trim();
 
 // Supabase — usado para ler as subscrições Web Push dos admins.
 const SUPABASE_URL = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim();
@@ -98,73 +93,6 @@ function emailSignature() {
 function plainText(value, fallback = '-') {
   const text = String(value ?? '').trim();
   return text || fallback;
-}
-
-// Embed Discord para novas marcações pendentes (canal #marcação-de-ensaios).
-function buildDiscordEmbed(booking) {
-  // Link direto para a página de gestão (sempre em produção — é um alerta para a equipa).
-  const ADMIN_URL = 'https://www.ensaiosfeedback.pt/admin';
-  // Layout compacto na description (markdown) em vez de campos inline:
-  // no telemóvel os campos inline empilham-se um por linha e alongam o card,
-  // enquanto a description flui o texto e mantém-se curta.
-  const description = [
-    `**👉 [GERIR RESERVA!](${ADMIN_URL})**`,
-    `👤 ${plainText(booking.contactName)} · 🎸 ${plainText(booking.bandName, plainText(booking.contactName))}`,
-    `📅 ${plainText(formatDatePt(booking.date))} · 🕐 ${plainText(booking.time)}`,
-    `🚪 ${plainText(booking.roomName)} · 📞 ${plainText(booking.contactPhone)}`,
-  ].join('\n');
-  return {
-    color: 15548997,
-    url: ADMIN_URL,
-    description,
-    timestamp: new Date().toISOString(),
-    title: '🚨 Novo Pedido de Marcação!',
-  };
-}
-
-// Disparo em segundo plano: nunca bloqueia nem falha a resposta principal.
-async function sendDiscordAlert(booking) {
-  if (!DISCORD_WEBHOOK_URL) return;
-  try {
-    await fetch(DISCORD_WEBHOOK_URL, {
-      body: JSON.stringify({ embeds: [buildDiscordEmbed(booking)] }),
-      headers: { 'Content-Type': 'application/json' },
-      method: 'POST',
-    });
-  } catch (e) {
-    console.error('Erro ao enviar alerta Discord:', e);
-  }
-}
-
-function buildContactRequestDiscordEmbed(contactRequest) {
-  const ADMIN_URL = 'https://www.ensaiosfeedback.pt/admin';
-  const description = [
-    `**👉 [GERIR PEDIDO!](${ADMIN_URL})**`,
-    `👤 ${plainText(contactRequest.contactName)} · 🎸 ${plainText(contactRequest.bandName, plainText(contactRequest.contactName))}`,
-    `🚪 ${plainText(contactRequest.roomName)} · 📞 ${plainText(contactRequest.contactPhone)}`,
-    `✉️ ${plainText(contactRequest.email)}`,
-    contactRequest.message ? `💬 ${plainText(contactRequest.message)}` : null,
-  ].filter(Boolean).join('\n');
-  return {
-    color: 3447003,
-    url: ADMIN_URL,
-    description,
-    timestamp: new Date().toISOString(),
-    title: '📩 Novo Pedido de Contacto!',
-  };
-}
-
-async function sendContactRequestDiscordAlert(contactRequest) {
-  if (!DISCORD_WEBHOOK_URL) return;
-  try {
-    await fetch(DISCORD_WEBHOOK_URL, {
-      body: JSON.stringify({ embeds: [buildContactRequestDiscordEmbed(contactRequest)] }),
-      headers: { 'Content-Type': 'application/json' },
-      method: 'POST',
-    });
-  } catch (e) {
-    console.error('Erro ao enviar alerta Discord:', e);
-  }
 }
 
 function buildCalendarLinks(booking) {
@@ -250,10 +178,42 @@ function buildMessage(booking, status) {
 async function sendPushAlert(booking) {
   if (!supabaseService || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
   try {
-    const { data: rows, error } = await supabaseService
+    const { data: settings, error: settingsError } = await supabaseService
+      .from('app_settings')
+      .select('betaEnabled')
+      .eq('id', true)
+      .maybeSingle();
+    if (settingsError) return;
+
+    let subscriptionsQuery = supabaseService
       .from('push_subscriptions')
-      .select('endpoint, p256dh, auth');
+      .select('user_id, endpoint, p256dh, auth');
+
+    let recipientProfiles = [];
+
+    if (settings?.betaEnabled !== false) {
+      const { data: developers, error: developersError } = await supabaseService
+        .from('profiles')
+        .select('id, name, email')
+        .eq('isDeveloper', true);
+      if (developersError || !Array.isArray(developers) || developers.length === 0) return;
+      recipientProfiles = developers;
+      subscriptionsQuery = subscriptionsQuery.in('user_id', developers.map((profile) => profile.id));
+    }
+
+    const { data: rows, error } = await subscriptionsQuery;
     if (error || !Array.isArray(rows)) return;
+
+    if (settings?.betaEnabled === false && rows.length > 0) {
+      const userIds = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
+      const { data: profiles, error: profilesError } = await supabaseService
+        .from('profiles')
+        .select('id, name, email')
+        .in('id', userIds);
+      if (!profilesError && Array.isArray(profiles)) recipientProfiles = profiles;
+    }
+
+    const profilesById = new Map(recipientProfiles.map((profile) => [profile.id, profile]));
 
     const title = '🚨 Novo Pedido de Marcação!';
     const body = [
@@ -264,23 +224,40 @@ async function sendPushAlert(booking) {
     ].filter(Boolean).join(' · ');
     const payload = JSON.stringify({ title, body, url: '/admin' });
 
-    await Promise.allSettled(rows.map(async (row) => {
+    const results = await Promise.all(rows.map(async (row) => {
+      const profile = profilesById.get(row.user_id);
+      const recipient = {
+        userId: row.user_id,
+        name: profile?.name || 'Utilizador sem nome',
+        email: profile?.email || 'Email indisponível',
+      };
       const subscription = {
         endpoint: String(row.endpoint || '').trim(),
         keys: { p256dh: String(row.p256dh || '').trim(), auth: String(row.auth || '').trim() },
       };
-      if (!subscription.endpoint || !subscription.keys.p256dh || !subscription.keys.auth) return;
+      if (!subscription.endpoint || !subscription.keys.p256dh || !subscription.keys.auth) {
+        return { ...recipient, status: 'subscrição inválida' };
+      }
       try {
         await webpush.sendNotification(subscription, payload);
+        return { ...recipient, status: 'enviado' };
       } catch (e) {
         const status = Number(e?.statusCode || 0);
         if (status === 404 || status === 410) {
           try { await supabaseService.from('push_subscriptions').delete().eq('endpoint', subscription.endpoint); } catch {}
+          return { ...recipient, status: 'subscrição expirada removida' };
         } else {
           console.error('Erro ao enviar Web Push:', e?.message || e);
+          return { ...recipient, status: `falhou${status ? ` (${status})` : ''}` };
         }
       }
     }));
+
+    console.info('Web Push — resumo do envio:', {
+      betaEnabled: settings?.betaEnabled !== false,
+      bookingId: booking.id || null,
+      recipients: results,
+    });
   } catch (e) {
     console.error('Erro ao preparar Web Push:', e);
   }
@@ -292,16 +269,7 @@ export default async function handler(req, res) {
   }
 
   const booking = req.body?.booking;
-  const contactRequest = req.body?.contactRequest;
   const status = String(req.body?.status || '').trim();
-
-  if (status === 'contact-request') {
-    if (!contactRequest || typeof contactRequest !== 'object') {
-      return res.status(400).json({ message: 'Contact request payload is required.' });
-    }
-    void sendContactRequestDiscordAlert(contactRequest);
-    return res.json({ message: 'Contact request notification queued.' });
-  }
 
   if (!booking || typeof booking !== 'object') {
     return res.status(400).json({ message: 'Booking payload is required.' });
@@ -312,9 +280,7 @@ export default async function handler(req, res) {
 
   const transport = getTransport();
 
-  // Alerta Discord em segundo plano para novas marcações (não bloqueia a resposta).
   if (status === 'pending') {
-    void sendDiscordAlert(booking);
     void sendPushAlert(booking);
   }
 

@@ -17,13 +17,29 @@ if (window.location.hash && /otp_expired|access_denied/.test(window.location.has
 
 const path = window.location.pathname;
 
-// Registo do Service Worker apenas na área administrativa (escopo /admin).
+// Em desenvolvimento, limpar caches administrativos antigos. O Service Worker
+// continua ativo para permitir testar Web Push, mas não interceta pedidos fetch.
+if (path.startsWith('/admin') && import.meta.env.DEV) {
+  if ('caches' in window) {
+    void caches.keys().then((keys) =>
+      Promise.all(keys.filter((key) => key.startsWith('fb-admin-')).map((key) => caches.delete(key))),
+    );
+  }
+}
+
+// Registo do Service Worker apenas na área administrativa.
 // Não controla rotas públicas.
 if (path.startsWith('/admin') && 'serviceWorker' in navigator) {
   const registerSw = () => {
     navigator.serviceWorker
       .register('/sw.js', { scope: '/admin' })
       .then((registration) => {
+        const configureWorker = (worker: ServiceWorker | null) => {
+          if (import.meta.env.DEV && worker) worker.postMessage({ type: 'DEV_MODE' });
+        };
+        configureWorker(registration.installing);
+        configureWorker(registration.waiting);
+        configureWorker(registration.active);
         if (registration.waiting) {
           registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
@@ -31,6 +47,7 @@ if (path.startsWith('/admin') && 'serviceWorker' in navigator) {
           const newWorker = registration.installing;
           if (!newWorker) return;
           newWorker.addEventListener('statechange', () => {
+            configureWorker(newWorker);
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               newWorker.postMessage({ type: 'SKIP_WAITING' });
             }
