@@ -287,7 +287,7 @@ async function sendBookingNotifications(booking, status) {
       bodyHTML += `<p>Por favor, entre em contacto connosco para reagendar.</p>`;
     } else if (status === 'cancelled') {
       subject = '⚠️ Reserva Cancelada.';
-      bodyHTML += `<p>Olá ${user}, o seu ensaio foi cancelado pela equipa de administração.</p>`;
+      bodyHTML += `<p>Olá ${user}, o seu ensaio foi desmarcado pela equipa de administração.</p>`;
     } else if (status === 'rescheduled') {
       subject = '🔄 Reserva Reagendada.';
       bodyHTML += `<p>Olá ${user}, o seu ensaio foi reagendado.</p>`;
