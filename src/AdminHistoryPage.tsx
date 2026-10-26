@@ -1,9 +1,10 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ChevronRight, MessageCircle, Plus, Wallet, X } from 'lucide-react';
+import { AlertTriangle, CalendarClock, ChevronRight, Clock3, MessageCircle, Plus, Radio, RefreshCw, Wallet, X } from 'lucide-react';
 import * as api from './api';
 import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
 import AdminSetupDiagnostics from './components/ui/AdminSetupDiagnostics';
+import { isSupabaseConfigured, supabase } from './supabaseClient';
 
 type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
 
@@ -621,6 +622,30 @@ function consegueAbrirWhatsApp(booking: PastBooking): boolean {
   return normalizarNumeroWhatsApp(booking.contactPhone || '').length > 0;
 }
 
+function localDateKey(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+function availabilityBookingStart(booking: PastBooking): Date | null {
+  const parsed = new Date(`${booking.date}T${booking.time || '00:00'}:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function availabilityBookingEnd(booking: PastBooking): Date | null {
+  const start = availabilityBookingStart(booking);
+  if (!start) return null;
+  return new Date(start.getTime() + Math.max(0, Number(booking.duration) || 0) * 60 * 60 * 1000);
+}
+
+function formatAvailabilityTime(date: Date | null): string {
+  if (!date) return '--:--';
+  return date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+}
+
 function AdminHistoryPage() {
   const [bookings, setBookings] = useState<PastBooking[]>([]);
   const [contactRequests, setContactRequests] = useState<api.ApiContactRequest[]>([]);
@@ -635,6 +660,9 @@ function AdminHistoryPage() {
   const [authError, setAuthError] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [availabilityRefreshing, setAvailabilityRefreshing] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState('');
+  const [availabilityNow, setAvailabilityNow] = useState(() => new Date());
   const [minDelayDone, setMinDelayDone] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setMinDelayDone(true), 800);
@@ -952,6 +980,36 @@ function AdminHistoryPage() {
     });
   }, [bookings, viewFilter, periodScope]);
 
+  const roomAvailability = useMemo(() => {
+    const today = localDateKey(availabilityNow);
+    const scheduledBookings = bookings
+      .filter(
+        (booking) =>
+          booking.date === today && (booking.status === 'pending' || booking.status === 'confirmed'),
+      )
+      .sort(
+        (left, right) =>
+          (availabilityBookingStart(left)?.getTime() ?? 0) -
+          (availabilityBookingStart(right)?.getTime() ?? 0),
+      );
+
+    return rooms
+      .filter((room) => room.active)
+      .map((room) => {
+        const roomBookings = scheduledBookings.filter(
+          (booking) => booking.roomId === room.id || (!booking.roomId && booking.roomName === room.name),
+        );
+        const currentBooking = roomBookings.find((booking) => {
+          if (booking.status !== 'confirmed') return false;
+          const start = availabilityBookingStart(booking);
+          const end = availabilityBookingEnd(booking);
+          return Boolean(start && end && availabilityNow >= start && availabilityNow < end);
+        });
+
+        return { room, bookings: roomBookings, currentBooking };
+      });
+  }, [availabilityNow, bookings, rooms]);
+
   const selectedBooking = useMemo(
     () => bookings.find((booking) => booking.id === selectedBookingId) || null,
     [bookings, selectedBookingId],
@@ -1023,6 +1081,20 @@ function AdminHistoryPage() {
         return;
       }
       throw err;
+    }
+  };
+
+  const refreshAvailability = async (sessionToken = token) => {
+    if (!sessionToken || availabilityRefreshing) return;
+    setAvailabilityRefreshing(true);
+    setAvailabilityNow(new Date());
+    try {
+      await loadHistory(sessionToken);
+      setAvailabilityError('');
+    } catch {
+      setAvailabilityError('Não foi possível atualizar a disponibilidade das salas.');
+    } finally {
+      setAvailabilityRefreshing(false);
     }
   };
 
@@ -1107,8 +1179,9 @@ function AdminHistoryPage() {
       setCurrentUser(payload.user);
       setAuthError('');
 
+      await loadCatalogs();
       if (isPrivilegedRole(payload.user.role)) {
-        await Promise.all([loadFinance(sessionToken), loadCatalogs(), loadUsers(sessionToken)]);
+        await Promise.all([loadFinance(sessionToken), loadUsers(sessionToken)]);
       }
       await loadContactRequests(sessionToken);
     } catch (_error) {
@@ -1141,8 +1214,9 @@ function AdminHistoryPage() {
       setLoginPassword('');
       await loadHistory(payload.token);
       await loadContactRequests(payload.token);
+      await loadCatalogs();
       if (isPrivilegedRole(payload.user.role)) {
-        await Promise.all([loadFinance(payload.token), loadCatalogs(), loadUsers(payload.token)]);
+        await Promise.all([loadFinance(payload.token), loadUsers(payload.token)]);
       }
     } catch (authErr) {
       // Falha: regista a tentativa; ao fim de MAX_LOGIN_ATTEMPTS bloqueia por LOCKOUT_MS.
@@ -2192,6 +2266,35 @@ function AdminHistoryPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!token || !currentUser) return;
+
+    const clockInterval = window.setInterval(() => setAvailabilityNow(new Date()), 30_000);
+    const refreshInterval = window.setInterval(() => {
+      void refreshAvailability(token);
+    }, 60_000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void refreshAvailability(token);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const channel = isSupabaseConfigured
+      ? supabase
+          .channel('admin-room-availability')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+            void refreshAvailability(token);
+          })
+          .subscribe()
+      : null;
+
+    return () => {
+      window.clearInterval(clockInterval);
+      window.clearInterval(refreshInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (channel) void supabase.removeChannel(channel);
+    };
+  }, [token, currentUser]);
+
   if (!currentUser) {
     return (
       <>
@@ -3105,6 +3208,104 @@ function AdminHistoryPage() {
         {activePanel === 'devtools' ? (
           <section className="card admin-section catalog-management-section">
             {currentUser ? <AdminSetupDiagnostics token={token} userId={currentUser.id} /> : null}
+          </section>
+        ) : null}
+
+        {activePanel === 'unified' && !loading ? (
+          <section className="card admin-section room-availability-card" aria-labelledby="room-availability-title">
+            <div className="room-availability-header">
+              <div className="section-heading">
+                <p className="eyebrow room-availability-live-label">
+                  <Radio size={14} aria-hidden="true" />
+                  Disponibilidade em tempo real
+                </p>
+                <h2 id="room-availability-title">Salas hoje</h2>
+                <p className="summary-copy">
+                  Estado às {formatAvailabilityTime(availabilityNow)} · atualização automática
+                </p>
+              </div>
+              <button
+                type="button"
+                className="secondary-button room-availability-refresh"
+                disabled={availabilityRefreshing}
+                onClick={() => void refreshAvailability()}
+              >
+                <RefreshCw className={availabilityRefreshing ? 'room-availability-refresh-icon' : ''} size={16} aria-hidden="true" />
+                {availabilityRefreshing ? 'A atualizar...' : 'Atualizar'}
+              </button>
+            </div>
+
+            {availabilityError ? <p className="admin-message-error">{availabilityError}</p> : null}
+
+            {catalogLoading ? (
+              <div className="room-availability-state" role="status">
+                <RefreshCw className="room-availability-refresh-icon" size={20} aria-hidden="true" />
+                <span>A carregar disponibilidade...</span>
+              </div>
+            ) : roomAvailability.length === 0 ? (
+              <div className="room-availability-state">
+                <CalendarClock size={20} aria-hidden="true" />
+                <span>Não existem salas ativas para apresentar.</span>
+              </div>
+            ) : (
+              <div className="room-availability-grid">
+                {roomAvailability.map(({ room, bookings: roomBookings, currentBooking }) => (
+                  <article
+                    key={room.id}
+                    className={`room-availability-item ${currentBooking ? 'room-availability-item-occupied' : ''}`}
+                    style={{ borderTopColor: room.accent }}
+                  >
+                    <div className="room-availability-room-header">
+                      <div>
+                        <p className="room-availability-room-name">{room.name}</p>
+                        <p className="room-availability-room-count">
+                          {roomBookings.length === 0
+                            ? 'Sem ensaios hoje'
+                            : `${roomBookings.length} ensaio${roomBookings.length === 1 ? '' : 's'} hoje`}
+                        </p>
+                      </div>
+                      <span className={`room-availability-status ${currentBooking ? 'is-occupied' : 'is-free'}`}>
+                        {currentBooking ? 'Ocupada' : 'Livre'}
+                      </span>
+                    </div>
+
+                    {currentBooking ? (
+                      <div className="room-availability-current">
+                        <span className="room-availability-current-label">A decorrer agora</span>
+                        <strong>{currentBooking.bandName || currentBooking.contactName || 'Ensaio'}</strong>
+                        <span>
+                          {currentBooking.time}–{formatAvailabilityTime(availabilityBookingEnd(currentBooking))}
+                        </span>
+                      </div>
+                    ) : null}
+
+                    <div className="room-availability-schedule">
+                      <p className="room-availability-schedule-title">
+                        <Clock3 size={15} aria-hidden="true" />
+                        Agenda do dia
+                      </p>
+                      {roomBookings.length === 0 ? (
+                        <p className="room-availability-empty">Sala disponível durante todo o dia.</p>
+                      ) : (
+                        <ul>
+                          {roomBookings.map((booking) => (
+                            <li key={booking.id} className={booking.id === currentBooking?.id ? 'is-current' : ''}>
+                              <span className="room-availability-time">
+                                {booking.time}–{formatAvailabilityTime(availabilityBookingEnd(booking))}
+                              </span>
+                              <span className="room-availability-booking-name">
+                                {booking.bandName || booking.contactName || 'Ensaio'}
+                              </span>
+                              <span className={`status-chip status-${booking.status}`}>{statusLabel[booking.status]}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
         ) : null}
 
