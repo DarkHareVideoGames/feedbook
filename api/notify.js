@@ -217,7 +217,7 @@ function buildMessage(booking, status) {
       subject: '⚠️ Reserva Cancelada.',
       html:
         head +
-        `<p>Olá ${user}, o seu ensaio foi cancelado pela equipa de administração.</p>` +
+        `<p>Olá ${user}, o seu ensaio foi desmarcado pela equipa de administração.</p>` +
         signature,
     };
   }
