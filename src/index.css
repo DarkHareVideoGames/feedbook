@@ -1955,6 +1955,236 @@ textarea:focus {
   padding: 24px;
 }
 
+.room-availability-card {
+  display: grid;
+  gap: 18px;
+  border-color: rgba(74, 222, 128, 0.22);
+  background:
+    radial-gradient(circle at top right, rgba(74, 222, 128, 0.08), transparent 34%),
+    var(--surface);
+}
+
+.room-availability-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.room-availability-live-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #86efac;
+}
+
+.room-availability-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+}
+
+.room-availability-refresh-icon {
+  animation: room-availability-spin 900ms linear infinite;
+}
+
+@keyframes room-availability-spin {
+  to { transform: rotate(360deg); }
+}
+
+.room-availability-state {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  color: var(--text-muted);
+}
+
+.room-availability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 14px;
+}
+
+.room-availability-item {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-top: 4px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.room-availability-item-occupied {
+  border-right-color: rgba(248, 113, 113, 0.38);
+  border-bottom-color: rgba(248, 113, 113, 0.38);
+  border-left-color: rgba(248, 113, 113, 0.38);
+  box-shadow: inset 0 0 24px rgba(239, 68, 68, 0.055);
+}
+
+.room-availability-room-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.room-availability-room-name,
+.room-availability-room-count,
+.room-availability-schedule-title,
+.room-availability-empty {
+  margin: 0;
+}
+
+.room-availability-room-name {
+  color: var(--text-main);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.room-availability-room-count,
+.room-availability-empty {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.room-availability-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.room-availability-status.is-free {
+  border-color: rgba(74, 222, 128, 0.48);
+  background: rgba(74, 222, 128, 0.12);
+  color: #86efac;
+}
+
+.room-availability-status.is-occupied {
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+}
+
+.room-availability-current {
+  display: grid;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  border-radius: 12px;
+  background: rgba(127, 29, 29, 0.15);
+}
+
+.room-availability-current strong {
+  color: var(--text-main);
+}
+
+.room-availability-current span:last-child {
+  color: #fecaca;
+  font-size: 0.84rem;
+}
+
+.room-availability-current-label {
+  color: #fca5a5;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.room-availability-schedule {
+  display: grid;
+  gap: 9px;
+}
+
+.room-availability-schedule-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.room-availability-schedule ul {
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  padding: 0;
+  margin: 0;
+}
+
+.room-availability-schedule li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 9px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.room-availability-schedule li.is-current {
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.room-availability-time {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.room-availability-booking-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .room-availability-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .room-availability-refresh {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .room-availability-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .room-availability-schedule li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .room-availability-schedule li .status-chip {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
 .catalog-management-section {
   display: grid;
   gap: 16px;
