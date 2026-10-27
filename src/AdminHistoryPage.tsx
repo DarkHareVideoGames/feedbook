@@ -229,6 +229,29 @@ type ServiceFormDraft = {
   active: boolean;
 };
 
+const defaultRoomAccent = '#d11323';
+
+const legacyRoomAccentColors: Record<string, string> = {
+  'var(--room-red)': '#d11323',
+  'var(--room-grey)': '#8e949f',
+  'var(--room-purple)': '#540099',
+};
+
+function roomAccentToHex(value: string | null | undefined): string | null {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  const legacyColor = legacyRoomAccentColors[normalized];
+  if (legacyColor) return legacyColor;
+  if (/^#[0-9a-f]{6}$/.test(normalized)) return normalized;
+  if (/^#[0-9a-f]{3}$/.test(normalized)) {
+    return `#${normalized
+      .slice(1)
+      .split('')
+      .map((character) => `${character}${character}`)
+      .join('')}`;
+  }
+  return null;
+}
+
 const emptyRoomForm: RoomFormDraft = {
   id: '',
   name: '',
@@ -242,7 +265,7 @@ const emptyRoomForm: RoomFormDraft = {
   longDescription: '',
   longDescriptionEn: '',
   bookingMode: 'booking',
-  accent: 'var(--room-red)',
+  accent: defaultRoomAccent,
   active: true,
 };
 
@@ -270,7 +293,7 @@ function roomToForm(room: api.ApiRoom): RoomFormDraft {
     gearEn: (room.gearEn ?? []).join('\n'),
     longDescription: room.longDescription,
     longDescriptionEn: room.longDescriptionEn,
-    accent: room.accent || 'var(--room-red)',
+    accent: roomAccentToHex(room.accent) ?? defaultRoomAccent,
     active: room.active !== false,
     bookingMode: room.bookingMode,
   };
@@ -1739,6 +1762,11 @@ function AdminHistoryPage() {
       setError('Preco da sala invalido. Indica um valor (>= 0).');
       return;
     }
+    const accent = roomAccentToHex(roomForm.accent);
+    if (!accent) {
+      setError('Cor da sala invalida. Usa um hexadecimal como #d11323.');
+      return;
+    }
     setCatalogNotice('');
     setError('');
     setRoomSaveLoading(true);
@@ -1774,7 +1802,7 @@ function AdminHistoryPage() {
         gearEn: roomForm.gearEn,
         longDescription: roomForm.longDescription,
         longDescriptionEn: roomForm.longDescriptionEn,
-        accent: roomForm.accent,
+        accent,
         active: roomForm.active,
         bookingMode: roomForm.bookingMode,
       };
@@ -3444,18 +3472,36 @@ function AdminHistoryPage() {
                     />
                   </label>
               </div>
-              <div className="field-row">
-                <label>
-                  Cor de destaque
-                  <select
-                    value={roomForm.accent}
-                    onChange={(event) => setRoomForm((current) => ({ ...current, accent: event.target.value }))}
-                  >
-                    <option value="var(--room-red)">Vermelho</option>
-                    <option value="var(--room-grey)">Cinzento</option>
-                    <option value="var(--room-purple)">Roxo</option>
-                  </select>
-                </label>
+              <div className="field-row room-editor-settings">
+                <fieldset className="room-editor-color-fieldset">
+                  <legend>Cor de destaque</legend>
+                  <div className="room-editor-color-control">
+                    <input
+                      className="room-editor-color-picker"
+                      type="color"
+                      aria-label="Escolher cor da sala"
+                      value={roomAccentToHex(roomForm.accent) ?? defaultRoomAccent}
+                      onChange={(event) => setRoomForm((current) => ({ ...current, accent: event.target.value }))}
+                    />
+                    <input
+                      className="room-editor-color-value"
+                      type="text"
+                      aria-label="Cor hexadecimal da sala"
+                      autoComplete="off"
+                      spellCheck={false}
+                      maxLength={7}
+                      placeholder="#d11323"
+                      value={roomForm.accent}
+                      onChange={(event) => setRoomForm((current) => ({ ...current, accent: event.target.value }))}
+                    />
+                    <span
+                      className="room-editor-color-preview"
+                      style={{ backgroundColor: roomAccentToHex(roomForm.accent) ?? defaultRoomAccent }}
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <small>Escolhe qualquer cor ou escreve um valor hexadecimal.</small>
+                </fieldset>
                 <label className="extra-toggle">
                   <input
                     type="checkbox"
