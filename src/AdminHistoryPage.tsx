@@ -4215,14 +4215,16 @@ function AdminHistoryPage() {
             </div>
 
             <footer className="booking-detail-footer contact-request-detail-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                disabled={Boolean(actionLoading[selectedContactRequest.id]) || selectedContactRequest.status !== 'pending'}
-                onClick={handleContactRequestContact}
-              >
-                {actionLoading[selectedContactRequest.id] || contactRequestConfirmLoading ? 'A processar...' : 'Contactar'}
-              </button>
+              {selectedContactRequest.status === 'pending' ? (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={Boolean(actionLoading[selectedContactRequest.id])}
+                  onClick={handleContactRequestContact}
+                >
+                  {actionLoading[selectedContactRequest.id] || contactRequestConfirmLoading ? 'A processar...' : 'Contactar'}
+                </button>
+              ) : null}
               {currentUser?.role === 'superuser' ? (
                 <button
                   type="button"
