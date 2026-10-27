@@ -3270,48 +3270,78 @@ function AdminHistoryPage() {
                   />
                 </label>
               </div>
-              <label>
-                Modo de reserva
-                <select
-                  value={roomForm.bookingMode}
-                  onChange={(event) => setRoomForm((current) => ({
-                    ...current,
-                    bookingMode: event.target.value === 'contact' ? 'contact' : 'booking',
-                  }))}
-                >
-                  <option value="booking">Marcação direta</option>
-                  <option value="contact">Apenas pedido de contacto</option>
-                </select>
-              </label>
-              <div className="field-row">
-                <label>
-                  Foto da sala (recomendado 1200 × 675 px, 16:9, max 5 MB)
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(event) => setRoomImageFile(event.target.files?.[0] ?? null)}
-                  />
-                </label>
-                {roomImageFile || roomForm.imageUrl ? (
-                  <div className="room-image-preview">
-                    <img
-                      src={roomImageFile ? URL.createObjectURL(roomImageFile) : roomForm.imageUrl}
-                      alt="Pre-visualizacao da foto da sala"
+              <fieldset className="room-editor-mode-fieldset">
+                <legend>Modo de reserva</legend>
+                <div className="room-editor-mode-options">
+                  <label className={roomForm.bookingMode === 'booking' ? 'is-selected' : ''}>
+                    <input
+                      type="radio"
+                      name="room-booking-mode"
+                      checked={roomForm.bookingMode === 'booking'}
+                      onChange={() => setRoomForm((current) => ({ ...current, bookingMode: 'booking' }))}
                     />
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      disabled={roomImageUploading || roomSaveLoading}
-                      onClick={() => {
-                        setRoomImageFile(null);
-                        setRoomForm((current) => ({ ...current, imageUrl: '' }));
-                      }}
-                    >
-                      Remover foto
-                    </button>
+                    <span>
+                      <strong>Marcação direta</strong>
+                      <small>O cliente escolhe data e hora.</small>
+                    </span>
+                  </label>
+                  <label className={roomForm.bookingMode === 'contact' ? 'is-selected' : ''}>
+                    <input
+                      type="radio"
+                      name="room-booking-mode"
+                      checked={roomForm.bookingMode === 'contact'}
+                      onChange={() => setRoomForm((current) => ({ ...current, bookingMode: 'contact' }))}
+                    />
+                    <span>
+                      <strong>Pedido de contacto</strong>
+                      <small>A equipa combina a reserva com o cliente.</small>
+                    </span>
+                  </label>
+                </div>
+              </fieldset>
+              <section className="room-editor-image-section">
+                <div className="room-editor-section-heading">
+                  <strong>Imagem da sala</strong>
+                  <small>Recomendado: 1200 × 675 px, formato 16:9, máximo 5 MB.</small>
+                </div>
+                <div className="room-editor-image-grid">
+                  <div className="room-editor-image-preview">
+                    {roomImageFile || roomForm.imageUrl ? (
+                      <img
+                        src={roomImageFile ? URL.createObjectURL(roomImageFile) : roomForm.imageUrl}
+                        alt="Pré-visualização da foto da sala"
+                      />
+                    ) : (
+                      <span>Sem imagem</span>
+                    )}
                   </div>
-                ) : null}
-              </div>
+                  <div className="room-editor-image-controls">
+                    <label>
+                      Escolher imagem
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        disabled={roomImageUploading || roomSaveLoading}
+                        onChange={(event) => setRoomImageFile(event.target.files?.[0] ?? null)}
+                      />
+                    </label>
+                    {roomImageFile || roomForm.imageUrl ? (
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        disabled={roomImageUploading || roomSaveLoading}
+                        onClick={() => {
+                          setRoomImageFile(null);
+                          setRoomForm((current) => ({ ...current, imageUrl: '' }));
+                        }}
+                      >
+                        Remover imagem
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </section>
+              <div className="room-editor-language-grid">
               <label>
                 Descricao (PT)
                 <textarea
@@ -3328,6 +3358,8 @@ function AdminHistoryPage() {
                   onChange={(event) => setRoomForm((current) => ({ ...current, descriptionEn: event.target.value }))}
                 />
               </label>
+              </div>
+              <div className="room-editor-language-grid">
               <label>
                 Descricao longa (PT)
                 <textarea
@@ -3344,9 +3376,8 @@ function AdminHistoryPage() {
                   onChange={(event) => setRoomForm((current) => ({ ...current, longDescriptionEn: event.target.value }))}
                 />
               </label>
-              <details className="admin-collapsible">
-                <summary className="admin-collapsible-summary">Ver equipamento</summary>
-                <div className="field-row">
+              </div>
+              <div className="room-editor-language-grid room-editor-equipment-grid">
                   <label>
                     Equipamento PT (um por linha)
                     <textarea
@@ -3363,8 +3394,7 @@ function AdminHistoryPage() {
                       onChange={(event) => setRoomForm((current) => ({ ...current, gearEn: event.target.value }))}
                     />
                   </label>
-                </div>
-              </details>
+              </div>
               <div className="field-row">
                 <label>
                   Cor de destaque
