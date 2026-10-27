@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CalendarClock, ChevronRight, Clock3, MessageCircle, Plus, Radio, RefreshCw, Wallet, X } from 'lucide-react';
+import { AlertTriangle, CalendarClock, ChevronRight, CircleCheck, CircleDashedCheck, Clock3, MessageCircle, Plus, Radio, RefreshCw, Wallet, X } from 'lucide-react';
 import * as api from './api';
 import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
@@ -630,6 +630,34 @@ function localDateKey(date: Date): string {
   ].join('-');
 }
 
+function availabilityWeekRange(date: Date): { start: Date; end: Date; startKey: string; endKey: string } {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const weekday = start.getDay();
+  start.setDate(start.getDate() - (weekday === 0 ? 6 : weekday - 1));
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { start, end, startKey: localDateKey(start), endKey: localDateKey(end) };
+}
+
+function formatAvailabilityDay(dateKey: string, todayKey: string): string {
+  if (dateKey === todayKey) return 'Hoje';
+  const date = new Date(`${dateKey}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return dateKey;
+  const weekday = date.toLocaleDateString('pt-PT', { weekday: 'short' }).replace('.', '');
+  return `${weekday} ${date.getDate()}`;
+}
+
+function contactRequestDateKey(request: api.ApiContactRequest): string {
+  const createdAt = new Date(request.createdAt);
+  return Number.isNaN(createdAt.getTime()) ? '' : localDateKey(createdAt);
+}
+
+const contactRequestStatusLabel: Record<api.ContactRequestStatus, string> = {
+  pending: 'Novo',
+  contacted: 'Contactado',
+  closed: 'Fechado',
+};
+
 function availabilityBookingStart(booking: PastBooking): Date | null {
   const parsed = new Date(`${booking.date}T${booking.time || '00:00'}:00`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
@@ -660,7 +688,7 @@ function AdminHistoryPage() {
   const [authError, setAuthError] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [availabilityRefreshing, setAvailabilityRefreshing] = useState(false);
+  const availabilityRefreshInFlight = useRef(false);
   const [availabilityError, setAvailabilityError] = useState('');
   const [availabilityNow, setAvailabilityNow] = useState(() => new Date());
   const [minDelayDone, setMinDelayDone] = useState(false);
@@ -769,6 +797,17 @@ function AdminHistoryPage() {
     function: null,
   });
   const [editUserDraft, setEditUserDraft] = useState<EditUserDraft | null>(null);
+
+  useEffect(() => {
+    if (!catalogNotice) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      setCatalogNotice('');
+    }, 3200);
+
+    return () => window.clearTimeout(timeout);
+  }, [catalogNotice]);
+
   // Superuser e admin têm acesso total (utilizadores, salas, serviços, preços, contas).
   const isPrivilegedRole = (role: Role | null | undefined) => role === 'admin' || role === 'superuser';
   const isPrivileged = isPrivilegedRole(currentUser?.role);
@@ -982,10 +1021,13 @@ function AdminHistoryPage() {
 
   const roomAvailability = useMemo(() => {
     const today = localDateKey(availabilityNow);
+    const week = availabilityWeekRange(availabilityNow);
     const scheduledBookings = bookings
       .filter(
         (booking) =>
-          booking.date === today && (booking.status === 'pending' || booking.status === 'confirmed'),
+          booking.date >= week.startKey &&
+          booking.date <= week.endKey &&
+          (booking.status === 'pending' || booking.status === 'confirmed'),
       )
       .sort(
         (left, right) =>
@@ -999,16 +1041,40 @@ function AdminHistoryPage() {
         const roomBookings = scheduledBookings.filter(
           (booking) => booking.roomId === room.id || (!booking.roomId && booking.roomName === room.name),
         );
+        const roomContactRequests = contactRequests
+          .filter((request) => {
+            const requestDate = contactRequestDateKey(request);
+            return (
+              requestDate >= week.startKey &&
+              requestDate <= week.endKey &&
+              (request.roomId === room.id || (!request.roomId && request.roomName === room.name))
+            );
+          })
+          .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
         const currentBooking = roomBookings.find((booking) => {
-          if (booking.status !== 'confirmed') return false;
+          if (booking.date !== today || booking.status !== 'confirmed') return false;
           const start = availabilityBookingStart(booking);
           const end = availabilityBookingEnd(booking);
           return Boolean(start && end && availabilityNow >= start && availabilityNow < end);
         });
 
-        return { room, bookings: roomBookings, currentBooking };
+        const days = Array.from(
+          roomBookings.reduce((groups, booking) => {
+            const dayBookings = groups.get(booking.date) || [];
+            dayBookings.push(booking);
+            groups.set(booking.date, dayBookings);
+            return groups;
+          }, new Map<string, PastBooking[]>()),
+          ([date, dayBookings]) => ({
+            date,
+            label: formatAvailabilityDay(date, today),
+            bookings: dayBookings,
+          }),
+        );
+
+        return { room, bookings: roomBookings, currentBooking, days, contactRequests: roomContactRequests };
       });
-  }, [availabilityNow, bookings, rooms]);
+  }, [availabilityNow, bookings, contactRequests, rooms]);
 
   const selectedBooking = useMemo(
     () => bookings.find((booking) => booking.id === selectedBookingId) || null,
@@ -1085,16 +1151,16 @@ function AdminHistoryPage() {
   };
 
   const refreshAvailability = async (sessionToken = token) => {
-    if (!sessionToken || availabilityRefreshing) return;
-    setAvailabilityRefreshing(true);
+    if (!sessionToken || availabilityRefreshInFlight.current) return;
+    availabilityRefreshInFlight.current = true;
     setAvailabilityNow(new Date());
     try {
-      await loadHistory(sessionToken);
+      await Promise.all([loadHistory(sessionToken), loadContactRequests(sessionToken)]);
       setAvailabilityError('');
     } catch {
       setAvailabilityError('Não foi possível atualizar a disponibilidade das salas.');
     } finally {
-      setAvailabilityRefreshing(false);
+      availabilityRefreshInFlight.current = false;
     }
   };
 
@@ -2284,6 +2350,9 @@ function AdminHistoryPage() {
           .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
             void refreshAvailability(token);
           })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_requests' }, () => {
+            void refreshAvailability(token);
+          })
           .subscribe()
       : null;
 
@@ -2363,6 +2432,13 @@ function AdminHistoryPage() {
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
 
+      {catalogNotice ? (
+        <div className="admin-toast" role="status" aria-live="polite">
+          <CircleCheck size={18} aria-hidden="true" />
+          <span>{catalogNotice}</span>
+        </div>
+      ) : null}
+
       {(betaEnabled || isSuperuser) ? (
         <div className="admin-beta-banner beta-only" role="note">
           <span className="admin-beta-badge">{betaEnabled ? 'Beta' : 'Beta desativada'}</span>
@@ -2388,6 +2464,20 @@ function AdminHistoryPage() {
 
       <header className="topbar admin-topbar">
         <div className="brand-wrap">
+          {currentUser ? (
+            <button
+              type="button"
+              className="admin-user-chip admin-user-chip-button"
+              title={currentUser.email}
+              onClick={() => setLogoutModalOpen(true)}
+            >
+              <span className="admin-user-chip-name">{currentUser.name}</span>
+              <span className={`admin-user-chip-role admin-role-${currentUser.role}`}>
+                {roleLabel[currentUser.role]}
+                {currentUser.function ? ` · ${staffFunctionLabels[currentUser.function]}` : ''}
+              </span>
+            </button>
+          ) : null}
           {adminLogoVisible ? (
             <img
               className="admin-brand-logo"
@@ -2512,24 +2602,7 @@ function AdminHistoryPage() {
         </aside>
 
         <div className="admin-content">
-          <div className="admin-content-bar">
-            {currentUser ? (
-              <button
-                type="button"
-                className="admin-user-chip admin-user-chip-button"
-                title={currentUser.email}
-                onClick={() => setLogoutModalOpen(true)}
-              >
-                <span className="admin-user-chip-name">{currentUser.name}</span>
-                <span className={`admin-user-chip-role admin-role-${currentUser.role}`}>
-                  {roleLabel[currentUser.role]}
-                  {currentUser.function ? ` · ${staffFunctionLabels[currentUser.function]}` : ''}
-                </span>
-              </button>
-            ) : null}
-          </div>
           {error ? <p className="admin-message-error">{error}</p> : null}
-          {catalogNotice ? <p className="confirmation">{catalogNotice}</p> : null}
           {loading ? <p className="summary-copy">A carregar...</p> : null}
 
           {activePanel === 'contact-requests' ? (
@@ -3212,27 +3285,14 @@ function AdminHistoryPage() {
         ) : null}
 
         {activePanel === 'unified' && !loading ? (
-          <section className="card admin-section room-availability-card" aria-labelledby="room-availability-title">
+          <section className="card admin-section room-availability-card" aria-label="Disponibilidade das salas">
             <div className="room-availability-header">
               <div className="section-heading">
                 <p className="eyebrow room-availability-live-label">
                   <Radio size={14} aria-hidden="true" />
                   Disponibilidade em tempo real
                 </p>
-                <h2 id="room-availability-title">Salas hoje</h2>
-                <p className="summary-copy">
-                  Estado às {formatAvailabilityTime(availabilityNow)} · atualização automática
-                </p>
               </div>
-              <button
-                type="button"
-                className="secondary-button room-availability-refresh"
-                disabled={availabilityRefreshing}
-                onClick={() => void refreshAvailability()}
-              >
-                <RefreshCw className={availabilityRefreshing ? 'room-availability-refresh-icon' : ''} size={16} aria-hidden="true" />
-                {availabilityRefreshing ? 'A atualizar...' : 'Atualizar'}
-              </button>
             </div>
 
             {availabilityError ? <p className="admin-message-error">{availabilityError}</p> : null}
@@ -3249,7 +3309,7 @@ function AdminHistoryPage() {
               </div>
             ) : (
               <div className="room-availability-grid">
-                {roomAvailability.map(({ room, bookings: roomBookings, currentBooking }) => (
+                {roomAvailability.map(({ room, bookings: roomBookings, currentBooking, days, contactRequests: roomContactRequests }) => (
                   <article
                     key={room.id}
                     className={`room-availability-item ${currentBooking ? 'room-availability-item-occupied' : ''}`}
@@ -3259,9 +3319,9 @@ function AdminHistoryPage() {
                       <div>
                         <p className="room-availability-room-name">{room.name}</p>
                         <p className="room-availability-room-count">
-                          {roomBookings.length === 0
-                            ? 'Sem ensaios hoje'
-                            : `${roomBookings.length} ensaio${roomBookings.length === 1 ? '' : 's'} hoje`}
+                          {room.bookingMode === 'contact'
+                            ? `${roomContactRequests.length} pedido${roomContactRequests.length === 1 ? '' : 's'}`
+                            : `${roomBookings.length} ensaio${roomBookings.length === 1 ? '' : 's'}`}
                         </p>
                       </div>
                       <span className={`room-availability-status ${currentBooking ? 'is-occupied' : 'is-free'}`}>
@@ -3279,29 +3339,81 @@ function AdminHistoryPage() {
                       </div>
                     ) : null}
 
-                    <div className="room-availability-schedule">
-                      <p className="room-availability-schedule-title">
-                        <Clock3 size={15} aria-hidden="true" />
-                        Agenda do dia
-                      </p>
-                      {roomBookings.length === 0 ? (
-                        <p className="room-availability-empty">Sala disponível durante todo o dia.</p>
-                      ) : (
-                        <ul>
-                          {roomBookings.map((booking) => (
-                            <li key={booking.id} className={booking.id === currentBooking?.id ? 'is-current' : ''}>
-                              <span className="room-availability-time">
-                                {booking.time}–{formatAvailabilityTime(availabilityBookingEnd(booking))}
-                              </span>
-                              <span className="room-availability-booking-name">
-                                {booking.bandName || booking.contactName || 'Ensaio'}
-                              </span>
-                              <span className={`status-chip status-${booking.status}`}>{statusLabel[booking.status]}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
+                    {room.bookingMode === 'booking' || roomBookings.length > 0 ? (
+                      <div className="room-availability-schedule">
+                        <p className="room-availability-schedule-title">
+                          <Clock3 size={15} aria-hidden="true" />
+                          Agenda semanal
+                        </p>
+                        {roomBookings.length === 0 ? (
+                          <p className="room-availability-empty">Sem marcações de segunda a domingo.</p>
+                        ) : (
+                          <div className="room-availability-days">
+                            {days.map((day) => (
+                              <div key={day.date} className="room-availability-day">
+                                <p className={`room-availability-day-label ${day.date === localDateKey(availabilityNow) ? 'is-today' : ''}`}>
+                                  {day.label}
+                                </p>
+                                <ul>
+                                  {day.bookings.map((booking) => (
+                                    <li key={booking.id} className={booking.id === currentBooking?.id ? 'is-current' : ''}>
+                                      <span className="room-availability-time">
+                                        {booking.time}–{formatAvailabilityTime(availabilityBookingEnd(booking))}
+                                      </span>
+                                      <span className="room-availability-booking-name">
+                                        {booking.bandName || booking.contactName || 'Ensaio'}
+                                      </span>
+                                      <span
+                                        className={`room-availability-booking-status is-${booking.status}`}
+                                        aria-label={statusLabel[booking.status]}
+                                        title={statusLabel[booking.status]}
+                                      >
+                                        {booking.status === 'confirmed' ? (
+                                          <CircleCheck size={17} aria-hidden="true" />
+                                        ) : (
+                                          <CircleDashedCheck size={17} aria-hidden="true" />
+                                        )}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+
+                    {room.bookingMode === 'contact' ? (
+                      <div className="room-availability-contacts">
+                        <p className="room-availability-schedule-title">
+                          <MessageCircle size={15} aria-hidden="true" />
+                          Pedidos de contacto
+                        </p>
+                        {roomContactRequests.length === 0 ? (
+                          <p className="room-availability-empty">Sem pedidos recebidos esta semana.</p>
+                        ) : (
+                          <ul>
+                            {roomContactRequests.map((request) => {
+                              const requestDate = contactRequestDateKey(request);
+                              return (
+                                <li key={request.id}>
+                                  <span className="room-availability-contact-date">
+                                    {formatAvailabilityDay(requestDate, localDateKey(availabilityNow))}
+                                  </span>
+                                  <span className="room-availability-booking-name">
+                                    {request.bandName || request.contactName || 'Pedido de contacto'}
+                                  </span>
+                                  <span className={`room-availability-contact-status is-${request.status}`}>
+                                    {contactRequestStatusLabel[request.status]}
+                                  </span>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    ) : null}
                   </article>
                 ))}
               </div>
@@ -3505,21 +3617,21 @@ function AdminHistoryPage() {
             ) : null}
 
             <div className="history-toolbar">
-              <div className="history-filters" role="group" aria-label="Filtros de historico">
-                {HISTORY_FILTER_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`history-filter ${viewFilter === option.value ? 'history-filter-active' : ''}`}
-                    aria-pressed={viewFilter === option.value}
-                    onClick={() => setViewFilter(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+              <label className="history-select">
+                <span>Filtro</span>
+                <select
+                  value={viewFilter}
+                  onChange={(event) => setViewFilter(event.target.value as HistoryFilter)}
+                >
+                  {HISTORY_FILTER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-              <label className="history-period" title="Limitar registos antigos (o futuro fica sempre visivel)">
+              <label className="history-select" title="Limitar registos antigos (o futuro fica sempre visivel)">
                 <span>Periodo</span>
                 <select
                   value={periodScope}
@@ -3638,7 +3750,7 @@ function AdminHistoryPage() {
               </div>
             ) : null}
             {filteredBookings.length === 0 && !loading ? (
-              <p className="summary-copy">Sem ensaios para os filtros atuais. A zona de perigo abaixo continua disponivel para o superuser.</p>
+              <p className="summary-copy">Sem ensaios para mostrar.</p>
             ) : null}
 
             {currentUser?.role === 'superuser' ? (

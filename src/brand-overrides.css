@@ -6,6 +6,14 @@
   justify-items: center;
 }
 
+.admin-topbar {
+  margin-bottom: 12px;
+}
+
+.admin-topbar .brand-wrap {
+  gap: 8px;
+}
+
 .brand-logo,
 .admin-brand-logo {
   width: min(100%, 420px);
@@ -32,12 +40,6 @@
   border-color: #ef3444;
   background: rgba(209, 19, 35, 0.16);
   color: #fff;
-}
-
-@media (min-width: 901px) {
-  .admin-sidebar {
-    margin-top: 80px;
-  }
 }
 
 @media (max-width: 900px) {
