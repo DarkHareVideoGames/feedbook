@@ -4218,6 +4218,73 @@ textarea:focus {
   border-top: 1px solid var(--border);
 }
 
+.room-editor-settings {
+  align-items: end;
+}
+
+.room-editor-color-fieldset {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.room-editor-color-fieldset legend {
+  margin-bottom: 7px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.room-editor-color-fieldset small {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.room-editor-color-control {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 22px;
+  gap: 8px;
+  align-items: center;
+}
+
+.room-editor-color-picker {
+  width: 54px;
+  min-height: 42px;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.room-editor-color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.room-editor-color-picker::-webkit-color-swatch {
+  border: 0;
+  border-radius: 6px;
+}
+
+.room-editor-color-picker::-moz-color-swatch {
+  border: 0;
+  border-radius: 6px;
+}
+
+.room-editor-color-value {
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  text-transform: lowercase;
+}
+
+.room-editor-color-preview {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.32);
+}
+
 .room-editor-actions {
   position: sticky;
   bottom: 0;
