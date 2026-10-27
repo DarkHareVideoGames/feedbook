@@ -350,6 +350,137 @@ async function sendContactRequestNotification(contactRequest) {
   }
 }
 
+// New function and endpoint for contact request reply
+async function sendContactRequestReply(contactRequest, replyText, replyTo, channel) {
+  const recipientEmail = String(contactRequest.email || '').trim().toLowerCase();
+  if (recipientEmail && emailTransport) {
+    const subject = '📩 Resposta ao teu pedido de contacto — Feedback Studios';
+    let bodyHTML = '<h1 style="font-size: 24px;">Feedback - Ensaios — Resposta ao pedido de contacto</h1>';
+    bodyHTML += `<p>Olá ${escapeHtml(contactRequest.contactName)},</p>`;
+    bodyHTML += `<p>Segue a nossa resposta ao teu pedido de contacto para a sala ${escapeHtml(contactRequest.roomName)}:</p>`;
+    bodyHTML += `<div style="background:#f4f4f4;padding:14px;border-left:3px solid #222222;border-radius:0 4px 4px 0;margin:12px 0;">`;
+    bodyHTML += `<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;">${escapeHtml(replyText || '')}</p>`;
+    bodyHTML += `</div>`;
+    if (contactRequest.message) {
+      bodyHTML += `<p><small><strong>O teu pedido original:</strong> ${escapeHtml(contactRequest.message)}</small></p>`;
+    }
+    bodyHTML += `<br><p><strong>Canal de resposta:</strong> ${channel === 'whatsapp' ? 'WhatsApp' : 'Email'}</p>`;
+    bodyHTML += emailSignature();
+    await sendEmail(recipientEmail, subject, bodyHTML);
+  }
+}
+
+// POST /api/contact-request-reply — resposta de texto a um pedido de contacto.
+app.post('/api/contact-request-reply', async (req, res) => {
+  try {
+    const body = req.body || {};
+    if (!supabaseAuth || !supabaseService) {
+      return res.status(503).json({ message: 'Resposta indisponivel: Supabase nao configurado no servidor.' });
+    }
+
+    const authHeader = String(req.headers.authorization || '');
+    const headerToken = authHeader.toLowerCase().startsWith('bearer ') ? authHeader.slice(7).trim() : '';
+    const token = headerToken || String(body.token || '').replace(/^Bearer\s*/i, '').trim();
+    if (!token) {
+      return res.status(401).json({ message: 'Missing session token.' });
+    }
+
+    const { data: actorData, error: actorError } = await supabaseAuth.auth.getUser(token);
+    if (actorError || !actorData?.user) {
+      return res.status(401).json({ message: 'Invalid session token.' });
+    }
+
+    const { data: actorProfile, error: actorProfileError } = await supabaseService
+      .from('profiles')
+      .select('name, role')
+      .eq('id', actorData.user.id)
+      .maybeSingle();
+    if (actorProfileError) {
+      console.error('Erro ao consultar perfil do utilizador:', actorProfileError);
+      return res.status(500).json({ message: 'Erro ao validar permissoes.' });
+    }
+    const actorRole = String(actorProfile?.role || '');
+    if (!['admin', 'superuser'].includes(actorRole)) {
+      return res.status(403).json({ message: 'Only admins can reply to contact requests.' });
+    }
+    const actor = {
+      id: actorData.user.id,
+      name: String(actorProfile?.name || actorData.user.email || 'Administrador'),
+      role: actorRole,
+    };
+
+    const contactRequestId = String(body.contactRequestId || '').trim();
+    const replyText = String(body.replyText || '').trim();
+    const channel = String(body.channel || 'email').trim().toLowerCase();
+    if (!contactRequestId) {
+      return res.status(400).json({ message: 'contactRequestId é obrigatório.' });
+    }
+    if (!replyText) {
+      return res.status(400).json({ message: 'replyText é obrigatório.' });
+    }
+    if (!['email', 'whatsapp'].includes(channel)) {
+      return res.status(400).json({ message: 'channel inválido. Usa email ou whatsapp.' });
+    }
+    const { data: contactRequest, error: fetchError } = await supabaseService
+      .from('contact_requests')
+      .select('*')
+      .eq('id', contactRequestId)
+      .maybeSingle();
+    if (fetchError || !contactRequest) {
+      return res.status(404).json({ message: 'Pedido de contacto nao encontrado.' });
+    }
+    if (contactRequest.status !== 'pending') {
+      return res.status(409).json({ message: 'Apenas pedidos a aguardar resposta podem receber uma resposta.' });
+    }
+    const replyTo = String(contactRequest.email || '').trim().toLowerCase();
+    if (channel === 'whatsapp' && !contactRequest.contactPhone) {
+      return res.status(400).json({ message: 'Este pedido nao possui telemovel registado.' });
+    }
+    const subject = '📩 Resposta ao teu pedido de contacto — Feedback Studios';
+    let bodyHTML = '<h1 style="font-size: 24px;">Feedback - Ensaios — Resposta ao pedido de contacto</h1>';
+    bodyHTML += `<p>Olá ${escapeHtml(contactRequest.contactName)},</p>`;
+    bodyHTML += `<p>Segue a nossa resposta ao teu pedido de contacto para a sala ${escapeHtml(contactRequest.roomName)}:</p>`;
+    bodyHTML += `<div style="background:#f4f4f4;padding:14px;border-left:3px solid #222222;border-radius:0 4px 4px 0;margin:12px 0;">`;
+    bodyHTML += `<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;">${escapeHtml(replyText)}</p>`;
+    bodyHTML += `</div>`;
+    if (contactRequest.message) {
+      bodyHTML += `<p><small><strong>O teu pedido original:</strong> ${escapeHtml(contactRequest.message)}</small></p>`;
+    }
+    bodyHTML += `<br><p><strong>Canal de resposta:</strong> ${channel === 'whatsapp' ? 'Email + WhatsApp' : 'Email'}</p>`;
+    bodyHTML += emailSignature();
+    if (replyTo) await sendEmail(replyTo, subject, bodyHTML);
+    const repliedAt = new Date().toISOString();
+    const { error: updateError } = await supabaseService
+      .from('contact_requests')
+      .update({
+        status: 'contacted',
+        replyMessage: replyText,
+        replyChannel: channel,
+        repliedAt,
+        updatedAt: repliedAt,
+      })
+      .eq('id', contactRequestId)
+      .select()
+      .single();
+    if (updateError) {
+      console.error('Erro ao actualizar pedido de contacto:', updateError);
+      return res.status(500).json({ message: 'Erro ao guardar a resposta.' });
+    }
+    const { error: auditError } = await supabaseService.from('audit_logs').insert({
+      id: `AUDIT-${randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`,
+      action: 'contact-request-reply-sent',
+      actor,
+      target: contactRequest.id,
+      details: JSON.stringify({ sala: contactRequest.roomName, canal: channel }),
+      createdAt: new Date().toISOString(),
+    });
+    if (auditError) console.error('Falha ao registar auditoria:', auditError);
+    return res.json({ message: 'Resposta enviada e pedido actualizado para Contactado.' });
+  } catch (e) {
+    console.error('Erro em /api/contact-request-reply:', e);
+    return res.status(500).json({ message: 'Erro inesperado.' });
+  }
+});
 // POST /api/contact-request — cria pedido de contacto e envia e-mail ao utilizador.
 app.post('/api/contact-request', async (req, res) => {
   try {

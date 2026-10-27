@@ -148,6 +148,9 @@ export type ApiContactRequest = {
   email: string;
   bandName?: string | null;
   message?: string | null;
+  replyMessage?: string | null;
+  replyChannel?: 'email' | 'whatsapp' | null;
+  repliedAt?: string | null;
   status: ContactRequestStatus;
   createdAt: string;
   updatedAt?: string;
@@ -573,6 +576,17 @@ function mapContactRequestRow(row: Record<string, unknown>): ApiContactRequest {
     email: String(row.email ?? ''),
     bandName: row.bandName === undefined ? null : (row.bandName as string | null),
     message: row.message === undefined ? null : (row.message as string | null),
+    replyMessage: row.replyMessage === undefined && row.reply_message === undefined
+      ? null
+      : String(row.replyMessage ?? row.reply_message ?? ''),
+    replyChannel: row.replyChannel === 'email' || row.replyChannel === 'whatsapp'
+      ? row.replyChannel
+      : row.reply_channel === 'email' || row.reply_channel === 'whatsapp'
+        ? row.reply_channel
+        : null,
+    repliedAt: row.repliedAt === undefined && row.replied_at === undefined
+      ? null
+      : String(row.repliedAt ?? row.replied_at ?? ''),
     status: (row.status ?? 'pending') as ContactRequestStatus,
     createdAt: String(row.createdAt ?? row.created_at ?? ''),
     updatedAt: String(row.updatedAt ?? row.updated_at ?? ''),
@@ -641,6 +655,29 @@ export async function updateContactRequestStatus(
     details: { sala: contactRequest.roomName, estado: status },
   });
   return { contactRequest };
+}
+
+export async function adminContactRequestReply(
+  token: string,
+  contactRequestId: string,
+  replyText: string,
+  channel: 'email' | 'whatsapp',
+): Promise<{ message: string }> {
+  await requireActor(token, ['admin', 'superuser']);
+  const response = await fetch('/api/contact-request-reply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      contactRequestId,
+      replyText,
+      channel,
+    }),
+  });
+  const payload = (await response.json().catch(() => ({}))) as { message?: string };
+  if (!response.ok) {
+    throw new ApiError(payload.message || 'Nao foi possivel enviar a resposta.', response.status || 500);
+  }
+  return { message: payload.message || 'Resposta enviada.' };
 }
 
 export async function deleteContactRequest(token: string, contactRequestId: string): Promise<{ message: string }> {
