@@ -39,6 +39,7 @@ export type ApiUser = {
   name: string;
   email: string;
   phone: string;
+  avatarUrl: string | null;
   role: Role;
   function: StaffFunction | null;
   isDeveloper: boolean;
@@ -430,6 +431,7 @@ async function profileFor(user: User): Promise<ApiUser> {
       function: normalizeFunction(metadata.function),
       isDeveloper: metadata.isDeveloper === true,
       phone: '',
+      avatarUrl: null,
       createdAt: user.created_at ?? new Date().toISOString(),
     };
   }
@@ -442,6 +444,7 @@ async function profileFor(user: User): Promise<ApiUser> {
     function: normalizeFunction(data.function),
     isDeveloper: data.isDeveloper === true,
     phone: String(data.phone ?? ''),
+    avatarUrl: normalizeUserAvatarUrl(data.avatarUrl ?? data.avatar_url),
     createdAt: String(data.createdAt ?? ''),
   };
 }
@@ -1593,6 +1596,101 @@ export async function updateAppSettings(
 
 // --- Utilizadores (admin) ------------------------------------
 
+export const USER_AVATARS_BUCKET = 'images';
+const USER_AVATARS_FOLDER = 'users';
+const USER_AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+const USER_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+function normalizeUserAvatarUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+function userAvatarExtension(mimeType: string): string {
+  if (mimeType === 'image/png') return 'png';
+  if (mimeType === 'image/webp') return 'webp';
+  return 'jpg';
+}
+
+function userAvatarStoragePath(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const marker = `/storage/v1/object/public/${USER_AVATARS_BUCKET}/`;
+    const markerIndex = parsed.pathname.indexOf(marker);
+    if (markerIndex < 0) return null;
+    const path = decodeURIComponent(parsed.pathname.slice(markerIndex + marker.length));
+    return path.startsWith(`${USER_AVATARS_FOLDER}/`) ? path : null;
+  } catch {
+    return null;
+  }
+}
+
+async function requireAvatarTarget(actor: ApiUser, userId: string): Promise<{ avatarUrl: string | null }> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('role,"avatarUrl"')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) throw toError(error.message, 'Could not load user profile', 400);
+  if (!data) throw new ApiError('User not found.', 404);
+  if (normalizeRole(data.role) === 'superuser' && actor.role !== 'superuser') {
+    throw new ApiError('A fotografia da conta Superuser só pode ser alterada pelo próprio Superuser.', 403);
+  }
+  return { avatarUrl: normalizeUserAvatarUrl(data.avatarUrl) };
+}
+
+export async function uploadUserAvatar(
+  token: string,
+  userId: string,
+  file: File,
+): Promise<{ url: string }> {
+  const actor = await requireActor(token, ['admin', 'superuser']);
+  const target = await requireAvatarTarget(actor, userId);
+
+  if (!USER_AVATAR_TYPES.includes(file.type)) {
+    throw new ApiError('Formato de fotografia inválido. Usa JPG, PNG ou WebP.', 400);
+  }
+  if (file.size > USER_AVATAR_MAX_BYTES) {
+    throw new ApiError('Fotografia demasiado grande. O máximo é 5 MB.', 400);
+  }
+
+  const safeUserId = String(userId || '').replace(/[^a-z0-9-]/gi, '') || `user-${randHex(3).toLowerCase()}`;
+  const extension = userAvatarExtension(file.type);
+  const path = `${USER_AVATARS_FOLDER}/${safeUserId}-${Date.now()}.${extension}`;
+  const { error: uploadError } = await supabase.storage.from(USER_AVATARS_BUCKET).upload(path, file, {
+    cacheControl: '31536000',
+    upsert: false,
+  });
+  if (uploadError) throw toError(uploadError.message, 'Could not upload user avatar', 400);
+
+  const { data: publicUrlData } = supabase.storage.from(USER_AVATARS_BUCKET).getPublicUrl(path);
+  const url = publicUrlData.publicUrl;
+  const { error: updateError } = await supabase.from('profiles').update({ avatarUrl: url }).eq('id', userId);
+  if (updateError) {
+    await supabase.storage.from(USER_AVATARS_BUCKET).remove([path]);
+    throw toError(updateError.message, 'Could not save user avatar', 400);
+  }
+
+  const previousPath = userAvatarStoragePath(target.avatarUrl);
+  if (previousPath && previousPath !== path) {
+    await supabase.storage.from(USER_AVATARS_BUCKET).remove([previousPath]);
+  }
+
+  return { url };
+}
+
+export async function removeUserAvatar(token: string, userId: string): Promise<void> {
+  const actor = await requireActor(token, ['admin', 'superuser']);
+  const target = await requireAvatarTarget(actor, userId);
+  const { error } = await supabase.from('profiles').update({ avatarUrl: null }).eq('id', userId);
+  if (error) throw toError(error.message, 'Could not remove user avatar', 400);
+
+  const previousPath = userAvatarStoragePath(target.avatarUrl);
+  if (previousPath) await supabase.storage.from(USER_AVATARS_BUCKET).remove([previousPath]);
+}
+
 export async function adminUsers(token: string): Promise<{ users: ApiUser[] }> {
   await requireActor(token, ['admin', 'superuser']);
 
@@ -1611,6 +1709,7 @@ export async function adminUsers(token: string): Promise<{ users: ApiUser[] }> {
       name: String(row.name ?? ''),
       email: String(row.email ?? ''),
       phone: String(row.phone ?? ''),
+      avatarUrl: normalizeUserAvatarUrl(row.avatarUrl ?? row.avatar_url),
       role: normalizeRole(row.role),
       function: normalizeFunction(row.function),
       isDeveloper: row.isDeveloper === true,
@@ -1717,12 +1816,13 @@ export async function updateUser(
     throw toError(error.message, 'Could not update user', 400);
   }
 
-  const row = data as { id: string; name: string; email: string; role: string; phone: string; function?: string; isDeveloper?: boolean; createdAt: string };
+  const row = data as { id: string; name: string; email: string; role: string; phone: string; avatarUrl?: string | null; function?: string; isDeveloper?: boolean; createdAt: string };
   const user: ApiUser = {
     id: String(row.id),
     name: String(row.name ?? ''),
     email: String(row.email ?? ''),
     phone: String(row.phone ?? ''),
+    avatarUrl: normalizeUserAvatarUrl(row.avatarUrl),
     role: normalizeRole(row.role),
     function: normalizeFunction(row.function),
     isDeveloper: row.isDeveloper === true,
@@ -1763,6 +1863,9 @@ export async function deleteUser(token: string, userId: string): Promise<{ messa
   if (error) {
     throw toError(error.message, 'Could not delete user', 403);
   }
+
+  const avatarPath = userAvatarStoragePath(normalizeUserAvatarUrl(target.avatarUrl ?? target.avatar_url));
+  if (avatarPath) await supabase.storage.from(USER_AVATARS_BUCKET).remove([avatarPath]);
 
   await recordAudit({
     action: 'user-deleted',

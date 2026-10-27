@@ -37,6 +37,7 @@ type AuthUser = {
   name: string;
   email: string;
   phone: string;
+  avatarUrl: string | null;
   role: Role;
   function: StaffFunction | null;
   isDeveloper: boolean;
@@ -186,6 +187,7 @@ type NewUserDraft = {
   email: string;
   password: string;
   phone: string;
+  avatarUrl: string;
   role: Role;
   function: StaffFunction | null;
   isDeveloper: boolean;
@@ -196,6 +198,7 @@ type EditUserDraft = {
   name: string;
   email: string;
   phone: string;
+  avatarUrl: string;
   password: string;
   role: Role;
   function: StaffFunction | null;
@@ -837,6 +840,9 @@ function AdminHistoryPage() {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [userActionLoading, setUserActionLoading] = useState(false);
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [userAvatarFile, setUserAvatarFile] = useState<File | null>(null);
+  const [userAvatarUploading, setUserAvatarUploading] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [showNewRoomForm, setShowNewRoomForm] = useState(false);
   const [showNewServiceForm, setShowNewServiceForm] = useState(false);
@@ -849,6 +855,7 @@ function AdminHistoryPage() {
   const [contactRequestToDelete, setContactRequestToDelete] = useState<string | null>(null);
   const [roomToDelete, setRoomToDelete] = useState<string | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [selectedContactRequestId, setSelectedContactRequestId] = useState<string | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const contactRequestModalTriggerRef = useRef<HTMLElement | null>(null);
@@ -857,6 +864,15 @@ function AdminHistoryPage() {
   const roomModalCloseRef = useRef<HTMLButtonElement | null>(null);
   const serviceModalTriggerRef = useRef<HTMLElement | null>(null);
   const serviceModalCloseRef = useRef<HTMLButtonElement | null>(null);
+  const userModalTriggerRef = useRef<HTMLElement | null>(null);
+  const userCreateTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const userModalRef = useRef<HTMLElement | null>(null);
+  const userDeleteModalRef = useRef<HTMLElement | null>(null);
+  const userModalCloseRef = useRef<HTMLButtonElement | null>(null);
+  const userDeleteTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const userDeleteCancelRef = useRef<HTMLButtonElement | null>(null);
+  const userDeleteWasOpenRef = useRef(false);
+  const userAvatarInputRef = useRef<HTMLInputElement | null>(null);
   const bookingModalTriggerRef = useRef<HTMLElement | null>(null);
   const bookingModalCloseRef = useRef<HTMLButtonElement | null>(null);
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
@@ -864,6 +880,7 @@ function AdminHistoryPage() {
     email: '',
     password: '',
     phone: '',
+    avatarUrl: '',
     role: 'collaborator',
     function: null,
     isDeveloper: false,
@@ -910,6 +927,9 @@ function AdminHistoryPage() {
     { value: 'collaborator', label: 'Colaboradores' },
   ];
   const selectedRole = editUserDraft ? editUserDraft.role : newUserDraft.role;
+  const activeUserDraft = editUserDraft ?? newUserDraft;
+  const userModalOpen = showNewUserForm || editUserDraft !== null;
+  const userOperationBusy = userActionLoading || userAvatarUploading || resetUserId !== null;
   const roleOptions = baseRoleOptions.some((option) => option.value === selectedRole)
     ? baseRoleOptions
     : [...baseRoleOptions, { value: selectedRole, label: roleLabel[selectedRole] }];
@@ -1164,6 +1184,25 @@ function AdminHistoryPage() {
     () => services.find((service) => service.id === editingServiceId) || null,
     [services, editingServiceId],
   );
+  const editingUser = useMemo(
+    () => users.find((user) => user.id === editUserDraft?.id) || null,
+    [users, editUserDraft?.id],
+  );
+  const deletingUser = useMemo(
+    () => users.find((user) => user.id === userToDelete) || null,
+    [users, userToDelete],
+  );
+  const [userAvatarPreviewUrl, setUserAvatarPreviewUrl] = useState('');
+
+  useEffect(() => {
+    if (!userAvatarFile) {
+      setUserAvatarPreviewUrl(activeUserDraft.avatarUrl);
+      return undefined;
+    }
+    const previewUrl = URL.createObjectURL(userAvatarFile);
+    setUserAvatarPreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [userAvatarFile, activeUserDraft.avatarUrl]);
   const customerNotificationBooking = useMemo(
     () => bookings.find((booking) => booking.id === customerNotificationDecision?.bookingId) || null,
     [bookings, customerNotificationDecision],
@@ -1235,6 +1274,57 @@ function AdminHistoryPage() {
   const closeServiceModal = () => {
     if (serviceSaveLoading || (editingServiceId && actionLoading[editingServiceId])) return;
     resetServiceModal();
+  };
+
+  const resetUserModal = () => {
+    setEditUserDraft(null);
+    setNewUserDraft({
+      name: '',
+      email: '',
+      password: '',
+      phone: '',
+      avatarUrl: '',
+      role: 'collaborator',
+      function: null,
+      isDeveloper: false,
+    });
+    setUserAvatarFile(null);
+    setShowNewUserForm(false);
+    setUserToDelete(null);
+    setError('');
+    window.requestAnimationFrame(() => {
+      const trigger = userModalTriggerRef.current;
+      if (trigger?.isConnected && !trigger.matches(':disabled')) {
+        trigger.focus();
+      } else {
+        userCreateTriggerRef.current?.focus();
+      }
+    });
+  };
+
+  const closeUserModal = () => {
+    if (userOperationBusy) return;
+    resetUserModal();
+  };
+
+  const openUserModal = (user: AuthUser, trigger: HTMLElement) => {
+    if (userOperationBusy || (user.role === 'superuser' && currentUser?.role !== 'superuser')) return;
+    userModalTriggerRef.current = trigger;
+    setShowNewUserForm(false);
+    setEditUserDraft({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      avatarUrl: user.avatarUrl ?? '',
+      password: '',
+      role: user.role,
+      function: user.function ?? null,
+      isDeveloper: user.isDeveloper,
+    });
+    setUserAvatarFile(null);
+    setCatalogNotice('');
+    setError('');
   };
 
   useEffect(() => {
@@ -1344,6 +1434,67 @@ function AdminHistoryPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [serviceToDelete, actionLoading]);
+
+  useEffect(() => {
+    if (!userModalOpen && !userToDelete) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [userModalOpen, userToDelete]);
+
+  useEffect(() => {
+    const wasDeleting = userDeleteWasOpenRef.current;
+    userDeleteWasOpenRef.current = Boolean(userToDelete);
+    if (!userModalOpen || userToDelete) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      const target = wasDeleting ? userDeleteTriggerRef.current : userModalCloseRef.current;
+      target?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [userModalOpen, userToDelete]);
+
+  useEffect(() => {
+    if (!userToDelete) return undefined;
+    const frame = window.requestAnimationFrame(() => userDeleteCancelRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [userToDelete]);
+
+  useEffect(() => {
+    if (!userModalOpen && !userToDelete) return undefined;
+    const modal = userToDelete ? userDeleteModalRef.current : userModalRef.current;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (userOperationBusy) return;
+        if (userToDelete) {
+          setUserToDelete(null);
+        } else {
+          closeUserModal();
+        }
+      }
+      if (event.key !== 'Tab' || !modal) return;
+      const controls = Array.from(modal.querySelectorAll<HTMLElement>(
+        'button, input, select, textarea, a[href], [tabindex="0"]',
+      )).filter((element) => !element.matches(':disabled') && element.getClientRects().length > 0);
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (!first) {
+        event.preventDefault();
+        modal.focus();
+      } else if (!modal.contains(document.activeElement) || document.activeElement === modal) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [userModalOpen, userToDelete, userOperationBusy]);
 
   useEffect(() => {
     if (!customerNotificationDecision) return undefined;
@@ -1554,8 +1705,10 @@ function AdminHistoryPage() {
     setActivePanel('unified');
     setCatalogNotice('');
     setUsers([]);
-    setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null, isDeveloper: false });
+    setNewUserDraft({ name: '', email: '', password: '', phone: '', avatarUrl: '', role: 'collaborator', function: null, isDeveloper: false });
     setEditUserDraft(null);
+    setUserAvatarFile(null);
+    setUserToDelete(null);
     setShowNewUserForm(false);
     setShowNewRoomForm(false);
     setShowNewServiceForm(false);
@@ -1568,7 +1721,7 @@ function AdminHistoryPage() {
   const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isPrivileged || userActionLoading) return;
+    if (!sessionToken || !isPrivileged || userOperationBusy) return;
 
     const name = newUserDraft.name.trim();
     const email = newUserDraft.email.trim().toLowerCase();
@@ -1588,10 +1741,22 @@ function AdminHistoryPage() {
     setError('');
     setUserActionLoading(true);
     try {
-      await api.createUser(sessionToken, { name, email, password, phone, role: newUserDraft.role, function: newUserDraft.function, isDeveloper: newUserDraft.isDeveloper });
-      setNewUserDraft({ name: '', email: '', password: '', phone: '', role: 'collaborator', function: null, isDeveloper: false });
-      setShowNewUserForm(false);
+      const payload = await api.createUser(sessionToken, { name, email, password, phone, role: newUserDraft.role, function: newUserDraft.function, isDeveloper: newUserDraft.isDeveloper });
+      if (userAvatarFile) {
+        setUserAvatarUploading(true);
+        try {
+          await api.uploadUserAvatar(sessionToken, payload.user.id, userAvatarFile);
+        } catch {
+          await loadUsers(sessionToken);
+          resetUserModal();
+          setError('O utilizador foi criado, mas não foi possível guardar a fotografia. Abre o respetivo card para tentar enviar apenas a fotografia.');
+          return;
+        } finally {
+          setUserAvatarUploading(false);
+        }
+      }
       await loadUsers(sessionToken);
+      resetUserModal();
       setCatalogNotice('Utilizador criado. Enviamos um convite por email para o utilizador definir a password.');
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel criar utilizador.');
@@ -1600,31 +1765,14 @@ function AdminHistoryPage() {
     }
   };
 
-  const startEditUser = (user: AuthUser) => {
-    setShowNewUserForm(false);
-    setEditUserDraft({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      password: '',
-      role: user.role,
-      function: user.function ?? null,
-      isDeveloper: user.isDeveloper,
-    });
-    setCatalogNotice('');
-    setError('');
-  };
-
   const cancelEditUser = () => {
-    setEditUserDraft(null);
-    setShowNewUserForm(false);
+    closeUserModal();
   };
 
   const handleEditUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isPrivileged || !editUserDraft || userActionLoading) return;
+    if (!sessionToken || !isPrivileged || !editUserDraft || userOperationBusy) return;
 
     const name = editUserDraft.name.trim();
     const email = editUserDraft.email.trim().toLowerCase();
@@ -1653,8 +1801,25 @@ function AdminHistoryPage() {
         function: editUserDraft.function,
         isDeveloper: editUserDraft.isDeveloper,
       });
-      setEditUserDraft(null);
+      try {
+        if (userAvatarFile) {
+          setUserAvatarUploading(true);
+          await api.uploadUserAvatar(sessionToken, editUserDraft.id, userAvatarFile);
+        } else if (editingUser?.avatarUrl && !editUserDraft.avatarUrl) {
+          setUserAvatarUploading(true);
+          await api.removeUserAvatar(sessionToken, editUserDraft.id);
+        }
+      } catch (avatarError) {
+        await loadUsers(sessionToken);
+        setEditUserDraft((current) => current ? { ...current, password: '' } : current);
+        const detail = avatarError instanceof Error ? ` ${avatarError.message}` : '';
+        setError(`Os dados do utilizador foram guardados, mas a alteração da fotografia falhou. Podes tentar guardar novamente.${detail}`);
+        return;
+      } finally {
+        setUserAvatarUploading(false);
+      }
       await loadUsers(sessionToken);
+      resetUserModal();
       setCatalogNotice('Utilizador atualizado com sucesso.');
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel atualizar utilizador.');
@@ -1664,11 +1829,9 @@ function AdminHistoryPage() {
   };
 
   // Reenvia o link de redefinição de password (Issue #9) — ação reservada ao superuser.
-  const [resetUserId, setResetUserId] = useState<string | null>(null);
-
   const handleResendResetLink = async (user: AuthUser) => {
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || currentUser?.role !== 'superuser' || userActionLoading || resetUserId) return;
+    if (!sessionToken || currentUser?.role !== 'superuser' || userOperationBusy) return;
 
     setCatalogNotice('');
     setError('');
@@ -1687,22 +1850,21 @@ function AdminHistoryPage() {
     }
   };
 
-  const handleDeleteUser = async (user: AuthUser) => {
+  const handleDeleteUser = async () => {
+    const user = users.find((candidate) => candidate.id === userToDelete);
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isPrivileged || userActionLoading) return;
+    if (!user || !sessionToken || !isPrivileged || userOperationBusy || user.id === currentUser?.id) return;
     if (user.role === 'superuser') {
       setError('A conta Superuser está protegida e não pode ser apagada.');
       return;
     }
-    if (!window.confirm('Apagar este utilizador?')) return;
-
     setCatalogNotice('');
     setError('');
     setUserActionLoading(true);
     try {
       const payload = await api.deleteUser(sessionToken, user.id);
-      if (editUserDraft?.id === user.id) setEditUserDraft(null);
       await loadUsers(sessionToken);
+      resetUserModal();
       setCatalogNotice(payload.message || 'Utilizador apagado com sucesso.');
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel apagar utilizador.');
@@ -2994,32 +3156,116 @@ function AdminHistoryPage() {
               </div>
 
               <button
+                ref={userCreateTriggerRef}
                 type="button"
                 className="secondary-button catalog-create-action"
-                onClick={() => {
-                  setEditUserDraft(null);
-                  setNewUserDraft({
-                    name: '',
-                    email: '',
-                    password: '',
-                    phone: '',
-                    role: 'collaborator',
-                    function: null,
-                    isDeveloper: false,
-                  });
+                onClick={(event) => {
+                  userModalTriggerRef.current = event.currentTarget;
+                  resetUserModal();
                   setShowNewUserForm(true);
                 }}
-                disabled={userActionLoading}
+                disabled={userOperationBusy}
               >
                 <Plus size={16} aria-hidden="true" />
                 Criar utilizador
               </button>
 
-              {showNewUserForm || editUserDraft ? (
-                <form
-                  className="admin-create-user catalog-form"
-                  onSubmit={editUserDraft ? handleEditUser : handleCreateUser}
+              {userModalOpen ? (
+                <div
+                  className="admin-modal-backdrop user-editor-backdrop"
+                  role={userToDelete ? undefined : 'dialog'}
+                  aria-modal={userToDelete ? undefined : true}
+                  aria-hidden={userToDelete ? true : undefined}
+                  aria-labelledby="user-editor-title"
+                  onMouseDown={(event) => {
+                    if (event.target === event.currentTarget && !userToDelete) closeUserModal();
+                  }}
                 >
+                  <section ref={userModalRef} tabIndex={-1} className="card admin-modal-card admin-modal-card-wide user-editor-modal">
+                    <header className="admin-modal-head user-editor-head">
+                      <div>
+                        <p className="eyebrow">{editUserDraft ? 'Editar utilizador' : 'Novo utilizador'}</p>
+                        <h2 id="user-editor-title">{editUserDraft?.name || 'Criar utilizador'}</h2>
+                      </div>
+                      <button
+                        ref={userModalCloseRef}
+                        type="button"
+                        className="secondary-button admin-modal-close"
+                        aria-label="Fechar editor do utilizador"
+                        disabled={userOperationBusy || Boolean(userToDelete)}
+                        onClick={closeUserModal}
+                      >
+                        <X aria-hidden="true" size={18} />
+                      </button>
+                    </header>
+                    <form
+                      className="admin-create-user user-editor-form"
+                      aria-busy={userOperationBusy}
+                      onSubmit={editUserDraft ? handleEditUser : handleCreateUser}
+                    >
+                      {error && !userToDelete ? <p className="admin-message-error user-editor-message" role="alert">{error}</p> : null}
+                      <fieldset className="user-editor-fields" disabled={userOperationBusy || Boolean(userToDelete)}>
+                      <section className="user-avatar-editor">
+                        <div className="user-avatar-preview" aria-label="Pré-visualização da fotografia">
+                          {userAvatarPreviewUrl ? (
+                            <img src={userAvatarPreviewUrl} alt="Fotografia do utilizador" />
+                          ) : (
+                            <span>{activeUserDraft.name.trim().charAt(0).toLocaleUpperCase('pt-PT') || '?'}</span>
+                          )}
+                        </div>
+                        <div className="user-avatar-controls">
+                          <strong>Fotografia de perfil</strong>
+                          <small>Opcional. JPG, PNG ou WebP, máximo 5 MB.</small>
+                          <button
+                            type="button"
+                            className="secondary-button user-avatar-file-action"
+                            disabled={userOperationBusy}
+                            onClick={() => userAvatarInputRef.current?.click()}
+                          >
+                            {userAvatarPreviewUrl ? 'Substituir fotografia' : 'Escolher fotografia'}
+                          </button>
+                          <input
+                              ref={userAvatarInputRef}
+                              hidden
+                              aria-label="Fotografia de perfil"
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              disabled={userOperationBusy}
+                              onChange={(event) => {
+                                const file = event.target.files?.[0] ?? null;
+                                event.target.value = '';
+                                if (!file) return;
+                                if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                                  setError('Formato de fotografia inválido. Usa JPG, PNG ou WebP.');
+                                  return;
+                                }
+                                if (file.size > 5 * 1024 * 1024) {
+                                  setError('Fotografia demasiado grande. O máximo é 5 MB.');
+                                  return;
+                                }
+                                setError('');
+                                setUserAvatarFile(file);
+                              }}
+                            />
+                          {userAvatarPreviewUrl ? (
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              disabled={userActionLoading || userAvatarUploading}
+                              onClick={() => {
+                                setUserAvatarFile(null);
+                                if (editUserDraft) {
+                                  setEditUserDraft((current) => current ? { ...current, avatarUrl: '' } : current);
+                                } else {
+                                  setNewUserDraft((current) => ({ ...current, avatarUrl: '' }));
+                                }
+                              }}
+                            >
+                              Remover fotografia
+                            </button>
+                          ) : null}
+                        </div>
+                      </section>
                 <label>
                   Nome *
                   <input
@@ -3157,90 +3403,99 @@ function AdminHistoryPage() {
                   <span>Desenvolvedor</span>
                 </label>
 
-                <div className="admin-user-form-actions">
+                <div className="admin-user-form-actions user-editor-actions">
                   <button
                     type="submit"
                     className="primary-button"
-                    disabled={userActionLoading || usersLoading}
+                    disabled={userOperationBusy || usersLoading}
                   >
-                    {userActionLoading
-                      ? 'A guardar...'
-                      : editUserDraft
-                        ? 'Guardar alteracoes'
-                        : 'Criar utilizador'}
+                    {userAvatarUploading
+                      ? 'A enviar fotografia...'
+                      : userActionLoading
+                        ? 'A guardar...'
+                        : editUserDraft
+                          ? 'Guardar alterações'
+                          : 'Criar utilizador'}
                   </button>
-                  {editUserDraft || showNewUserForm ? (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={cancelEditUser}
+                    disabled={userActionLoading || userAvatarUploading}
+                  >
+                    Cancelar
+                  </button>
+                  {editUserDraft && currentUser?.role === 'superuser' ? (
                     <button
                       type="button"
                       className="secondary-button"
-                      onClick={cancelEditUser}
-                      disabled={userActionLoading}
+                      onClick={() => editingUser && void handleResendResetLink(editingUser)}
+                      disabled={userOperationBusy}
                     >
-                        Cancelar
+                      {resetUserId === editUserDraft.id ? 'A reenviar...' : 'Reenviar link de password'}
+                    </button>
+                  ) : null}
+                  {editUserDraft && editUserDraft.role !== 'superuser' && currentUser?.id !== editUserDraft.id ? (
+                    <button
+                      ref={userDeleteTriggerRef}
+                      type="button"
+                      className="danger-zone-action user-editor-delete"
+                      disabled={userActionLoading || userAvatarUploading}
+                      onClick={() => setUserToDelete(editUserDraft.id)}
+                    >
+                      Apagar utilizador
                     </button>
                   ) : null}
                 </div>
-                </form>
+                      </fieldset>
+                    </form>
+                  </section>
+                </div>
               ) : null}
 
               {usersLoading ? <p className="summary-copy">A carregar utilizadores...</p> : null}
-              <ul className="admin-user-list catalog-list">
-                {users.map((user) => (
-                  <li key={user.id}>
-                    <div className="admin-user-card-head">
-                      <strong>{user.name}</strong>
-                    </div>
-                    <span>{user.email}</span>
-                    <div className="admin-user-badges" aria-label="Perfil e função">
-                      <span className={`admin-user-badge admin-user-role-${user.role}`}>
-                        {user.role === 'superuser' ? 'Superuser — conta protegida' : roleLabel[user.role]}
-                      </span>
-                      {user.function ? (
-                        <span className="admin-user-badge admin-user-function-badge">
-                          {staffFunctionLabels[user.function]}
+              <ul className="admin-user-list user-management-list">
+                {users.map((user) => {
+                  const isProtected = user.role === 'superuser' && currentUser?.role !== 'superuser';
+
+                  return (
+                    <li key={user.id} className="user-management-card">
+                      <button
+                        type="button"
+                        className="user-management-card-trigger"
+                        disabled={userOperationBusy || isProtected}
+                        title={isProtected ? 'Conta protegida: apenas o Superuser pode editá-la.' : `Editar ${user.name}`}
+                        onClick={(event) => openUserModal(user, event.currentTarget)}
+                      >
+                        <span className="user-management-avatar" aria-hidden="true">
+                          {user.avatarUrl ? (
+                            <img src={user.avatarUrl} alt="" />
+                          ) : (
+                            <span>{user.name.trim().charAt(0).toLocaleUpperCase('pt-PT') || '?'}</span>
+                          )}
                         </span>
-                      ) : null}
-                      {user.isDeveloper ? (
-                        <span className="admin-user-badge admin-user-function-badge">Desenvolvedor</span>
-                      ) : null}
-                    </div>
-                    {user.role === 'superuser' && currentUser?.role !== 'superuser' ? null : (
-                      <div className="team-actions">
-                        <>
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() => startEditUser(user)}
-                            disabled={userActionLoading}
-                          >
-                            Editar
-                          </button>
-                          {user.role !== 'superuser' && currentUser?.id !== user.id ? (
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              onClick={() => void handleDeleteUser(user)}
-                              disabled={userActionLoading}
-                            >
-                              Apagar
-                            </button>
-                          ) : null}
-                          {currentUser?.role === 'superuser' ? (
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              onClick={() => void handleResendResetLink(user)}
-                              disabled={userActionLoading || resetUserId !== null}
-                              title="Reenviar por email o link para o utilizador redefinir a password"
-                            >
-                              {resetUserId === user.id ? 'A reenviar...' : 'Reenviar link de password'}
-                            </button>
-                          ) : null}
-                        </>
-                      </div>
-                    )}
-                  </li>
-                ))}
+                        <span className="user-management-card-body">
+                          <span className="user-management-card-heading">
+                            <strong>{user.name}</strong>
+                            <ChevronRight aria-hidden="true" size={18} />
+                          </span>
+                          <span className="user-management-function">
+                            {user.function ? staffFunctionLabels[user.function] : 'Sem função definida'}
+                          </span>
+                          <span className="user-management-contact">{user.email || user.phone}</span>
+                          <span className="admin-user-badges" aria-label="Perfil e função">
+                            <span className={`admin-user-badge admin-user-role-${user.role}`}>
+                              {user.role === 'superuser' ? 'Superuser — conta protegida' : roleLabel[user.role]}
+                            </span>
+                            {user.isDeveloper ? (
+                              <span className="admin-user-badge admin-user-function-badge">Desenvolvedor</span>
+                            ) : null}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
               {users.length === 0 && !usersLoading ? (
                 <p className="summary-copy">Sem utilizadores registados.</p>
@@ -4798,6 +5053,49 @@ function AdminHistoryPage() {
                 onClick={() => { void handleDeleteService(); }}
               >
                 {actionLoading[serviceToDelete] ? 'A apagar...' : 'Apagar serviço'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {userToDelete && deletingUser ? (
+        <div
+          className="admin-modal-backdrop user-delete-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-user-modal-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !userOperationBusy) setUserToDelete(null);
+          }}
+        >
+          <section ref={userDeleteModalRef} tabIndex={-1} className="card admin-modal-card clear-bookings-modal user-delete-modal">
+            <div className="clear-bookings-modal-alert">
+              <AlertTriangle aria-hidden="true" size={18} strokeWidth={2.25} />
+              <span>Operação irreversível</span>
+            </div>
+            <h3 id="delete-user-modal-title">Apagar {deletingUser.name}?</h3>
+            <p>
+              A conta, o perfil e a fotografia associada serão removidos definitivamente.
+            </p>
+            {error ? <p className="admin-message-error" role="alert">{error}</p> : null}
+            <div className="admin-modal-actions clear-bookings-modal-actions">
+              <button
+                ref={userDeleteCancelRef}
+                type="button"
+                className="secondary-button"
+                disabled={userActionLoading}
+                onClick={() => setUserToDelete(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="danger-zone-action"
+                disabled={userActionLoading}
+                onClick={() => { void handleDeleteUser(); }}
+              >
+                {userActionLoading ? 'A apagar...' : 'Apagar utilizador'}
               </button>
             </div>
           </section>

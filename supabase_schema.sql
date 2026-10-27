@@ -67,6 +67,7 @@ create table if not exists public.profiles (
   name        text        not null default '',
   email       text        not null unique,
   phone       text        not null default '',
+  "avatarUrl" text,
   role        text        not null default 'collaborator'
               check (role in ('superuser', 'admin', 'collaborator', 'technician')),
   -- Função/cargo (metadado; NÃO confere permissões — permissões vêm do role).
@@ -78,6 +79,7 @@ create table if not exists public.profiles (
 
 -- Migração idempotente para bases já existentes (adiciona coluna/actualiza checks).
 alter table public.profiles add column if not exists "function" text;
+alter table public.profiles add column if not exists "avatarUrl" text;
 alter table public.profiles drop constraint if exists profiles_role_check;
 alter table public.profiles add constraint profiles_role_check
   check (role in ('superuser', 'admin', 'collaborator', 'technician'));
