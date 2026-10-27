@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CalendarClock, ChevronRight, CircleCheck, CircleDashedCheck, Clock3, MessageCircle, Plus, Radio, RefreshCw, Wallet, X } from 'lucide-react';
+import { AlertTriangle, CalendarClock, ChevronRight, CircleCheck, CircleDashedCheck, Clock3, MessageCircle, Plus, Radio, RefreshCw, X } from 'lucide-react';
 import * as api from './api';
 import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
@@ -179,7 +179,7 @@ type HistoryFilter = 'all' | 'pending' | 'rejected' | 'rescheduled' | 'unpaid';
 // Futuro/hoje fica sempre visivel; 'all' mostra o historico completo.
 type PeriodScope = 'month' | '3m' | '6m' | 'year' | 'all';
 
-type AdminPanel = 'unified' | 'contact-requests' | 'users' | 'rooms' | 'services' | 'devtools';
+type AdminPanel = 'unified' | 'finance' | 'contact-requests' | 'users' | 'rooms' | 'services' | 'devtools';
 
 type NewUserDraft = {
   name: string;
@@ -523,24 +523,24 @@ function getPdfRoomPalette(roomName: string): { header: [number, number, number]
   const normalized = String(roomName || '').toLowerCase();
   if (normalized.includes('red')) {
     return {
-      header: [233, 172, 172],
-      stripe: [253, 244, 244],
-      text: [127, 29, 29],
+      header: [209, 19, 35],
+      stripe: [75, 22, 27],
+      text: [254, 202, 202],
     };
   }
 
   if (normalized.includes('grey') || normalized.includes('gray')) {
     return {
-      header: [186, 193, 204],
-      stripe: [246, 248, 251],
-      text: [51, 65, 85],
+      header: [100, 116, 139],
+      stripe: [43, 49, 58],
+      text: [226, 232, 240],
     };
   }
 
   return {
-    header: [173, 206, 246],
-    stripe: [242, 249, 255],
-    text: [30, 64, 175],
+    header: [37, 99, 235],
+    stripe: [24, 45, 82],
+    text: [191, 219, 254],
   };
 }
 
@@ -763,7 +763,6 @@ function AdminHistoryPage() {
   const [assigneeChoice, setAssigneeChoice] = useState<Record<string, string>>({});
   const [financeData, setFinanceData] = useState<FinanceMonthSummary[]>([]);
   const [financeExtrasCatalog, setFinanceExtrasCatalog] = useState<Record<string, number>>({});
-  const [showFinance, setShowFinance] = useState(false);
   const [activePanel, setActivePanel] = useState<AdminPanel>('unified');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
@@ -2060,26 +2059,58 @@ function AdminHistoryPage() {
     const margin = 12;
     let cursorY = margin;
 
+    const pdfTheme = {
+      background: [8, 8, 10] as [number, number, number],
+      surface: [20, 20, 23] as [number, number, number],
+      surfaceRaised: [29, 29, 33] as [number, number, number],
+      border: [58, 58, 64] as [number, number, number],
+      header: [38, 38, 43] as [number, number, number],
+      badge: [48, 48, 54] as [number, number, number],
+      text: [248, 250, 252] as [number, number, number],
+      muted: [156, 163, 175] as [number, number, number],
+    };
+    const themedPages = new Set<number>();
+    const paintPage = () => {
+      const pageNumber = doc.getCurrentPageInfo().pageNumber;
+      doc.setFillColor(...pdfTheme.background);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      doc.setFillColor(...pdfTheme.header);
+      doc.rect(0, 0, pageWidth, 2.2, 'F');
+      themedPages.add(pageNumber);
+    };
+    const paintAutoTablePage = () => {
+      const pageNumber = doc.getCurrentPageInfo().pageNumber;
+      if (!themedPages.has(pageNumber)) paintPage();
+    };
+
+    paintPage();
+
     const receivedTotal = financeDataToShow.reduce((sum, month) => sum + month.totalReceived, 0);
     const periodLabel = financeDataToShow.map((month) => formatFinanceMonthLabel(month.month)).join(', ');
-    const logoData = await loadImageAsDataUrl('/logo.png');
+    const logoData = await loadImageAsDataUrl('/feedbook-logoPDF.png');
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(17);
-    doc.text('Feedback - Ensaios - Contas', margin, cursorY + 1);
+    doc.setFillColor(...pdfTheme.surface);
+    doc.setDrawColor(...pdfTheme.border);
+    doc.roundedRect(margin, cursorY - 3, pageWidth - (margin * 2), 22, 3, 3, 'FD');
 
     if (logoData?.dataUrl) {
-      doc.addImage(logoData.dataUrl, logoData.format, pageWidth - 44, margin - 1, 32, 11);
+      doc.addImage(logoData.dataUrl, logoData.format, margin + 5, cursorY + 3.5, 21, 7);
     }
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text(`Gerado em ${new Date().toLocaleString('pt-PT')}`, margin, cursorY + 7);
-    cursorY += 10;
+    doc.setTextColor(...pdfTheme.muted);
+    doc.text(`Gerado em ${new Date().toLocaleString('pt-PT')}`, pageWidth - margin - 5, cursorY + 8, { align: 'right' });
+    cursorY += 24;
 
-    doc.setFontSize(10);
-    doc.text(`Periodo: ${periodLabel}`, margin, cursorY);
-    cursorY += 6;
+    doc.setFillColor(...pdfTheme.badge);
+    doc.setDrawColor(...pdfTheme.border);
+    doc.roundedRect(margin, cursorY, pageWidth - (margin * 2), 9, 2.5, 2.5, 'FD');
+    doc.setTextColor(...pdfTheme.text);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(`PERIODO  ${periodLabel}`, margin + 4, cursorY + 5.8);
+    cursorY += 13;
 
     autoTable(doc, {
       startY: cursorY,
@@ -2089,14 +2120,15 @@ function AdminHistoryPage() {
         formatCurrency(receivedTotal),
         String(financeDataToShow.reduce((sum, month) => sum + month.bookingCount, 0)),
       ]],
-      styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 3, textColor: [17, 24, 39] },
-      headStyles: { fillColor: [178, 223, 200], textColor: [27, 67, 50], fontStyle: 'bold', halign: 'center' },
-      alternateRowStyles: { fillColor: [243, 253, 247] },
+      styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 3, textColor: pdfTheme.text, fillColor: pdfTheme.surfaceRaised, lineColor: pdfTheme.border, lineWidth: 0.2 },
+      headStyles: { fillColor: pdfTheme.header, textColor: pdfTheme.text, fontStyle: 'bold', halign: 'center' },
+      bodyStyles: { fillColor: pdfTheme.surfaceRaised, textColor: pdfTheme.text, fontStyle: 'bold' },
       columnStyles: {
         0: { halign: 'right' },
         1: { halign: 'center' },
       },
       margin: { left: margin, right: margin },
+      willDrawPage: paintAutoTablePage,
     });
 
     cursorY = ((doc as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY) ?? cursorY;
@@ -2105,25 +2137,29 @@ function AdminHistoryPage() {
     const ensureRoom = (requiredHeight = 12) => {
       if (cursorY + requiredHeight > pageHeight - margin) {
         doc.addPage();
+        paintPage();
         cursorY = margin;
       }
     };
 
     for (const month of financeDataToShow) {
       ensureRoom(16);
+      doc.setFillColor(...pdfTheme.surface);
+      doc.setDrawColor(...pdfTheme.border);
+      doc.roundedRect(margin, cursorY - 4, pageWidth - (margin * 2), 14, 2.5, 2.5, 'FD');
+      doc.setFillColor(...pdfTheme.border);
+      doc.roundedRect(margin + 4, cursorY - 1.5, 2, 9, 1, 1, 'F');
+      doc.setTextColor(...pdfTheme.text);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
-      doc.text(formatFinanceMonthLabel(month.month), margin, cursorY);
-      cursorY += 5;
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.text(
-        `Recebido: ${formatCurrency(month.totalReceived)}`,
-        margin,
-        cursorY,
-      );
-      cursorY += 5;
+      doc.text(formatFinanceMonthLabel(month.month), margin + 10, cursorY + 1);
+      doc.setFillColor(...pdfTheme.badge);
+      doc.setDrawColor(...pdfTheme.border);
+      doc.roundedRect(pageWidth - margin - 54, cursorY - 1.8, 50, 8.5, 2.2, 2.2, 'FD');
+      doc.setTextColor(...pdfTheme.text);
+      doc.setFontSize(8.5);
+      doc.text(`Recebido  ${formatCurrency(month.totalReceived)}`, pageWidth - margin - 29, cursorY + 3.7, { align: 'center' });
+      cursorY += 13;
 
       const entries = month.bookings.map((entry) => [
         formatDateDayMonthYear(entry.date),
@@ -2139,9 +2175,10 @@ function AdminHistoryPage() {
         theme: 'grid',
         head: [['Data', 'Sala', 'Estado', 'Banda', 'Valor', 'Recebido por']],
         body: entries,
-        styles: { font: 'helvetica', fontSize: 8, cellPadding: 2.4, textColor: [17, 24, 39] },
-        headStyles: { fillColor: [203, 213, 225], textColor: [30, 41, 59], fontStyle: 'bold', halign: 'center' },
-        alternateRowStyles: { fillColor: [249, 250, 251] },
+        styles: { font: 'helvetica', fontSize: 8, cellPadding: 2.4, textColor: pdfTheme.text, fillColor: pdfTheme.surface, lineColor: pdfTheme.border, lineWidth: 0.15 },
+        headStyles: { fillColor: pdfTheme.header, textColor: pdfTheme.text, fontStyle: 'bold', halign: 'center' },
+        bodyStyles: { fillColor: pdfTheme.surface, textColor: pdfTheme.text },
+        alternateRowStyles: { fillColor: pdfTheme.surfaceRaised },
         columnStyles: {
           0: { halign: 'center' },
           1: { halign: 'left' },
@@ -2159,9 +2196,17 @@ function AdminHistoryPage() {
           if (hookData.column.index === 1) {
             hookData.cell.styles.fillColor = palette.stripe;
             hookData.cell.styles.textColor = palette.text;
+            hookData.cell.styles.fontStyle = 'bold';
+          }
+
+          if (hookData.column.index === 2) {
+            hookData.cell.styles.fillColor = pdfTheme.badge;
+            hookData.cell.styles.textColor = pdfTheme.text;
+            hookData.cell.styles.fontStyle = 'bold';
           }
         },
         margin: { left: margin, right: margin },
+        willDrawPage: paintAutoTablePage,
       });
 
       cursorY = ((doc as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY) ?? cursorY;
@@ -2211,8 +2256,9 @@ function AdminHistoryPage() {
         }))
         .sort((left, right) => right.count - left.count);
 
-      const printSummaryTable = (title: string, rows: string[][], color: [number, number, number]) => {
+      const printSummaryTable = (title: string, rows: string[][]) => {
         ensureRoom(24);
+        doc.setTextColor(...pdfTheme.text);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9.5);
         doc.text(title, margin, cursorY);
@@ -2223,29 +2269,31 @@ function AdminHistoryPage() {
           theme: 'grid',
           head: [['Tipo', 'Registos', 'Total']],
           body: rows.length > 0 ? rows : [['Sem dados', '0', formatCurrency(0)]],
-          styles: { font: 'helvetica', fontSize: 8, cellPadding: 2, textColor: [17, 24, 39] },
-          headStyles: { fillColor: color, textColor: 255, fontStyle: 'bold', halign: 'center' },
-          alternateRowStyles: { fillColor: [249, 250, 251] },
+          styles: { font: 'helvetica', fontSize: 8, cellPadding: 2, textColor: pdfTheme.text, fillColor: pdfTheme.surface, lineColor: pdfTheme.border, lineWidth: 0.15 },
+          headStyles: { fillColor: pdfTheme.header, textColor: pdfTheme.text, fontStyle: 'bold', halign: 'center' },
+          bodyStyles: { fillColor: pdfTheme.surface, textColor: pdfTheme.text },
+          alternateRowStyles: { fillColor: pdfTheme.surfaceRaised },
           columnStyles: {
             0: { halign: 'left' },
             1: { halign: 'center' },
             2: { halign: 'right' },
           },
           margin: { left: margin, right: margin },
+          willDrawPage: paintAutoTablePage,
         });
 
         cursorY = ((doc as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY) ?? cursorY;
         cursorY += 4;
       };
 
-      printSummaryTable('Resumo por colaborador', collaboratorSummaryRows, [162, 216, 211]);
-      printSummaryTable('Resumo por banda', bandSummaryRows, [186, 230, 253]);
-      printSummaryTable('Resumo por sala', roomSummaryRows, [224, 187, 228]);
+      printSummaryTable('Resumo por colaborador', collaboratorSummaryRows);
+      printSummaryTable('Resumo por banda', bandSummaryRows);
+      printSummaryTable('Resumo por sala', roomSummaryRows);
 
       if (extrasServiceSummaries.length > 0) {
         for (const serviceSummary of extrasServiceSummaries) {
           const row = [[serviceSummary.label, String(serviceSummary.count), formatCurrency(serviceSummary.total)]];
-          printSummaryTable(`Resumo do servico: ${serviceSummary.label}`, row, [245, 211, 166]);
+          printSummaryTable(`Resumo do servico: ${serviceSummary.label}`, row);
         }
       }
     }
@@ -2256,11 +2304,13 @@ function AdminHistoryPage() {
       doc.setPage(page);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
+      doc.setDrawColor(...pdfTheme.border);
+      doc.line(margin, pageHeight - 11, pageWidth - margin, pageHeight - 11);
+      doc.setTextColor(...pdfTheme.muted);
       doc.text(footerText, pageWidth / 2, pageHeight - 6, { align: 'center' });
     }
 
-    doc.setTextColor(17, 24, 39);
+    doc.setTextColor(...pdfTheme.text);
 
     const stamp = new Date().toISOString().slice(0, 10);
     doc.save(`feedback-ensaios-contas-${stamp}.pdf`);
@@ -2551,15 +2601,18 @@ function AdminHistoryPage() {
             {isPrivileged ? (
               <button
                 type="button"
-                className={`admin-sidebar-item ${activePanel === "users" ? "admin-sidebar-item-active" : ""}`}
+                className={`admin-sidebar-item ${activePanel === "finance" ? "admin-sidebar-item-active" : ""}`}
                 onClick={() => {
-                  setActivePanel("users");
+                  setActivePanel("finance");
                   setSidebarOpen(false);
                 }}
               >
-                Utilizadores
+                Contas
               </button>
             ) : null}
+
+            <div className="admin-sidebar-separator" role="separator" />
+
             {isPrivileged ? (
               <>
                 <button
@@ -2585,6 +2638,20 @@ function AdminHistoryPage() {
               </>
             ) : null}
 
+            <div className="admin-sidebar-separator" role="separator" />
+
+            {isPrivileged ? (
+              <button
+                type="button"
+                className={`admin-sidebar-item ${activePanel === "users" ? "admin-sidebar-item-active" : ""}`}
+                onClick={() => {
+                  setActivePanel("users");
+                  setSidebarOpen(false);
+                }}
+              >
+                Utilizadores
+              </button>
+            ) : null}
             <button
               type="button"
               className={`admin-sidebar-item ${activePanel === "devtools" ? "admin-sidebar-item-active" : ""}`}
@@ -3453,28 +3520,16 @@ function AdminHistoryPage() {
           </section>
         ) : null}
 
-        {activePanel === "unified" && !loading && !error ? (
+        {(activePanel === "unified" || activePanel === "finance") && !loading && !error ? (
           <section className="card admin-section">
             <div className="section-heading section-heading-row">
               <div>
-                <p className="eyebrow">Ensaios</p>
-                <h2>{filteredBookings.length === 0 ? 'Sem ensaios neste filtro' : historyCountLabel}</h2>
+                <p className="eyebrow">{activePanel === 'finance' ? 'Gestão financeira' : 'Ensaios'}</p>
+                <h2>{activePanel === 'finance' ? 'Contas' : filteredBookings.length === 0 ? 'Sem ensaios neste filtro' : historyCountLabel}</h2>
               </div>
-              {isPrivileged ? (
-                <button
-                  type="button"
-                  className="icon-button finance-toggle"
-                  aria-label={showFinance ? 'Esconder contas' : 'Ver contas'}
-                  aria-pressed={showFinance}
-                  title={showFinance ? 'Esconder contas' : 'Ver contas'}
-                  onClick={() => setShowFinance((value) => !value)}
-                >
-                  <Wallet size={20} aria-hidden="true" />
-                </button>
-              ) : null}
             </div>
 
-            {isPrivileged && showFinance ? (
+            {activePanel === 'finance' && isPrivileged ? (
               <div className="finance-panel">
                 <div className="finance-stat-grid">
                   <div className="finance-stat">
@@ -3489,6 +3544,14 @@ function AdminHistoryPage() {
 
                 {financeData.length > 0 ? (
                   <div className="finance-export-bar">
+                    <label className="history-select" title="Limitar os meses incluídos na exportação">
+                      <span>Período</span>
+                      <select value={periodScope} onChange={(event) => setPeriodScope(event.target.value as PeriodScope)}>
+                        {PERIOD_SCOPE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
                     <button type="button" className="primary-button finance-pdf-button" onClick={handlePrintFinance}>
                       Gerar PDF
                     </button>
@@ -3550,10 +3613,9 @@ function AdminHistoryPage() {
                 <div className="finance-print-layout" aria-label="Resumo de contas para PDF">
                   <div className="finance-print-header">
                     <div className="finance-print-header-copy">
-                      <h3>Feedback - Ensaios - Contas</h3>
                       <p>{financeDataToShow.length > 0 ? `${financeDataToShow.length} mês(es) selecionado(s)` : 'Nenhum mes selecionado'}</p>
                     </div>
-                    <img className="finance-print-logo" src="/feedbook-logo.png" alt="Feedback - Ensaios" />
+                    <img className="finance-print-logo" src="/feedbook-logoPDF.png" alt="Feedback - Ensaios" />
                   </div>
 
                   {financeDataToShow.length === 0 ? (
@@ -3648,7 +3710,8 @@ function AdminHistoryPage() {
               </div>
             ) : null}
 
-            <div className="history-toolbar">
+            {activePanel === 'unified' ? (
+              <div className="history-toolbar">
               <label className="history-select">
                 <span>Filtro</span>
                 <select
@@ -3676,9 +3739,10 @@ function AdminHistoryPage() {
                   ))}
                 </select>
               </label>
-            </div>
+              </div>
+            ) : null}
 
-            {filteredBookings.length > 0 ? (
+            {activePanel === 'unified' && filteredBookings.length > 0 ? (
               <div className="history-table-wrap">
                 <table className="history-table history-desktop">
                   <thead>
@@ -3781,11 +3845,11 @@ function AdminHistoryPage() {
                 </ul>
               </div>
             ) : null}
-            {filteredBookings.length === 0 && !loading ? (
+            {activePanel === 'unified' && filteredBookings.length === 0 && !loading ? (
               <p className="summary-copy">Sem ensaios para mostrar.</p>
             ) : null}
 
-            {currentUser?.role === 'superuser' ? (
+            {activePanel === 'unified' && currentUser?.role === 'superuser' ? (
               <section className="danger-zone" aria-labelledby="danger-zone-title">
                 <div className="danger-zone-heading">
                   <AlertTriangle aria-hidden="true" size={16} strokeWidth={2.2} />
