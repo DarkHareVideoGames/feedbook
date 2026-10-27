@@ -804,6 +804,7 @@ function AdminHistoryPage() {
   const [roomForm, setRoomForm] = useState<RoomFormDraft>(emptyRoomForm);
   const [roomImageFile, setRoomImageFile] = useState<File | null>(null);
   const [roomImageUploading, setRoomImageUploading] = useState(false);
+  const [roomSaveLoading, setRoomSaveLoading] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [serviceForm, setServiceForm] = useState<ServiceFormDraft>(emptyServiceForm);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
@@ -822,11 +823,14 @@ function AdminHistoryPage() {
   const [contactRequestReplyText, setContactRequestReplyText] = useState('');
   const [contactRequestConfirmLoading, setContactRequestConfirmLoading] = useState<boolean>(false);
   const [contactRequestToDelete, setContactRequestToDelete] = useState<string | null>(null);
+  const [roomToDelete, setRoomToDelete] = useState<string | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
   const [selectedContactRequestId, setSelectedContactRequestId] = useState<string | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const contactRequestModalTriggerRef = useRef<HTMLElement | null>(null);
   const contactRequestModalCloseRef = useRef<HTMLButtonElement | null>(null);
+  const roomModalTriggerRef = useRef<HTMLElement | null>(null);
+  const roomModalCloseRef = useRef<HTMLButtonElement | null>(null);
   const bookingModalTriggerRef = useRef<HTMLElement | null>(null);
   const bookingModalCloseRef = useRef<HTMLButtonElement | null>(null);
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
@@ -1126,6 +1130,10 @@ function AdminHistoryPage() {
     () => contactRequests.find((request) => request.id === selectedContactRequestId) || null,
     [contactRequests, selectedContactRequestId],
   );
+  const editingRoom = useMemo(
+    () => rooms.find((room) => room.id === editingRoomId) || null,
+    [rooms, editingRoomId],
+  );
   const customerNotificationBooking = useMemo(
     () => bookings.find((booking) => booking.id === customerNotificationDecision?.bookingId) || null,
     [bookings, customerNotificationDecision],
@@ -1157,6 +1165,25 @@ function AdminHistoryPage() {
     setContactRequestConfirmLoading(false);
     setSelectedContactRequestId(null);
     window.requestAnimationFrame(() => contactRequestModalTriggerRef.current?.focus());
+  };
+
+  const openRoomModal = (room: api.ApiRoom, trigger: HTMLElement) => {
+    roomModalTriggerRef.current = trigger;
+    setShowNewRoomForm(false);
+    setEditingRoomId(room.id);
+    setRoomForm(roomToForm(room));
+    setRoomImageFile(null);
+    setCatalogNotice('');
+    setError('');
+  };
+
+  const closeRoomModal = () => {
+    if (roomSaveLoading || roomImageUploading || (editingRoomId && actionLoading[editingRoomId])) return;
+    setEditingRoomId(null);
+    setRoomForm(emptyRoomForm);
+    setRoomImageFile(null);
+    setShowNewRoomForm(false);
+    window.requestAnimationFrame(() => roomModalTriggerRef.current?.focus());
   };
 
   useEffect(() => {
@@ -1214,6 +1241,32 @@ function AdminHistoryPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedBookingId]);
+
+  useEffect(() => {
+    if ((!editingRoomId && !showNewRoomForm) || roomToDelete) return undefined;
+
+    window.requestAnimationFrame(() => roomModalCloseRef.current?.focus());
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !roomSaveLoading && !roomImageUploading && !(editingRoomId && actionLoading[editingRoomId])) {
+        closeRoomModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editingRoomId, showNewRoomForm, roomToDelete, roomSaveLoading, roomImageUploading, actionLoading]);
+
+  useEffect(() => {
+    if (!roomToDelete) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !actionLoading[roomToDelete]) setRoomToDelete(null);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [roomToDelete, actionLoading]);
 
   useEffect(() => {
     if (!customerNotificationDecision) return undefined;
@@ -1604,15 +1657,6 @@ function AdminHistoryPage() {
     }
   };
 
-  const startEditRoom = (room: api.ApiRoom) => {
-    setShowNewRoomForm(false);
-    setEditingRoomId(room.id);
-    setRoomForm(roomToForm(room));
-    setRoomImageFile(null);
-    setCatalogNotice('');
-    setError('');
-  };
-
   const cancelEditRoom = () => {
     setEditingRoomId(null);
     setRoomForm(emptyRoomForm);
@@ -1623,7 +1667,7 @@ function AdminHistoryPage() {
   const handleSaveRoom = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isPrivileged) return;
+    if (!sessionToken || !isPrivileged || roomSaveLoading) return;
     const maxMembers = Number(roomForm.maxMembers);
     const trimmedName = roomForm.name.trim();
     if (!trimmedName) {
@@ -1643,6 +1687,7 @@ function AdminHistoryPage() {
     }
     setCatalogNotice('');
     setError('');
+    setRoomSaveLoading(true);
     try {
       // Determina o id alvo (para novas salas, o id pode ser gerado a partir do nome).
       const roomId = editingRoomId ?? (roomForm.id.trim() || undefined);
@@ -1690,23 +1735,28 @@ function AdminHistoryPage() {
       await loadCatalogs();
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel guardar a sala.');
+    } finally {
+      setRoomSaveLoading(false);
     }
   };
 
-  const handleDeleteRoom = async (roomId: string) => {
+  const handleDeleteRoom = async () => {
+    const roomId = roomToDelete;
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isPrivileged) return;
-    if (!window.confirm('Apagar esta sala? Se tiver marcacoes, sera arquivada.')) return;
+    if (!roomId || !sessionToken || !isPrivileged || actionLoading[roomId]) return;
     setCatalogNotice('');
     setError('');
-    try {
+    await withActionLock(roomId, async () => {
       const payload = await api.deleteRoom(sessionToken, roomId);
-      if (editingRoomId === roomId) cancelEditRoom();
+      if (editingRoomId === roomId) {
+        setEditingRoomId(null);
+        setRoomForm(emptyRoomForm);
+        setRoomImageFile(null);
+      }
+      setRoomToDelete(null);
       await loadCatalogs();
       setCatalogNotice(payload.message || 'Sala removida.');
-    } catch {
-      setError('Nao foi possivel apagar a sala.');
-    }
+    });
   };
 
   const startEditService = (service: api.ApiService) => {
@@ -3133,7 +3183,9 @@ function AdminHistoryPage() {
             <button
               type="button"
               className="secondary-button catalog-create-action"
-              onClick={() => {
+              disabled={roomSaveLoading}
+              onClick={(event) => {
+                roomModalTriggerRef.current = event.currentTarget;
                 cancelEditRoom();
                 setShowNewRoomForm(true);
               }}
@@ -3142,7 +3194,33 @@ function AdminHistoryPage() {
               Criar sala
             </button>
             {showNewRoomForm || editingRoomId ? (
-              <form className="admin-create-user catalog-form" onSubmit={handleSaveRoom}>
+              <div
+                className="admin-modal-backdrop room-editor-backdrop"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="room-editor-title"
+                onMouseDown={(event) => {
+                  if (event.target === event.currentTarget) closeRoomModal();
+                }}
+              >
+                <section className="card admin-modal-card admin-modal-card-wide room-editor-modal">
+                  <header className="admin-modal-head room-editor-head">
+                    <div>
+                      <p className="eyebrow">{editingRoomId ? 'Editar sala' : 'Nova sala'}</p>
+                      <h2 id="room-editor-title">{editingRoom?.name || 'Criar sala'}</h2>
+                    </div>
+                    <button
+                      ref={roomModalCloseRef}
+                      type="button"
+                      className="secondary-button admin-modal-close"
+                      aria-label="Fechar editor da sala"
+                      disabled={roomSaveLoading || roomImageUploading}
+                      onClick={closeRoomModal}
+                    >
+                      <X aria-hidden="true" size={18} />
+                    </button>
+                  </header>
+                  <form className="admin-create-user room-editor-form" onSubmit={handleSaveRoom}>
               {!editingRoomId ? (
                 <label>
                   ID (opcional, ex: sala-blue)
@@ -3223,6 +3301,7 @@ function AdminHistoryPage() {
                     <button
                       type="button"
                       className="secondary-button"
+                      disabled={roomImageUploading || roomSaveLoading}
                       onClick={() => {
                         setRoomImageFile(null);
                         setRoomForm((current) => ({ ...current, imageUrl: '' }));
@@ -3307,62 +3386,73 @@ function AdminHistoryPage() {
                   <span>Ativa no site</span>
                 </label>
               </div>
-              <div className="admin-user-form-actions">
-                <button type="submit" className="primary-button" disabled={roomImageUploading}>
+              <div className="admin-user-form-actions room-editor-actions">
+                <button type="submit" className="primary-button" disabled={roomImageUploading || roomSaveLoading}>
                   {roomImageUploading
                     ? 'A enviar imagem...'
+                    : roomSaveLoading
+                      ? 'A guardar...'
                     : editingRoomId
                       ? 'Guardar sala'
                       : 'Adicionar sala'}
                 </button>
-                {editingRoomId || showNewRoomForm ? (
-                  <button type="button" className="secondary-button" onClick={cancelEditRoom}>
-                    Cancelar
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={roomImageUploading || roomSaveLoading}
+                  onClick={closeRoomModal}
+                >
+                  Cancelar
+                </button>
+                {editingRoomId ? (
+                  <button
+                    type="button"
+                    className="danger-zone-action room-editor-delete"
+                    disabled={Boolean(actionLoading[editingRoomId]) || roomSaveLoading || roomImageUploading}
+                    onClick={() => setRoomToDelete(editingRoomId)}
+                  >
+                    {actionLoading[editingRoomId] ? 'A apagar...' : 'Apagar sala'}
                   </button>
                 ) : null}
               </div>
-              </form>
+                  </form>
+                </section>
+              </div>
             ) : null}
 
             {catalogLoading ? <p className="summary-copy">A carregar salas...</p> : null}
-            <ul className="admin-user-list catalog-list">
+            <ul className="admin-user-list catalog-list room-management-list">
               {rooms.map((room) => (
-                <li key={room.id}>
-                  <div className="admin-user-card-head">
-                    <strong
-                      className={`admin-user-badge admin-room-name-badge${room.accent.includes('grey') ? ' admin-room-name-badge-grey' : ''}`}
-                      style={{ backgroundColor: room.accent, borderColor: room.accent }}
-                    >
-                      {room.name}
-                    </strong>
-                  </div>
-                  <span>{room.description || 'Sem descricao'}</span>
-                  <div className="admin-user-badges" aria-label="Estado, capacidade e preco">
-                    <span
-                      className={`admin-user-badge ${room.active ? 'admin-room-badge-active' : 'admin-room-badge-inactive'}`}
-                    >
-                      {room.active ? 'Ativa no site' : 'Inativa'}
+                <li key={room.id} className="room-management-card">
+                  <button
+                    type="button"
+                    className="room-management-card-trigger"
+                    disabled={Boolean(actionLoading[room.id])}
+                    onClick={(event) => openRoomModal(room, event.currentTarget)}
+                  >
+                    <span className="room-management-card-media" style={{ borderColor: room.accent }}>
+                      {room.imageUrl ? <img src={room.imageUrl} alt="" /> : <span aria-hidden="true">{room.name.slice(0, 1)}</span>}
                     </span>
-                    <span className="admin-user-badge admin-user-function-badge">
-                      Ate {room.maxMembers} elementos
-                    </span>
-                    <span className="admin-user-badge admin-user-function-badge">
-                      {room.bookingMode === 'contact' ? 'Apenas contacto' : 'Marcação direta'}
-                    </span>
-                    {room.pricePerMemberHour !== null && room.pricePerMemberHour !== undefined ? (
-                      <span className="admin-user-badge admin-user-function-badge">
-                        {room.pricePerMemberHour} EUR/h
+                    <span className="room-management-card-content">
+                      <span className="room-management-card-head">
+                        <strong>{room.name}</strong>
+                        <span className={`admin-user-badge ${room.active ? 'admin-room-badge-active' : 'admin-room-badge-inactive'}`}>
+                          {room.active ? 'Ativa' : 'Inativa'}
+                        </span>
                       </span>
-                    ) : null}
-                  </div>
-                  <div className="team-actions">
-                    <button type="button" className="secondary-button" onClick={() => startEditRoom(room)}>
-                      Editar
-                    </button>
-                    <button type="button" className="secondary-button" onClick={() => void handleDeleteRoom(room.id)}>
-                      Apagar
-                    </button>
-                  </div>
+                      <span className="room-management-card-meta">
+                        <span>{room.bookingMode === 'contact' ? 'Pedido de contacto' : 'Marcação direta'}</span>
+                        <span>Até {room.maxMembers} elementos</span>
+                        {room.pricePerMemberHour !== null && room.pricePerMemberHour !== undefined ? (
+                          <span>{room.pricePerMemberHour} EUR/h</span>
+                        ) : null}
+                      </span>
+                      <span className="room-management-card-open">
+                        Editar sala
+                        <ChevronRight aria-hidden="true" size={18} />
+                      </span>
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -4448,6 +4538,47 @@ function AdminHistoryPage() {
                 onClick={() => { void handleDeleteContactRequest(); }}
               >
                 {actionLoading[contactRequestToDelete] ? 'A apagar...' : 'Apagar definitivamente'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {roomToDelete ? (
+        <div
+          className="admin-modal-backdrop room-delete-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-room-modal-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !actionLoading[roomToDelete]) setRoomToDelete(null);
+          }}
+        >
+          <section className="card admin-modal-card clear-bookings-modal">
+            <div className="clear-bookings-modal-alert">
+              <AlertTriangle aria-hidden="true" size={18} strokeWidth={2.25} />
+              <span>Operação irreversível</span>
+            </div>
+            <h3 id="delete-room-modal-title">Apagar {editingRoom?.name || 'esta sala'}?</h3>
+            <p>
+              A sala será removida. Se tiver marcações associadas, será arquivada para preservar o histórico.
+            </p>
+            <div className="admin-modal-actions clear-bookings-modal-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={Boolean(actionLoading[roomToDelete])}
+                onClick={() => setRoomToDelete(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="danger-zone-action"
+                disabled={Boolean(actionLoading[roomToDelete])}
+                onClick={() => { void handleDeleteRoom(); }}
+              >
+                {actionLoading[roomToDelete] ? 'A apagar...' : 'Apagar sala'}
               </button>
             </div>
           </section>
