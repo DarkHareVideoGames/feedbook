@@ -20,6 +20,127 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Onboarding administrativo (Driver.js, Issue #135). */
+.onboarding-help-trigger {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+}
+
+.onboarding-welcome-backdrop {
+  z-index: 80;
+}
+
+.onboarding-welcome-modal {
+  display: grid;
+  gap: 16px;
+  max-width: 500px;
+}
+
+.feedbook-onboarding-action-step .driver-popover-next-btn {
+  display: none !important;
+}
+
+.onboarding-welcome-modal h2,
+.onboarding-welcome-modal p {
+  margin: 0;
+}
+
+.onboarding-welcome-modal > p:not(.eyebrow) {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.onboarding-welcome-actions {
+  justify-content: flex-end;
+}
+
+.feedbook-onboarding-popover.driver-popover {
+  max-width: min(360px, calc(100vw - 24px));
+  border: 1px solid rgba(209, 19, 35, 0.7);
+  border-radius: 16px;
+  background: #121318;
+  color: var(--text-main);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
+}
+
+.feedbook-onboarding-popover .driver-popover-title {
+  color: #ffffff;
+  font-size: 1.05rem;
+}
+
+.feedbook-onboarding-popover .driver-popover-description,
+.feedbook-onboarding-popover .driver-popover-progress-text {
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.feedbook-onboarding-popover .driver-popover-footer {
+  margin-top: 16px;
+}
+
+.feedbook-onboarding-popover .driver-popover-prev-btn,
+.feedbook-onboarding-popover .driver-popover-next-btn {
+  min-height: 38px;
+  border-radius: 9px;
+  font-weight: 700;
+  text-shadow: none;
+}
+
+.feedbook-onboarding-popover .driver-popover-prev-btn {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: transparent;
+  color: var(--text-main);
+}
+
+.feedbook-onboarding-popover .driver-popover-next-btn {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.feedbook-onboarding-popover .driver-popover-close-btn {
+  color: var(--text-muted);
+}
+
+.feedbook-onboarding-popover .driver-popover-close-btn:hover,
+.feedbook-onboarding-popover .driver-popover-close-btn:focus-visible {
+  color: #ffffff;
+}
+
+.feedbook-onboarding-popover.driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: #121318;
+}
+
+.feedbook-onboarding-popover.driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: #121318;
+}
+
+.feedbook-onboarding-popover.driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: #121318;
+}
+
+.feedbook-onboarding-popover.driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: #121318;
+}
+
+@media (max-width: 640px) {
+  .onboarding-help-trigger {
+    min-height: 38px;
+  }
+
+  .onboarding-welcome-modal {
+    margin: 16px;
+  }
+
+  .onboarding-welcome-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
 .history-extras-cell {
   min-width: 120px;
 }
@@ -3081,13 +3202,30 @@ textarea:focus {
   display: none;
   align-items: center;
   justify-content: center;
-  width: 44px;
+  gap: 7px;
+  min-width: 44px;
   height: 44px;
+  padding: 0 12px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(14, 16, 20, 0.9);
   color: var(--text-main);
   cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.admin-sidebar-toggle:hover,
+.admin-sidebar-toggle:focus-visible,
+.admin-sidebar-toggle-open {
+  border-color: rgba(209, 19, 35, 0.8);
+  background: rgba(50, 11, 15, 0.96);
+}
+
+.admin-sidebar-toggle-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .admin-pie-burger {
@@ -3096,6 +3234,18 @@ textarea:focus {
   justify-content: center;
   gap: 4px;
   width: 18px;
+}
+
+.admin-sidebar-toggle-open .admin-pie-burger span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.admin-sidebar-toggle-open .admin-pie-burger span:nth-child(2) {
+  opacity: 0;
+}
+
+.admin-sidebar-toggle-open .admin-pie-burger span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
 }
 
 .admin-pie-burger span {
