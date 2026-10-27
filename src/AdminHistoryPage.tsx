@@ -818,9 +818,8 @@ function AdminHistoryPage() {
   const [clearBookingsLoading, setClearBookingsLoading] = useState(false);
   const [clearBookingsModalOpen, setClearBookingsModalOpen] = useState(false);
   const [clearBookingsConfirmation, setClearBookingsConfirmation] = useState('');
-  const [contactRequestReplyOpen, setContactRequestReplyOpen] = useState(false);
+  const [contactRequestStep, setContactRequestStep] = useState<'detail' | 'reply' | 'confirm'>('detail');
   const [contactRequestReplyText, setContactRequestReplyText] = useState('');
-  const [contactRequestConfirmOpen, setContactRequestConfirmOpen] = useState<boolean>(false);
   const [contactRequestConfirmLoading, setContactRequestConfirmLoading] = useState<boolean>(false);
   const [contactRequestToDelete, setContactRequestToDelete] = useState<string | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
@@ -1146,30 +1145,29 @@ function AdminHistoryPage() {
   const openContactRequestModal = (contactRequestId: string, trigger: HTMLElement) => {
     contactRequestModalTriggerRef.current = trigger;
     setSelectedContactRequestId(contactRequestId);
-    setContactRequestReplyOpen(false);
+    setContactRequestStep('detail');
     setContactRequestReplyText('');
-    setContactRequestConfirmOpen(false);
+    setContactRequestConfirmLoading(false);
     setError('');
   };
 
   const closeContactRequestModal = () => {
-    setContactRequestReplyOpen(false);
+    setContactRequestStep('detail');
     setContactRequestReplyText('');
-    setContactRequestConfirmOpen(false);
+    setContactRequestConfirmLoading(false);
     setSelectedContactRequestId(null);
     window.requestAnimationFrame(() => contactRequestModalTriggerRef.current?.focus());
   };
 
   useEffect(() => {
-    if (!selectedContactRequestId) return undefined;
+    if (!selectedContactRequestId || contactRequestStep !== 'detail') return undefined;
 
     window.requestAnimationFrame(() => contactRequestModalCloseRef.current?.focus());
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
         event.key === 'Escape' &&
-        !contactRequestReplyOpen &&
-        !contactRequestConfirmOpen &&
+        contactRequestStep === 'detail' &&
         !actionLoading[selectedContactRequestId]
       ) {
         closeContactRequestModal();
@@ -1178,23 +1176,23 @@ function AdminHistoryPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedContactRequestId, actionLoading, contactRequestReplyOpen, contactRequestConfirmOpen]);
+  }, [selectedContactRequestId, actionLoading, contactRequestStep]);
 
   useEffect(() => {
-    if (!contactRequestReplyOpen || contactRequestConfirmOpen) return undefined;
+    if (contactRequestStep !== 'reply') return undefined;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !contactRequestConfirmLoading) {
-        setContactRequestReplyOpen(false);
+        setContactRequestStep('detail');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [contactRequestReplyOpen, contactRequestConfirmOpen, contactRequestConfirmLoading]);
+  }, [contactRequestStep, contactRequestConfirmLoading]);
 
   useEffect(() => {
-    if (!contactRequestConfirmOpen) return undefined;
+    if (contactRequestStep !== 'confirm') return undefined;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !contactRequestConfirmLoading) closeContactRequestConfirm();
@@ -1202,7 +1200,7 @@ function AdminHistoryPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [contactRequestConfirmOpen, contactRequestConfirmLoading]);
+  }, [contactRequestStep, contactRequestConfirmLoading]);
 
   useEffect(() => {
     if (!selectedBookingId) return undefined;
@@ -2424,11 +2422,11 @@ function AdminHistoryPage() {
       return;
     }
     setError('');
-    setContactRequestConfirmOpen(true);
+    setContactRequestStep('confirm');
   };
 
   const closeContactRequestConfirm = () => {
-    setContactRequestConfirmOpen(false);
+    setContactRequestStep('reply');
   };
 
   const executeContactRequestConfirm = async (sendWhatsApp: boolean) => {
@@ -2443,8 +2441,7 @@ function AdminHistoryPage() {
         abrirWhatsAppPedidoContacto(selectedContactRequest, replyText);
       }
       setCatalogNotice('Mensagem enviada e pedido marcado como contactado.');
-      setContactRequestConfirmOpen(false);
-      setContactRequestReplyOpen(false);
+      setContactRequestStep('detail');
       setContactRequestReplyText('');
       closeContactRequestModal();
       await loadContactRequests(token);
@@ -2456,10 +2453,11 @@ function AdminHistoryPage() {
   };
 
   const handleContactRequestContact = () => {
-    if (selectedContactRequest?.status === 'contacted') return;
+    if (!selectedContactRequest || selectedContactRequest.status !== 'pending') return;
     setError('');
+    setContactRequestConfirmLoading(false);
     setContactRequestReplyText('');
-    setContactRequestReplyOpen(true);
+    setContactRequestStep('reply');
   };
 
   const handleDeleteContactRequest = async () => {
@@ -4118,7 +4116,7 @@ function AdminHistoryPage() {
         </div>
       ) : null}
 
-      {selectedContactRequest && !contactRequestReplyOpen && !contactRequestConfirmOpen ? (
+      {selectedContactRequest && contactRequestStep === 'detail' ? (
         <div
           className="admin-modal-backdrop booking-detail-backdrop"
           role="dialog"
@@ -4220,7 +4218,7 @@ function AdminHistoryPage() {
               <button
                 type="button"
                 className="secondary-button"
-                disabled={Boolean(actionLoading[selectedContactRequest.id]) || selectedContactRequest.status === 'contacted'}
+                disabled={Boolean(actionLoading[selectedContactRequest.id]) || selectedContactRequest.status !== 'pending'}
                 onClick={handleContactRequestContact}
               >
                 {actionLoading[selectedContactRequest.id] || contactRequestConfirmLoading ? 'A processar...' : 'Contactar'}
@@ -4240,7 +4238,7 @@ function AdminHistoryPage() {
         </div>
       ) : null}
 
-      {contactRequestReplyOpen && !contactRequestConfirmOpen && selectedContactRequest ? (
+      {contactRequestStep === 'reply' && selectedContactRequest ? (
         <div
           className="admin-modal-backdrop contact-request-confirm-backdrop"
           role="dialog"
@@ -4248,7 +4246,7 @@ function AdminHistoryPage() {
           aria-labelledby="contact-request-reply-title"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget && !contactRequestConfirmLoading) {
-              setContactRequestReplyOpen(false);
+              setContactRequestStep('detail');
             }
           }}
         >
@@ -4263,7 +4261,7 @@ function AdminHistoryPage() {
                 className="secondary-button admin-modal-close"
                 aria-label="Fechar mensagem"
                 disabled={contactRequestConfirmLoading}
-                onClick={() => setContactRequestReplyOpen(false)}
+                onClick={() => setContactRequestStep('detail')}
               >
                 <X aria-hidden="true" size={18} />
               </button>
@@ -4288,7 +4286,7 @@ function AdminHistoryPage() {
                 type="button"
                 className="secondary-button"
                 disabled={contactRequestConfirmLoading}
-                onClick={() => setContactRequestReplyOpen(false)}
+                onClick={() => setContactRequestStep('detail')}
               >
                 Cancelar
               </button>
@@ -4305,7 +4303,7 @@ function AdminHistoryPage() {
         </div>
       ) : null}
 
-      {contactRequestConfirmOpen && selectedContactRequest ? (
+      {contactRequestStep === 'confirm' && selectedContactRequest ? (
         <div
           className="admin-modal-backdrop contact-request-confirm-backdrop"
           role="dialog"
