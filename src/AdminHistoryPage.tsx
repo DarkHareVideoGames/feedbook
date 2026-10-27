@@ -807,6 +807,7 @@ function AdminHistoryPage() {
   const [roomSaveLoading, setRoomSaveLoading] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [serviceForm, setServiceForm] = useState<ServiceFormDraft>(emptyServiceForm);
+  const [serviceSaveLoading, setServiceSaveLoading] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogNotice, setCatalogNotice] = useState('');
@@ -831,6 +832,8 @@ function AdminHistoryPage() {
   const contactRequestModalCloseRef = useRef<HTMLButtonElement | null>(null);
   const roomModalTriggerRef = useRef<HTMLElement | null>(null);
   const roomModalCloseRef = useRef<HTMLButtonElement | null>(null);
+  const serviceModalTriggerRef = useRef<HTMLElement | null>(null);
+  const serviceModalCloseRef = useRef<HTMLButtonElement | null>(null);
   const bookingModalTriggerRef = useRef<HTMLElement | null>(null);
   const bookingModalCloseRef = useRef<HTMLButtonElement | null>(null);
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
@@ -1134,6 +1137,10 @@ function AdminHistoryPage() {
     () => rooms.find((room) => room.id === editingRoomId) || null,
     [rooms, editingRoomId],
   );
+  const editingService = useMemo(
+    () => services.find((service) => service.id === editingServiceId) || null,
+    [services, editingServiceId],
+  );
   const customerNotificationBooking = useMemo(
     () => bookings.find((booking) => booking.id === customerNotificationDecision?.bookingId) || null,
     [bookings, customerNotificationDecision],
@@ -1184,6 +1191,27 @@ function AdminHistoryPage() {
     setRoomImageFile(null);
     setShowNewRoomForm(false);
     window.requestAnimationFrame(() => roomModalTriggerRef.current?.focus());
+  };
+
+  const openServiceModal = (service: api.ApiService, trigger: HTMLElement) => {
+    serviceModalTriggerRef.current = trigger;
+    setShowNewServiceForm(false);
+    setEditingServiceId(service.id);
+    setServiceForm(serviceToForm(service));
+    setCatalogNotice('');
+    setError('');
+  };
+
+  const resetServiceModal = () => {
+    setEditingServiceId(null);
+    setServiceForm(emptyServiceForm);
+    setShowNewServiceForm(false);
+    window.requestAnimationFrame(() => serviceModalTriggerRef.current?.focus());
+  };
+
+  const closeServiceModal = () => {
+    if (serviceSaveLoading || (editingServiceId && actionLoading[editingServiceId])) return;
+    resetServiceModal();
   };
 
   useEffect(() => {
@@ -1267,6 +1295,32 @@ function AdminHistoryPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [roomToDelete, actionLoading]);
+
+  useEffect(() => {
+    if ((!editingServiceId && !showNewServiceForm) || serviceToDelete) return undefined;
+
+    window.requestAnimationFrame(() => serviceModalCloseRef.current?.focus());
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !serviceSaveLoading && !(editingServiceId && actionLoading[editingServiceId])) {
+        closeServiceModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editingServiceId, showNewServiceForm, serviceToDelete, serviceSaveLoading, actionLoading]);
+
+  useEffect(() => {
+    if (!serviceToDelete) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !actionLoading[serviceToDelete]) setServiceToDelete(null);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [serviceToDelete, actionLoading]);
 
   useEffect(() => {
     if (!customerNotificationDecision) return undefined;
@@ -1759,14 +1813,6 @@ function AdminHistoryPage() {
     });
   };
 
-  const startEditService = (service: api.ApiService) => {
-    setShowNewServiceForm(false);
-    setEditingServiceId(service.id);
-    setServiceForm(serviceToForm(service));
-    setCatalogNotice('');
-    setError('');
-  };
-
   const cancelEditService = () => {
     setEditingServiceId(null);
     setServiceForm(emptyServiceForm);
@@ -1776,7 +1822,7 @@ function AdminHistoryPage() {
   const handleSaveService = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
-    if (!sessionToken || !isPrivileged) return;
+    if (!sessionToken || !isPrivileged || serviceSaveLoading) return;
     const trimmedName = serviceForm.name.trim();
     const price = Number(serviceForm.price);
     if (!trimmedName) {
@@ -1789,6 +1835,7 @@ function AdminHistoryPage() {
     }
     setCatalogNotice('');
     setError('');
+    setServiceSaveLoading(true);
     try {
       const draft: api.ServiceDraft = {
         id: editingServiceId ?? (serviceForm.id.trim() || undefined),
@@ -1806,10 +1853,12 @@ function AdminHistoryPage() {
         await api.createService(sessionToken, draft);
         setCatalogNotice('Servico criado com sucesso.');
       }
-      cancelEditService();
+      resetServiceModal();
       await loadCatalogs();
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel guardar o servico.');
+    } finally {
+      setServiceSaveLoading(false);
     }
   };
 
@@ -1823,7 +1872,7 @@ function AdminHistoryPage() {
     try {
       await withActionLock(serviceId, async () => {
         const payload = await api.deleteService(sessionToken, serviceId);
-        if (editingServiceId === serviceId) cancelEditService();
+        if (editingServiceId === serviceId) resetServiceModal();
         await loadCatalogs();
         setCatalogNotice(payload.message || 'Servico removido.');
         setServiceToDelete(null);
@@ -3501,7 +3550,9 @@ function AdminHistoryPage() {
             <button
               type="button"
               className="secondary-button catalog-create-action"
-              onClick={() => {
+              disabled={serviceSaveLoading}
+              onClick={(event) => {
+                serviceModalTriggerRef.current = event.currentTarget;
                 cancelEditService();
                 setShowNewServiceForm(true);
               }}
@@ -3510,108 +3561,159 @@ function AdminHistoryPage() {
               Criar servico
             </button>
             {showNewServiceForm || editingServiceId ? (
-              <form className="admin-create-user catalog-form" onSubmit={handleSaveService}>
-              {!editingServiceId ? (
-                <label>
-                  ID (opcional, ex: mistura)
-                  <input
-                    type="text"
-                    autoComplete="off"
-                    value={serviceForm.id}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, id: event.target.value }))}
-                    placeholder="gerado a partir do nome"
-                  />
-                </label>
-              ) : null}
-              <div className="field-row">
-                <label>
-                  Nome (PT) *
-                  <input
-                    type="text"
-                    required
-                    autoComplete="off"
-                    value={serviceForm.name}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, name: event.target.value }))}
-                  />
-                </label>
-                <label>
-                  Nome (EN)
-                  <input
-                    type="text"
-                    autoComplete="off"
-                    value={serviceForm.nameEn}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, nameEn: event.target.value }))}
-                  />
-                </label>
+              <div
+                className="admin-modal-backdrop service-editor-backdrop"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="service-editor-title"
+                onMouseDown={(event) => {
+                  if (event.target === event.currentTarget) closeServiceModal();
+                }}
+              >
+                <section className="card admin-modal-card admin-modal-card-wide service-editor-modal">
+                  <header className="admin-modal-head service-editor-head">
+                    <div>
+                      <p className="eyebrow">{editingServiceId ? 'Editar serviço' : 'Novo serviço'}</p>
+                      <h2 id="service-editor-title">{editingService?.name || 'Criar serviço'}</h2>
+                    </div>
+                    <button
+                      ref={serviceModalCloseRef}
+                      type="button"
+                      className="secondary-button admin-modal-close"
+                      aria-label="Fechar editor do serviço"
+                      disabled={serviceSaveLoading}
+                      onClick={closeServiceModal}
+                    >
+                      <X aria-hidden="true" size={18} />
+                    </button>
+                  </header>
+                  <form className="admin-create-user service-editor-form" onSubmit={handleSaveService}>
+                    {!editingServiceId ? (
+                      <label>
+                        ID opcional
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          value={serviceForm.id}
+                          onChange={(event) => setServiceForm((current) => ({ ...current, id: event.target.value }))}
+                          placeholder="mistura"
+                        />
+                      </label>
+                    ) : null}
+                    <div className="service-editor-language-grid">
+                      <label>
+                        Nome (PT) *
+                        <input
+                          type="text"
+                          required
+                          autoComplete="off"
+                          value={serviceForm.name}
+                          onChange={(event) => setServiceForm((current) => ({ ...current, name: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Name (EN)
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          value={serviceForm.nameEn}
+                          onChange={(event) => setServiceForm((current) => ({ ...current, nameEn: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Descrição (PT)
+                        <textarea
+                          rows={4}
+                          value={serviceForm.description}
+                          onChange={(event) => setServiceForm((current) => ({ ...current, description: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Description (EN)
+                        <textarea
+                          rows={4}
+                          value={serviceForm.descriptionEn}
+                          onChange={(event) => setServiceForm((current) => ({ ...current, descriptionEn: event.target.value }))}
+                        />
+                      </label>
+                    </div>
+                    <div className="field-row service-editor-settings">
+                      <label>
+                        Preço (EUR) *
+                        <input
+                          type="number"
+                          min={0}
+                          step="1"
+                          required
+                          autoComplete="off"
+                          value={serviceForm.price}
+                          onChange={(event) => setServiceForm((current) => ({ ...current, price: event.target.value }))}
+                        />
+                      </label>
+                      <label className="extra-toggle service-editor-active-toggle">
+                        <input
+                          type="checkbox"
+                          checked={serviceForm.active}
+                          onChange={(event) => setServiceForm((current) => ({ ...current, active: event.target.checked }))}
+                        />
+                        <span>Ativo no site</span>
+                      </label>
+                    </div>
+                    <div className="admin-user-form-actions service-editor-actions">
+                      <button type="submit" className="primary-button" disabled={serviceSaveLoading}>
+                        {serviceSaveLoading ? 'A guardar...' : editingServiceId ? 'Guardar serviço' : 'Adicionar serviço'}
+                      </button>
+                      <button type="button" className="secondary-button" disabled={serviceSaveLoading} onClick={closeServiceModal}>
+                        Cancelar
+                      </button>
+                      {editingServiceId ? (
+                        <button
+                          type="button"
+                          className="danger-zone-action service-editor-delete"
+                          disabled={Boolean(actionLoading[editingServiceId]) || serviceSaveLoading}
+                          onClick={() => setServiceToDelete(editingServiceId)}
+                        >
+                          {actionLoading[editingServiceId] ? 'A apagar...' : 'Apagar serviço'}
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+                </section>
               </div>
-              <label>
-                Descricao
-                <textarea
-                  rows={2}
-                  value={serviceForm.description}
-                  onChange={(event) => setServiceForm((current) => ({ ...current, description: event.target.value }))}
-                />
-              </label>
-               <label>
-                 Descricao (EN)
-                 <textarea
-                   rows={2}
-                   value={serviceForm.descriptionEn}
-                   onChange={(event) => setServiceForm((current) => ({ ...current, descriptionEn: event.target.value }))}
-                 />
-               </label>
-              <div className="field-row">
-                <label>
-                  Preco (EUR) *
-                  <input
-                    type="number"
-                    min={0}
-                    step="1"
-                    autoComplete="off"
-                    value={serviceForm.price}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, price: event.target.value }))}
-                  />
-                </label>
-                <label className="extra-toggle">
-                  <input
-                    type="checkbox"
-                    checked={serviceForm.active}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, active: event.target.checked }))}
-                  />
-                  <span>Ativo no site</span>
-                </label>
-              </div>
-              <div className="admin-user-form-actions">
-                <button type="submit" className="primary-button">
-                  {editingServiceId ? 'Guardar servico' : 'Adicionar servico'}
-                </button>
-                {editingServiceId || showNewServiceForm ? (
-                  <button type="button" className="secondary-button" onClick={cancelEditService}>
-                    Cancelar
-                  </button>
-                ) : null}
-              </div>
-              </form>
             ) : null}
 
             {catalogLoading ? <p className="summary-copy">A carregar servicos...</p> : null}
-            <ul className="admin-user-list catalog-list">
+            <ul className="admin-user-list catalog-list service-management-list">
               {services.map((service) => (
-                <li key={service.id}>
-                  <div className="admin-user-card-head">
-                    <strong className="admin-user-badge admin-service-name-badge">{service.name}</strong>
-                    {!service.active ? <span className="booking-id-chip">inativo</span> : null}
-                  <span style={{ marginLeft: 'auto', fontWeight: 600 }}>{service.price} EUR</span>
-                  </div>
-                  <small>{service.description || 'Sem descricao'}</small>
-                  <div className="team-actions">
-                    <button type="button" className="secondary-button" onClick={() => startEditService(service)}>
-                      Editar
-                    </button>
-                    <button type="button" className="secondary-button" onClick={() => setServiceToDelete(service.id)}>
-                      Apagar
-                    </button>
-                  </div>
+                <li key={service.id} className="service-management-card">
+                  <button
+                    type="button"
+                    className="service-management-card-trigger"
+                    disabled={Boolean(actionLoading[service.id])}
+                    onClick={(event) => openServiceModal(service, event.currentTarget)}
+                  >
+                    <span className="service-management-card-mark" aria-hidden="true">
+                      {service.name.slice(0, 1)}
+                    </span>
+                    <span className="service-management-card-content">
+                      <span className="service-management-card-head">
+                        <strong>{service.name}</strong>
+                        <span className={`admin-user-badge ${service.active ? 'admin-room-badge-active' : 'admin-room-badge-inactive'}`}>
+                          {service.active ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </span>
+                      <span className="service-management-card-description">
+                        {service.description || 'Sem descrição'}
+                      </span>
+                      <span className="service-management-card-footer">
+                        <strong>{service.price} EUR</strong>
+                        <span>
+                          Editar serviço
+                          <ChevronRight aria-hidden="true" size={18} />
+                        </span>
+                      </span>
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -4617,17 +4719,20 @@ function AdminHistoryPage() {
 
       {serviceToDelete ? (
         <div
-          className="admin-modal-backdrop"
+          className="admin-modal-backdrop service-delete-backdrop"
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-service-modal-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !actionLoading[serviceToDelete]) setServiceToDelete(null);
+          }}
         >
           <section className="card admin-modal-card clear-bookings-modal">
             <div className="clear-bookings-modal-alert">
               <AlertTriangle aria-hidden="true" size={18} strokeWidth={2.25} />
               <span>Operação irreversível</span>
             </div>
-            <h3 id="delete-service-modal-title">Apagar serviço?</h3>
+            <h3 id="delete-service-modal-title">Apagar {editingService?.name || 'este serviço'}?</h3>
             <p>
               Este serviço será removido. Se estiver em uso, será arquivado.
             </p>
@@ -4646,7 +4751,7 @@ function AdminHistoryPage() {
                 disabled={Boolean(actionLoading[serviceToDelete])}
                 onClick={() => { void handleDeleteService(); }}
               >
-                {actionLoading[serviceToDelete] ? 'A apagar...' : 'Apagar definitivamente'}
+                {actionLoading[serviceToDelete] ? 'A apagar...' : 'Apagar serviço'}
               </button>
             </div>
           </section>
