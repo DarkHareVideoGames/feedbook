@@ -5,6 +5,8 @@ import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
 import AdminSetupDiagnostics from './components/ui/AdminSetupDiagnostics';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
+import 'driver.js/dist/driver.css';
+import { OnboardingHelpTrigger, WelcomeModal, useOnboarding } from './onboarding';
 
 type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
 
@@ -901,6 +903,12 @@ function AdminHistoryPage() {
   const isPrivilegedRole = (role: Role | null | undefined) => role === 'admin' || role === 'superuser';
   const isPrivileged = isPrivilegedRole(currentUser?.role);
   const isSuperuser = currentUser?.role === 'superuser';
+  const onboarding = useOnboarding({
+    userId: currentUser?.id,
+    role: isPrivileged ? currentUser?.role : undefined,
+    setActivePanel,
+    setSidebarOpen,
+  });
   const toggleBetaMode = async () => {
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
     if (!sessionToken || actionLoading['beta']) return;
@@ -2959,6 +2967,9 @@ function AdminHistoryPage() {
               onError={() => setAdminLogoVisible(false)}
             />
           ) : null}
+          {isPrivileged ? (
+            <OnboardingHelpTrigger busy={onboarding.isBusy || onboarding.tourActive} onStart={() => { void onboarding.startTour(); }} />
+          ) : null}
         </div>
       </header>
 
@@ -2966,8 +2977,11 @@ function AdminHistoryPage() {
         {!loading && isPrivileged ? (
           <button
             type="button"
-            className="admin-sidebar-toggle"
-            aria-label="Abrir menu de gestao"
+            className={`admin-sidebar-toggle ${sidebarOpen ? 'admin-sidebar-toggle-open' : ''}`}
+            data-onboarding="mobile-menu-toggle"
+            aria-label={sidebarOpen ? 'Fechar menu de gestão' : 'Abrir menu de gestão'}
+            aria-expanded={sidebarOpen}
+            aria-controls="admin-sidebar-navigation"
             onClick={() => setSidebarOpen((current) => !current)}
           >
             <span className="admin-pie-burger" aria-hidden="true">
@@ -2975,6 +2989,7 @@ function AdminHistoryPage() {
               <span />
               <span />
             </span>
+            <span className="admin-sidebar-toggle-label">{sidebarOpen ? 'Fechar' : 'Menu'}</span>
           </button>
         ) : null}
 
@@ -2994,10 +3009,11 @@ function AdminHistoryPage() {
               X
             </button>
           </div>
-          <nav className="admin-sidebar-nav" aria-label="Seccoes de administracao">
+          <nav id="admin-sidebar-navigation" className="admin-sidebar-nav" aria-label="Seccoes de administracao" data-onboarding="mobile-menu-navigation">
             <button
               type="button"
               className={`admin-sidebar-item ${activePanel === "unified" ? "admin-sidebar-item-active" : ""}`}
+              data-onboarding="rehearsals-navigation"
               onClick={() => {
                 setActivePanel("unified");
                 setSidebarOpen(false);
@@ -3008,6 +3024,7 @@ function AdminHistoryPage() {
             <button
               type="button"
               className={`admin-sidebar-item ${activePanel === "contact-requests" ? "admin-sidebar-item-active" : ""}`}
+              data-onboarding="contact-requests-navigation"
               onClick={() => {
                 setActivePanel("contact-requests");
                 setSidebarOpen(false);
@@ -3019,6 +3036,7 @@ function AdminHistoryPage() {
               <button
                 type="button"
                 className={`admin-sidebar-item ${activePanel === "finance" ? "admin-sidebar-item-active" : ""}`}
+                data-onboarding="finance-navigation"
                 onClick={() => {
                   setActivePanel("finance");
                   setSidebarOpen(false);
@@ -3035,6 +3053,7 @@ function AdminHistoryPage() {
                 <button
                   type="button"
                   className={`admin-sidebar-item ${activePanel === "rooms" ? "admin-sidebar-item-active" : ""}`}
+                  data-onboarding="rooms-navigation"
                   onClick={() => {
                     setActivePanel("rooms");
                     setSidebarOpen(false);
@@ -3045,6 +3064,7 @@ function AdminHistoryPage() {
                 <button
                   type="button"
                   className={`admin-sidebar-item ${activePanel === "services" ? "admin-sidebar-item-active" : ""}`}
+                  data-onboarding="services-navigation"
                   onClick={() => {
                     setActivePanel("services");
                     setSidebarOpen(false);
@@ -3061,6 +3081,7 @@ function AdminHistoryPage() {
               <button
                 type="button"
                 className={`admin-sidebar-item ${activePanel === "users" ? "admin-sidebar-item-active" : ""}`}
+                data-onboarding="users-navigation"
                 onClick={() => {
                   setActivePanel("users");
                   setSidebarOpen(false);
@@ -3096,7 +3117,7 @@ function AdminHistoryPage() {
           {loading ? <p className="summary-copy">A carregar...</p> : null}
 
           {activePanel === 'contact-requests' ? (
-            <section className="card admin-section catalog-management-section">
+            <section className="card admin-section catalog-management-section" data-onboarding="contact-requests">
               <div className="section-heading section-heading-row catalog-heading">
                 <div>
                   <p className="eyebrow">Contactos</p>
@@ -3146,7 +3167,7 @@ function AdminHistoryPage() {
           ) : null}
 
           {isPrivileged && activePanel === 'users' ? (
-            <section className="card admin-section catalog-management-section">
+            <section className="card admin-section catalog-management-section" data-onboarding="users">
               <div className="section-heading section-heading-row catalog-heading">
                 <div>
                   <p className="eyebrow">Utilizadores</p>
@@ -3504,7 +3525,7 @@ function AdminHistoryPage() {
           ) : null}
 
           {isPrivileged && activePanel === 'rooms' ? (
-          <section className="card admin-section catalog-management-section">
+          <section className="card admin-section catalog-management-section" data-onboarding="rooms">
             <div className="section-heading section-heading-row catalog-heading">
               <div>
                 <p className="eyebrow">Salas</p>
@@ -3840,7 +3861,7 @@ function AdminHistoryPage() {
         ) : null}
 
         {isPrivileged && activePanel === 'services' ? (
-          <section className="card admin-section catalog-management-section">
+          <section className="card admin-section catalog-management-section" data-onboarding="services">
             <div className="section-heading section-heading-row catalog-heading">
               <div>
                 <p className="eyebrow">Servicos</p>
@@ -4028,7 +4049,7 @@ function AdminHistoryPage() {
         ) : null}
 
         {activePanel === 'unified' && !loading ? (
-          <section className="card admin-section room-availability-card" aria-label="Disponibilidade das salas">
+          <section className="card admin-section room-availability-card" aria-label="Disponibilidade das salas" data-onboarding="live-availability">
             <div className="room-availability-header">
               <div className="section-heading">
                 <p className="eyebrow room-availability-live-label">
@@ -4165,7 +4186,7 @@ function AdminHistoryPage() {
         ) : null}
 
         {(activePanel === "unified" || activePanel === "finance") && !loading && !error ? (
-          <section className="card admin-section">
+          <section className="card admin-section" data-onboarding={activePanel === 'finance' ? 'finance' : 'rehearsals'}>
             <div className="section-heading section-heading-row">
               <div>
                 <p className="eyebrow">{activePanel === 'finance' ? 'Gestão financeira' : 'Ensaios'}</p>
@@ -5359,6 +5380,13 @@ function AdminHistoryPage() {
             </form>
           </section>
         </div>
+      ) : null}
+      {onboarding.isReady && onboarding.showWelcome ? (
+        <WelcomeModal
+          busy={onboarding.isBusy}
+          onStart={() => { void onboarding.startTour(); }}
+          onSkip={() => { void onboarding.skipWelcome(); }}
+        />
       ) : null}
       </div>
       {currentUser ? <InstallPwaPrompt /> : null}
