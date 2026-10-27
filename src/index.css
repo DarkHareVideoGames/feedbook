@@ -2576,6 +2576,110 @@ textarea:focus {
   margin-top: 6px;
 }
 
+.contact-request-list {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.admin-user-list .contact-request-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.contact-request-card-trigger {
+  display: grid;
+  width: 100%;
+  min-height: 154px;
+  padding: 16px;
+  gap: 12px;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.contact-request-card-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.contact-request-card-head,
+.contact-request-card-footer,
+.contact-request-card-open {
+  display: flex;
+  align-items: center;
+}
+
+.contact-request-card-head,
+.contact-request-card-footer {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.contact-request-card-head > span:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.contact-request-card-head strong,
+.contact-request-card-head small,
+.contact-request-card-room {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-request-card-head small,
+.contact-request-card-footer {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.contact-request-card-room {
+  align-self: start;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.contact-request-card-reply {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  border-radius: 10px;
+  background: rgba(22, 101, 52, 0.12);
+}
+
+.contact-request-card-reply > span:first-child {
+  color: #86efac;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.contact-request-card-reply > span:last-child {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-request-card-footer {
+  align-self: end;
+  margin-top: auto;
+}
+
+.contact-request-card-open {
+  gap: 8px;
+  color: var(--text-secondary);
+}
+
 .admin-booking-list {
   margin-top: 8px;
 }
@@ -3692,6 +3796,84 @@ textarea:focus {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   padding: 0;
+}
+
+.contact-request-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.contact-request-detail-actions .danger-zone-action {
+  margin-left: auto;
+}
+
+.contact-request-reply-detail {
+  border-color: rgba(74, 222, 128, 0.28);
+  background: rgba(22, 101, 52, 0.08);
+}
+
+.contact-request-reply-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.contact-request-confirm-backdrop {
+  z-index: 80;
+}
+
+.contact-request-confirm-modal {
+  width: min(100%, 460px);
+}
+
+.contact-request-reply-modal {
+  width: min(100%, 620px);
+}
+
+.contact-request-reply-modal .admin-modal-head h3,
+.contact-request-reply-modal .admin-modal-head p {
+  margin: 0;
+}
+
+.contact-request-reply-field {
+  display: grid;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.contact-request-reply-field textarea {
+  min-height: 170px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.contact-request-reply-actions {
+  margin-top: 2px;
+}
+
+@media (max-width: 620px) {
+  .contact-request-list {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-request-detail-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .contact-request-detail-actions .danger-zone-action {
+    width: 100%;
+    margin-left: 0;
+  }
 }
 
 .booking-detail-header,

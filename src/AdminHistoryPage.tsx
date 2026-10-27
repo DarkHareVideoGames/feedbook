@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CalendarClock, ChevronRight, CircleCheck, CircleDashedCheck, Clock3, MessageCircle, Plus, Radio, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, CalendarClock, ChevronRight, CircleCheck, CircleDashedCheck, Clock3, MessageCircle, Plus, Radio, RefreshCw, Send, X } from 'lucide-react';
 import * as api from './api';
 import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
@@ -621,8 +621,23 @@ function abrirWhatsAppMensagem(
   return true;
 }
 
-function consegueAbrirWhatsApp(booking: PastBooking): boolean {
-  return normalizarNumeroWhatsApp(booking.contactPhone || '').length > 0;
+function consegueAbrirWhatsApp(contact: { contactPhone?: string | null }): boolean {
+  return normalizarNumeroWhatsApp(contact.contactPhone || '').length > 0;
+}
+
+function abrirWhatsAppPedidoContacto(request: api.ApiContactRequest, message: string): boolean {
+  const numeroNormalizado = normalizarNumeroWhatsApp(request.contactPhone || '');
+  if (!numeroNormalizado) return false;
+
+  const mensagem = [
+    `Olá ${request.contactName || 'Utilizador'}!`,
+    message.trim(),
+    `Sala: ${request.roomName}`,
+    'Obrigado por escolheres o Feedback - Ensaios.',
+  ].join('\n\n');
+  const linkWhatsApp = `https://wa.me/${numeroNormalizado}?text=${encodeURIComponent(mensagem)}`;
+  window.open(linkWhatsApp, '_blank', 'noopener,noreferrer');
+  return true;
 }
 
 function localDateKey(date: Date): string {
@@ -655,6 +670,25 @@ function contactRequestDateKey(request: api.ApiContactRequest): string {
   return Number.isNaN(createdAt.getTime()) ? '' : localDateKey(createdAt);
 }
 
+function contactRequestStatusTone(status: api.ContactRequestStatus): string {
+  if (status === 'contacted') return 'state-confirmed';
+  if (status === 'closed') return 'status-void';
+  return 'state-pending';
+}
+
+function formatContactRequestDate(value?: string): string {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('pt-PT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 const contactRequestStatusLabel: Record<api.ContactRequestStatus, string> = {
   pending: 'Novo',
   contacted: 'Contactado',
@@ -680,7 +714,6 @@ function formatAvailabilityTime(date: Date | null): string {
 function AdminHistoryPage() {
   const [bookings, setBookings] = useState<PastBooking[]>([]);
   const [contactRequests, setContactRequests] = useState<api.ApiContactRequest[]>([]);
-  const [contactRequestsLoading, setContactRequestsLoading] = useState(false);
   const [adminLogoVisible, setAdminLogoVisible] = useState(true);
   const [betaEnabled, setBetaEnabled] = useState(true);
   const [token, setToken] = useState('');
@@ -785,9 +818,16 @@ function AdminHistoryPage() {
   const [clearBookingsLoading, setClearBookingsLoading] = useState(false);
   const [clearBookingsModalOpen, setClearBookingsModalOpen] = useState(false);
   const [clearBookingsConfirmation, setClearBookingsConfirmation] = useState('');
+  const [contactRequestReplyOpen, setContactRequestReplyOpen] = useState(false);
+  const [contactRequestReplyText, setContactRequestReplyText] = useState('');
+  const [contactRequestConfirmOpen, setContactRequestConfirmOpen] = useState<boolean>(false);
+  const [contactRequestConfirmLoading, setContactRequestConfirmLoading] = useState<boolean>(false);
   const [contactRequestToDelete, setContactRequestToDelete] = useState<string | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
+  const [selectedContactRequestId, setSelectedContactRequestId] = useState<string | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const contactRequestModalTriggerRef = useRef<HTMLElement | null>(null);
+  const contactRequestModalCloseRef = useRef<HTMLButtonElement | null>(null);
   const bookingModalTriggerRef = useRef<HTMLElement | null>(null);
   const bookingModalCloseRef = useRef<HTMLButtonElement | null>(null);
   const [newUserDraft, setNewUserDraft] = useState<NewUserDraft>({
@@ -1083,6 +1123,10 @@ function AdminHistoryPage() {
     () => bookings.find((booking) => booking.id === selectedBookingId) || null,
     [bookings, selectedBookingId],
   );
+  const selectedContactRequest = useMemo(
+    () => contactRequests.find((request) => request.id === selectedContactRequestId) || null,
+    [contactRequests, selectedContactRequestId],
+  );
   const customerNotificationBooking = useMemo(
     () => bookings.find((booking) => booking.id === customerNotificationDecision?.bookingId) || null,
     [bookings, customerNotificationDecision],
@@ -1098,6 +1142,67 @@ function AdminHistoryPage() {
     setSelectedBookingId(null);
     window.requestAnimationFrame(() => bookingModalTriggerRef.current?.focus());
   };
+
+  const openContactRequestModal = (contactRequestId: string, trigger: HTMLElement) => {
+    contactRequestModalTriggerRef.current = trigger;
+    setSelectedContactRequestId(contactRequestId);
+    setContactRequestReplyOpen(false);
+    setContactRequestReplyText('');
+    setContactRequestConfirmOpen(false);
+    setError('');
+  };
+
+  const closeContactRequestModal = () => {
+    setContactRequestReplyOpen(false);
+    setContactRequestReplyText('');
+    setContactRequestConfirmOpen(false);
+    setSelectedContactRequestId(null);
+    window.requestAnimationFrame(() => contactRequestModalTriggerRef.current?.focus());
+  };
+
+  useEffect(() => {
+    if (!selectedContactRequestId) return undefined;
+
+    window.requestAnimationFrame(() => contactRequestModalCloseRef.current?.focus());
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key === 'Escape' &&
+        !contactRequestReplyOpen &&
+        !contactRequestConfirmOpen &&
+        !actionLoading[selectedContactRequestId]
+      ) {
+        closeContactRequestModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedContactRequestId, actionLoading, contactRequestReplyOpen, contactRequestConfirmOpen]);
+
+  useEffect(() => {
+    if (!contactRequestReplyOpen || contactRequestConfirmOpen) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !contactRequestConfirmLoading) {
+        setContactRequestReplyOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [contactRequestReplyOpen, contactRequestConfirmOpen, contactRequestConfirmLoading]);
+
+  useEffect(() => {
+    if (!contactRequestConfirmOpen) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !contactRequestConfirmLoading) closeContactRequestConfirm();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [contactRequestConfirmOpen, contactRequestConfirmLoading]);
 
   useEffect(() => {
     if (!selectedBookingId) return undefined;
@@ -1169,7 +1274,6 @@ function AdminHistoryPage() {
 
   const loadContactRequests = async (sessionToken: string) => {
     if (!sessionToken) return;
-    setContactRequestsLoading(true);
     try {
       const payload = await api.adminContactRequests(sessionToken);
       setContactRequests(payload.contactRequests);
@@ -1179,8 +1283,6 @@ function AdminHistoryPage() {
         return;
       }
       setError('Nao foi possivel carregar os pedidos de contacto.');
-    } finally {
-      setContactRequestsLoading(false);
     }
   };
 
@@ -2316,20 +2418,48 @@ function AdminHistoryPage() {
     doc.save(`feedback-ensaios-contas-${stamp}.pdf`);
   };
 
-  const handleContactRequestStatus = async (
-    contactRequestId: string,
-    status: api.ContactRequestStatus,
-  ) => {
-    if (!token || actionLoading[contactRequestId]) return;
-    setError('');
-    try {
-      await withActionLock(contactRequestId, async () => {
-        await api.updateContactRequestStatus(token, contactRequestId, status);
-        await loadContactRequests(token);
-      });
-    } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel atualizar o pedido de contacto.');
+  const openContactRequestConfirm = () => {
+    if (!contactRequestReplyText.trim()) {
+      setError('Escreve a mensagem antes de continuar.');
+      return;
     }
+    setError('');
+    setContactRequestConfirmOpen(true);
+  };
+
+  const closeContactRequestConfirm = () => {
+    setContactRequestConfirmOpen(false);
+  };
+
+  const executeContactRequestConfirm = async (sendWhatsApp: boolean) => {
+    if (!selectedContactRequestId || !selectedContactRequest || !token || contactRequestConfirmLoading) return;
+    const replyText = contactRequestReplyText.trim();
+    if (!replyText) return;
+    setError('');
+    setContactRequestConfirmLoading(true);
+    try {
+      await api.adminContactRequestReply(token, selectedContactRequestId, replyText, sendWhatsApp ? 'whatsapp' : 'email');
+      if (sendWhatsApp) {
+        abrirWhatsAppPedidoContacto(selectedContactRequest, replyText);
+      }
+      setCatalogNotice('Mensagem enviada e pedido marcado como contactado.');
+      setContactRequestConfirmOpen(false);
+      setContactRequestReplyOpen(false);
+      setContactRequestReplyText('');
+      closeContactRequestModal();
+      await loadContactRequests(token);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao enviar contacto.');
+    } finally {
+      setContactRequestConfirmLoading(false);
+    }
+  };
+
+  const handleContactRequestContact = () => {
+    if (selectedContactRequest?.status === 'contacted') return;
+    setError('');
+    setContactRequestReplyText('');
+    setContactRequestReplyOpen(true);
   };
 
   const handleDeleteContactRequest = async () => {
@@ -2687,49 +2817,42 @@ function AdminHistoryPage() {
                 </div>
                 <span className="catalog-count">{contactRequests.length} registados</span>
               </div>
-              {contactRequestsLoading ? <p className="summary-copy">A carregar pedidos...</p> : null}
-              <ul className="admin-user-list catalog-list">
+              <ul className="admin-user-list catalog-list contact-request-list">
                 {contactRequests.map((request) => (
-                  <li key={request.id}>
-                    <div className="admin-user-card-head">
-                      <strong>{request.contactName}</strong>
-                      <span className="booking-id-chip">{request.status}</span>
-                    </div>
-                    <span>{request.roomName} · {request.bandName || 'Sem nome de projeto'}</span>
-                    <span>{request.email} · {request.contactPhone}</span>
-                    {request.message ? <span>{request.message}</span> : null}
-                    <div className="team-actions">
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        disabled={Boolean(actionLoading[request.id]) || request.status === 'contacted'}
-                        onClick={() => { void handleContactRequestStatus(request.id, 'contacted'); }}
-                      >
-                        {actionLoading[request.id] ? 'A guardar...' : 'Marcar contactado'}
-                      </button>
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        disabled={Boolean(actionLoading[request.id]) || request.status === 'closed'}
-                        onClick={() => { void handleContactRequestStatus(request.id, 'closed'); }}
-                      >
-                        Fechar pedido
-                      </button>
-                      {currentUser?.role === 'superuser' ? (
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          disabled={Boolean(actionLoading[request.id])}
-                          onClick={() => setContactRequestToDelete(request.id)}
-                        >
-                          {actionLoading[request.id] ? 'A apagar...' : 'Apagar'}
-                        </button>
+                  <li key={request.id} className="contact-request-card">
+                    <button
+                      type="button"
+                      className="contact-request-card-trigger"
+                      onClick={(event) => openContactRequestModal(request.id, event.currentTarget)}
+                    >
+                      <span className="contact-request-card-head">
+                        <span>
+                          <strong>{request.contactName}</strong>
+                          <small>{request.bandName || 'Sem nome de projeto'}</small>
+                        </span>
+                        <span className={`status-chip ${contactRequestStatusTone(request.status)}`}>
+                          {contactRequestStatusLabel[request.status]}
+                        </span>
+                      </span>
+                      <span className="contact-request-card-room">{request.roomName}</span>
+                      {request.status === 'contacted' && request.replyMessage ? (
+                        <span className="contact-request-card-reply">
+                          <span>Mensagem enviada</span>
+                          <span>{request.replyMessage}</span>
+                        </span>
                       ) : null}
-                    </div>
+                      <span className="contact-request-card-footer">
+                        <span>{formatContactRequestDate(request.createdAt)}</span>
+                        <span className="contact-request-card-open">
+                          {request.message ? <MessageCircle aria-hidden="true" size={14} /> : null}
+                          <ChevronRight aria-hidden="true" size={18} />
+                        </span>
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
-              {!contactRequestsLoading && contactRequests.length === 0 ? (
+              {contactRequests.length === 0 ? (
                 <p className="summary-copy">Sem pedidos de contacto.</p>
               ) : null}
             </section>
@@ -3991,6 +4114,248 @@ function AdminHistoryPage() {
             <footer className="booking-detail-footer">
               {renderBookingActions(selectedBooking)}
             </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {selectedContactRequest && !contactRequestReplyOpen && !contactRequestConfirmOpen ? (
+        <div
+          className="admin-modal-backdrop booking-detail-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="contact-request-detail-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !actionLoading[selectedContactRequest.id]) {
+              closeContactRequestModal();
+            }
+          }}
+        >
+          <section className="card admin-modal-card admin-modal-card-wide booking-detail-modal contact-request-detail-modal">
+            <header className="booking-detail-header">
+              <div className="booking-detail-header-content">
+                <div className="booking-detail-title-row">
+                  <p className="eyebrow">Pedido de contacto</p>
+                  <span className={`status-chip ${contactRequestStatusTone(selectedContactRequest.status)}`}>
+                    {contactRequestStatusLabel[selectedContactRequest.status]}
+                  </span>
+                </div>
+                <h2 id="contact-request-detail-title">{selectedContactRequest.contactName}</h2>
+                <div className="booking-detail-header-meta">
+                  <span>{selectedContactRequest.roomName}</span>
+                  <span className="booking-detail-datetime-badge">
+                    {formatContactRequestDate(selectedContactRequest.createdAt)}
+                  </span>
+                </div>
+              </div>
+              <button
+                ref={contactRequestModalCloseRef}
+                type="button"
+                className="secondary-button admin-modal-close"
+                aria-label="Fechar detalhes do pedido de contacto"
+                disabled={Boolean(actionLoading[selectedContactRequest.id])}
+                onClick={closeContactRequestModal}
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </header>
+
+            <div className="booking-detail-body">
+              <dl className="booking-detail-grid">
+                <div>
+                  <dt>Projeto</dt>
+                  <dd>{selectedContactRequest.bandName || 'Sem nome de projeto'}</dd>
+                </div>
+                <div>
+                  <dt>Sala</dt>
+                  <dd>{selectedContactRequest.roomName}</dd>
+                </div>
+                <div>
+                  <dt>Telemóvel</dt>
+                  <dd>{formatContactPhone(selectedContactRequest.contactPhone) || '-'}</dd>
+                </div>
+                <div>
+                  <dt>Email</dt>
+                  <dd className="booking-detail-email">{selectedContactRequest.email || '-'}</dd>
+                </div>
+                <div>
+                  <dt>Criado em</dt>
+                  <dd>{formatContactRequestDate(selectedContactRequest.createdAt)}</dd>
+                </div>
+                <div>
+                  <dt>Atualizado em</dt>
+                  <dd>{formatContactRequestDate(selectedContactRequest.updatedAt)}</dd>
+                </div>
+              </dl>
+
+              <section className="booking-detail-section" aria-labelledby="contact-request-message-title">
+                <div className="booking-detail-section-title">
+                  <MessageCircle aria-hidden="true" size={16} />
+                  <h3 id="contact-request-message-title">Mensagem</h3>
+                </div>
+                <p className={selectedContactRequest.message ? 'booking-customer-message' : 'booking-detail-empty'}>
+                  {selectedContactRequest.message || 'Sem mensagem adicional neste pedido.'}
+                </p>
+              </section>
+
+              {selectedContactRequest.replyMessage ? (
+                <section className="booking-detail-section contact-request-reply-detail" aria-labelledby="contact-request-sent-message-title">
+                  <div className="booking-detail-section-title">
+                    <Send aria-hidden="true" size={16} />
+                    <h3 id="contact-request-sent-message-title">Mensagem enviada</h3>
+                  </div>
+                  <p className="booking-customer-message">{selectedContactRequest.replyMessage}</p>
+                  <div className="contact-request-reply-detail-meta">
+                    <span>
+                      {selectedContactRequest.replyChannel === 'whatsapp' ? 'Email + WhatsApp' : 'Só email'}
+                    </span>
+                    {selectedContactRequest.repliedAt ? (
+                      <span>{formatContactRequestDate(selectedContactRequest.repliedAt)}</span>
+                    ) : null}
+                  </div>
+                </section>
+              ) : null}
+            </div>
+
+            <footer className="booking-detail-footer contact-request-detail-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={Boolean(actionLoading[selectedContactRequest.id]) || selectedContactRequest.status === 'contacted'}
+                onClick={handleContactRequestContact}
+              >
+                {actionLoading[selectedContactRequest.id] || contactRequestConfirmLoading ? 'A processar...' : 'Contactar'}
+              </button>
+              {currentUser?.role === 'superuser' ? (
+                <button
+                  type="button"
+                  className="danger-zone-action"
+                  disabled={Boolean(actionLoading[selectedContactRequest.id])}
+                  onClick={() => setContactRequestToDelete(selectedContactRequest.id)}
+                >
+                  Apagar
+                </button>
+              ) : null}
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {contactRequestReplyOpen && !contactRequestConfirmOpen && selectedContactRequest ? (
+        <div
+          className="admin-modal-backdrop contact-request-confirm-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="contact-request-reply-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !contactRequestConfirmLoading) {
+              setContactRequestReplyOpen(false);
+            }
+          }}
+        >
+          <section className="card admin-modal-card contact-request-reply-modal">
+            <div className="admin-modal-head">
+              <div>
+                <p className="eyebrow">Contactar cliente</p>
+                <h3 id="contact-request-reply-title">Escrever mensagem</h3>
+              </div>
+              <button
+                type="button"
+                className="secondary-button admin-modal-close"
+                aria-label="Fechar mensagem"
+                disabled={contactRequestConfirmLoading}
+                onClick={() => setContactRequestReplyOpen(false)}
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </div>
+            <p className="admin-helper-note">
+              A mensagem será enviada a {selectedContactRequest.contactName} por email e, se escolheres, também por WhatsApp.
+            </p>
+            <label className="contact-request-reply-field" htmlFor="contact-request-reply-text">
+              Mensagem
+              <textarea
+                id="contact-request-reply-text"
+                autoFocus
+                rows={7}
+                value={contactRequestReplyText}
+                disabled={contactRequestConfirmLoading}
+                onChange={(event) => setContactRequestReplyText(event.target.value)}
+                placeholder="Escreve a mensagem para o cliente..."
+              />
+            </label>
+            <div className="admin-modal-actions contact-request-reply-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={contactRequestConfirmLoading}
+                onClick={() => setContactRequestReplyOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={contactRequestConfirmLoading || !contactRequestReplyText.trim()}
+                onClick={openContactRequestConfirm}
+              >
+                Enviar
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {contactRequestConfirmOpen && selectedContactRequest ? (
+        <div
+          className="admin-modal-backdrop contact-request-confirm-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="contact-request-confirm-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !contactRequestConfirmLoading) {
+              closeContactRequestConfirm();
+            }
+          }}
+        >
+          <section className="card admin-modal-card customer-notification-modal contact-request-confirm-modal">
+            <div className="customer-notification-modal-icon">
+              <MessageCircle aria-hidden="true" size={20} />
+            </div>
+            <h3 id="contact-request-confirm-title">Enviar mensagem por WhatsApp?</h3>
+            <p>
+              Vais enviar o email a {selectedContactRequest.contactName} e marcar o pedido como contactado.
+              Queres enviar também a mensagem por WhatsApp?
+            </p>
+            {!consegueAbrirWhatsApp(selectedContactRequest) ? (
+              <p className="admin-helper-note">Este pedido não tem um número válido para WhatsApp.</p>
+            ) : null}
+            <div className="admin-modal-actions customer-notification-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                autoFocus
+                disabled={contactRequestConfirmLoading}
+                onClick={() => { void executeContactRequestConfirm(false); }}
+              >
+                {contactRequestConfirmLoading ? 'A processar...' : 'Não, só email'}
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={contactRequestConfirmLoading || !consegueAbrirWhatsApp(selectedContactRequest)}
+                onClick={() => { void executeContactRequestConfirm(true); }}
+              >
+                {contactRequestConfirmLoading ? 'A processar...' : 'Sim, email + WhatsApp'}
+              </button>
+            </div>
+            <button
+              type="button"
+              className="admin-modal-cancel-link"
+              disabled={contactRequestConfirmLoading}
+              onClick={closeContactRequestConfirm}
+            >
+              Voltar sem executar
+            </button>
           </section>
         </div>
       ) : null}
