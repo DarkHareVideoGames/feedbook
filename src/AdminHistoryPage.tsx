@@ -6,7 +6,7 @@ import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
 import AdminSetupDiagnostics from './components/ui/AdminSetupDiagnostics';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 import 'driver.js/dist/driver.css';
-import { OnboardingHelpTrigger, WelcomeModal, useOnboarding } from './onboarding';
+import { CompletionModal, OnboardingHelpTrigger, WelcomeModal, useOnboarding } from './onboarding';
 
 type Role = 'superuser' | 'admin' | 'collaborator' | 'technician';
 
@@ -5384,9 +5384,12 @@ function AdminHistoryPage() {
       {onboarding.isReady && onboarding.showWelcome ? (
         <WelcomeModal
           busy={onboarding.isBusy}
-          onStart={() => { void onboarding.startTour(); }}
-          onSkip={() => { void onboarding.skipWelcome(); }}
+          onStart={onboarding.startWelcomeTour}
+          onLater={() => { void onboarding.deferWelcomeTour(); }}
         />
+      ) : null}
+      {onboarding.showCompletion ? (
+        <CompletionModal busy={onboarding.isBusy} onConfirm={() => { void onboarding.confirmCompletion(); }} />
       ) : null}
       </div>
       {currentUser ? <InstallPwaPrompt /> : null}
