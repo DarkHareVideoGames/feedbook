@@ -1,0 +1,845 @@
+/* --- Banner de consentimento de cookies (RGPD) --- */
+.cookie-banner {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--surface-strong);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  animation: cookie-banner-in 260ms ease;
+}
+
+@keyframes cookie-banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cookie-banner-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.cookie-banner-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.cookie-banner-copy strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.cookie-banner-copy p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.cookie-banner-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.cookie-banner .secondary-button,
+.cookie-banner .primary-button {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .cookie-banner {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .cookie-banner-actions {
+    flex-direction: column-reverse;
+  }
+
+  .cookie-banner .secondary-button,
+  .cookie-banner .primary-button {
+    width: 100%;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 8mm;
+}
+
+@media print {
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .finance-print-layout,
+  .finance-print-layout * {
+    visibility: visible !important;
+  }
+
+  .finance-print-layout {
+    display: grid !important;
+    position: static !important;
+    width: 100%;
+    min-height: auto;
+    padding: 12mm 14mm;
+    box-sizing: border-box;
+    background: #fff;
+    color: #111827;
+    gap: 18px;
+    overflow: visible !important;
+    break-inside: avoid;
+  }
+
+  .finance-print-layout > * {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .finance-print-header {
+    display: grid !important;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(17, 24, 39, 0.15);
+    padding: 0 0 12px;
+    margin-bottom: 2px;
+  }
+
+  .finance-print-header-copy {
+    display: grid;
+    gap: 4px;
+  }
+
+  .finance-print-logo {
+    display: block !important;
+    width: 75px;
+    max-width: 40vw;
+    filter: grayscale(1) brightness(1.25);
+    opacity: 0.8;
+  }
+
+  .finance-print-header h3,
+  .finance-print-header p,
+  .finance-print-month,
+  .finance-print-month *,
+  .finance-print-summary,
+  .finance-print-summary *,
+  .finance-print-value,
+  .finance-print-empty {
+    color: #111827 !important;
+  }
+
+    .finance-print-summary {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(130px, 1fr));
+    gap: 12px;
+    padding: 16px;
+    background: #f5f7fb;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    border-radius: 12px;
+  }
+
+  .finance-print-summary div {
+    display: grid;
+    gap: 6px;
+  }
+
+  .finance-print-summary span,
+  .finance-print-values span,
+  .finance-print-subhead {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4b5563;
+  }
+
+  .finance-print-month {
+    display: grid !important;
+    gap: 10px;
+    padding: 12px 0 6px;
+    border-bottom: 1px solid rgba(17, 24, 39, 0.1);
+  }
+
+  .finance-print-month-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .finance-print-values {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 10px 0;
+  }
+
+  .finance-print-values div {
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    border-radius: 10px;
+    background: #fafafa;
+  }
+
+  .finance-print-bookings-section {
+    display: grid !important;
+    gap: 8px;
+    padding-top: 8px;
+  }
+
+  .finance-print-breakdown {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .finance-print-breakdown-card {
+    display: grid !important;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    border-radius: 10px;
+    background: #fafafa;
+  }
+
+  .finance-print-breakdown-card span {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4b5563;
+  }
+
+    .finance-print-breakdown-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+  }
+
+  .finance-print-breakdown-card li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+    color: #111827;
+  }
+
+  .finance-print-room-group {
+    display: grid !important;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid rgba(17, 24, 39, 0.1);
+    border-radius: 12px;
+    background: #f8fafc;
+  }
+
+  .finance-room-red {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(255, 255, 255, 0.9));
+    border-color: rgba(239, 68, 68, 0.22);
+  }
+
+  .finance-room-grey {
+    background: linear-gradient(135deg, rgba(148, 163, 184, 0.12), rgba(255, 255, 255, 0.9));
+    border-color: rgba(148, 163, 184, 0.22);
+  }
+
+  .finance-room-neutral {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.06), rgba(255, 255, 255, 0.9));
+    border-color: rgba(59, 130, 246, 0.18);
+  }
+
+  .finance-print-room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: #111827;
+  }
+
+  .finance-print-payment-list {
+    display: grid !important;
+    gap: 8px;
+  }
+
+  .finance-print-payment-card {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+  }
+
+  .finance-print-payment-field {
+    display: grid !important;
+    gap: 4px;
+    color: #111827;
+  }
+
+  .finance-print-payment-field span {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4b5563;
+  }
+
+  .finance-print-payment-field strong {
+    font-size: 11px;
+    color: #111827;
+  }
+
+  .finance-print-subhead {
+    margin: 0;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .finance-print-empty {
+    color: #111827;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-shell {
+    padding: 20px 16px 48px;
+  }
+
+  .topbar,
+  .field-row,
+  .hero-metrics,
+  .booking-form .field-row:first-of-type {
+    grid-template-columns: 1fr;
+  }
+
+  .duration-select {
+    max-width: 100%;
+  }
+
+  .topbar {
+    display: grid;
+    align-items: start;
+  }
+
+  .topbar-tools {
+    justify-items: start;
+  }
+
+  .language-switcher {
+    flex-wrap: wrap;
+  }
+
+  .hero,
+  .booking-form,
+  .summary-panel,
+  .room-card {
+    padding: 20px;
+  }
+
+  .calendar-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-toolbar strong {
+    order: -1;
+  }
+
+  .brand-logo {
+    border-radius: 10px;
+  }
+
+  .admin-modal-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .finance-stat {
+    padding: 12px 10px;
+  }
+
+  .finance-stat strong {
+    font-size: 1rem;
+  }
+
+  .finance-month-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-month-card {
+    padding: 12px;
+  }
+
+  .finance-month-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .finance-bookings-list li {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 4px;
+  }
+
+  .finance-bookings-list li strong {
+    grid-column: 1 / -1;
+  }
+
+  .finance-print-month-head,
+  .finance-print-values {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .finance-export-bar {
+    padding: 10px 12px;
+  }
+
+  .finance-pdf-button {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .history-desktop {
+    display: none;
+  }
+
+  .history-mobile-list {
+    display: grid;
+  }
+
+  .history-table-wrap {
+    overflow-x: visible;
+  }
+
+  /* Toolbar compacta em telemovel: dois seletores com a mesma largura. */
+  .history-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .history-select {
+    display: grid;
+    gap: 4px;
+  }
+
+  .history-select select {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* --- Restyling industrial: superfícies sóbrias, arestas firmes e contraste direto. --- */
+@media screen {
+  :root {
+    --surface: rgba(13, 14, 17, 0.98);
+    --surface-strong: #090a0c;
+    --surface-soft: rgba(255, 255, 255, 0.035);
+    --border: rgba(255, 255, 255, 0.16);
+    --text-muted: #7f848d;
+  }
+
+  .page-shell {
+    background: #000000;
+  }
+
+  .brand-logo,
+  .admin-brand-logo {
+    border-radius: 4px;
+    box-shadow: none;
+  }
+
+  .card,
+  .admin-sidebar,
+  .admin-auth-card,
+  .admin-section,
+  .admin-modal-card,
+  .cookie-banner {
+    border-radius: 6px;
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .card,
+  .admin-sidebar,
+  .admin-auth-card,
+  .admin-section,
+  .admin-modal-card {
+    background: var(--surface);
+  }
+
+  .hero-metrics article,
+  .hero-panel,
+  .admin-user-list li,
+  .admin-audit-list li,
+  .history-mobile-card,
+  .finance-stat,
+  .finance-month-card,
+  .finance-breakdown-card {
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .room-card {
+    border-radius: 6px;
+    box-shadow: none;
+  }
+
+  .room-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.045);
+  }
+
+  .room-image-preview img {
+    border-radius: 4px;
+  }
+
+  input,
+  select,
+  textarea {
+    border-radius: 4px;
+    border-color: rgba(255, 255, 255, 0.2);
+    background: #090a0c;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    background: #0b0c0f;
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  .slot-button,
+  .extra-toggle,
+  .primary-button,
+  .secondary-button,
+  .icon-button,
+  .calendar-nav,
+  .history-select select,
+  .admin-sidebar-item,
+  .admin-sidebar-toggle,
+  .history-actions .secondary-button {
+    border-radius: 4px;
+  }
+
+  .primary-button {
+    border: 1px solid #ef3444;
+    background: #bd1020;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .primary-button:hover {
+    filter: none;
+    background: #e0192c;
+  }
+
+  .secondary-button,
+  .slot-button,
+  .extra-toggle,
+  .icon-button,
+  .calendar-nav,
+  .admin-sidebar-item {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: #111216;
+  }
+
+  .secondary-button:hover,
+  .slot-button:hover,
+  .extra-toggle:hover,
+  .icon-button:hover,
+  .calendar-nav:hover,
+  .admin-sidebar-item:hover {
+    border-color: rgba(255, 255, 255, 0.42);
+    background: #191b20;
+    transform: none;
+  }
+
+  .slot-button-active,
+  .icon-button[aria-pressed="true"],
+  .admin-sidebar-item-active {
+    border-color: #ef3444;
+    background: rgba(209, 19, 35, 0.2);
+  }
+
+  .admin-sidebar-item-active {
+    background: rgba(209, 19, 35, 0.2);
+    box-shadow: inset 3px 0 0 #ef3444;
+  }
+
+  .calendar-nav {
+    border-radius: 4px;
+  }
+
+  .status-chip,
+  .status-assignee-chip,
+  .wa-optin,
+  .admin-session-pill,
+  .admin-user-chip,
+  .admin-user-chip-role,
+  .admin-user-badge {
+    border-radius: 3px;
+    box-shadow: none;
+  }
+
+  .admin-session-pill {
+    box-shadow: none;
+  }
+
+  .cookie-banner {
+    background: #0a0b0d;
+  }
+
+  .admin-modal-backdrop,
+  .admin-sidebar-overlay {
+    background: rgba(0, 0, 0, 0.78);
+  }
+
+  .danger-zone {
+    box-shadow: none;
+  }
+}
+
+/* Mantém a confirmação suficientemente compacta para caber com o logótipo no ecrã móvel. */
+@media screen and (max-width: 720px) {
+  .confirmation-page {
+    padding: 6px 10px 10px;
+  }
+
+  .confirmation-page .admin-beta-banner {
+    margin-bottom: 4px;
+  }
+
+  .public-topbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .public-topbar .brand-wrap {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    flex: initial;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .public-topbar .brand-logo {
+    width: min(46vw, 170px);
+    margin: 0;
+  }
+
+  .public-topbar .topbar-tools {
+    position: static;
+    flex: 0 0 auto;
+    justify-items: end;
+  }
+
+  .confirmation-page .public-topbar {
+    justify-content: space-between;
+  }
+
+  .confirmation-page .public-topbar .brand-wrap {
+    width: auto;
+    flex: 1;
+    justify-content: flex-start;
+  }
+
+  .public-topbar .language-switcher {
+    flex-wrap: nowrap;
+  }
+
+  .confirmation-page .public-topbar {
+    margin-bottom: 6px;
+  }
+
+  .confirmation-page .layout,
+  .confirmation-page .confirmation-grid {
+    gap: 6px;
+  }
+
+  .confirmation-page .confirmation-form {
+    gap: 0;
+    padding: 8px;
+  }
+
+  .confirmation-page .confirmation-banner {
+    gap: 5px;
+    padding: 9px;
+    border-width: 1px;
+    border-radius: 10px;
+    box-shadow: none;
+  }
+
+  .confirmation-page .confirmation-banner-badge {
+    gap: 5px;
+    padding: 3px 8px;
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+  }
+
+  .confirmation-page .confirmation-banner-badge::before {
+    width: 5px;
+    height: 5px;
+  }
+
+  .confirmation-page .confirmation-banner-message {
+    font-size: 0.72rem;
+    line-height: 1.25;
+  }
+
+  .confirmation-page .confirmation-details-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    margin-top: 0;
+  }
+
+  .confirmation-page .confirmation-details-grid div,
+  .confirmation-page .confirmation-detail-section,
+  .confirmation-page .confirmation-reference {
+    padding: 6px 8px;
+    border-radius: 7px;
+  }
+
+  .confirmation-page .confirmation-details-grid dt,
+  .confirmation-page .confirmation-detail-section h3,
+  .confirmation-page .confirmation-reference > span {
+    margin-bottom: 2px;
+    font-size: 0.54rem;
+    letter-spacing: 0.06em;
+  }
+
+  .confirmation-page .confirmation-details-grid dd,
+  .confirmation-page .confirmation-extras-empty,
+  .confirmation-page .confirmation-customer-message p {
+    font-size: 0.7rem;
+    line-height: 1.2;
+  }
+
+  .confirmation-page .confirmation-detail-section h3 {
+    margin-bottom: 3px;
+  }
+
+  .confirmation-page .confirmation-extras-list {
+    gap: 3px;
+  }
+
+  .confirmation-page .confirmation-extras-list li {
+    gap: 8px;
+    padding: 4px 7px;
+    border-radius: 6px;
+    font-size: 0.68rem;
+  }
+
+  .confirmation-page .confirmation-total {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 7px;
+  }
+
+  .confirmation-page .confirmation-total span {
+    font-size: 0.56rem;
+    letter-spacing: 0.04em;
+  }
+
+  .confirmation-page .confirmation-total strong {
+    font-size: 0.92rem;
+  }
+
+  .confirmation-page .confirmation-reference {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .confirmation-page .confirmation-banner .confirmation-id-value {
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+  }
+
+  .confirmation-page .confirmation-id-note {
+    font-size: 0.6rem;
+    line-height: 1.2;
+  }
+
+  .confirmation-page .confirmation-save-actions {
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .confirmation-page .confirmation-save-button {
+    min-height: 32px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 0.72rem;
+  }
+
+  .confirmation-page .confirmation-save-button svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .confirmation-page .confirmation-save-error {
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .danger-zone {
+    margin-top: 44px;
+    padding: 13px 14px 14px;
+  }
+
+  .danger-zone-content {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .danger-zone-action {
+    width: 100%;
+  }
+}
+
