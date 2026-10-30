@@ -1,4 +1,8 @@
-/* CSS entrypoint — preserve original cascade order during restructuring. */
+/* FEEDBACK — estilos carregados pela ordem original da cascata. */
 @import './styles/base/foundation.css';
 @import './styles/admin/onboarding.css';
-@import './styles/legacy.css';
+@import './styles/01-publico-e-componentes.css';
+@import './styles/02-administracao-e-historico.css';
+@import './styles/03-cookies-e-ajustes.css';
+@import './styles/04-quem-somos.css';
+@import './styles/05-loading-e-pwa.css';
