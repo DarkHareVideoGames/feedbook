@@ -12,6 +12,7 @@ forma de recriar e evoluir a base de dados de forma reprodutível.
 | `supabase_rooms_services.sql` | 3 | Tabelas `rooms` e `services` + seed das salas. |
 | `supabase_migration_*.sql` | 4+ | Migrações incrementais (idempotentes). Aplicar por ordem cronológica. |
 | `supabase_migration_security_rls.sql` | 5+ | Endurecimento de RLS (Issue #38): remove escrita `anon`, limita PII de `bookings`, restringe `profiles`/`audit_logs` a admin/superuser, deriva ator de `auth.uid()` nas funções admin. Idempotente. |
+| `supabase_migration_fix_profile_rls_recursion.sql` | Após `supabase_migration_security_rls.sql` | Issue #149: corrige a recursão RLS em `profiles` (erro PostgreSQL `42P17`) e repõe as políticas administrativas dependentes. |
 | `supabase_migration_contact_requests.sql` | Após a migração de segurança | Issue #34: modo de sala `booking`/`contact`, tabela de pedidos de contacto e RLS para inserção pública e gestão pela equipa. |
 | `supabase_migration_contact_request_replies.sql` | Após `supabase_migration_contact_requests.sql` | Issue #125: campos para persistir a mensagem, o canal e a data da resposta enviada a um pedido de contacto. |
 | `supabase_migration_fix_booking_rls.sql` | Após a migração de segurança | Correção de RLS para marcações públicas: GRANTs para service_role, leitura pública mínima em bookings, políticas idempotentes. |

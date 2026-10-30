@@ -34,37 +34,76 @@ $$;
 -- 3. Políticas least-privilege
 -- ------------------------------------------------------------
 
+-- As políticas RLS não podem consultar public.profiles diretamente para
+-- verificar o role: na própria tabela profiles isso provoca recursão infinita
+-- (PostgreSQL 42P17). Esta função corre como definer e centraliza a verificação.
+create or replace function public.has_profile_role(p_roles text[])
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and role = any(p_roles)
+  );
+$$;
+
+revoke all on function public.has_profile_role(text[]) from public;
+grant execute on function public.has_profile_role(text[]) to authenticated;
+
+create or replace function public.can_manage_beta()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and (role in ('admin', 'superuser') or "isDeveloper" = true)
+  );
+$$;
+
+revoke all on function public.can_manage_beta() from public;
+grant execute on function public.can_manage_beta() to authenticated;
+
 -- rooms: catálogo público (leitura), escrita só admin/superuser
 drop policy if exists "anon read rooms" on public.rooms;
 create policy "anon read rooms" on public.rooms for select to anon, authenticated using (true);
 drop policy if exists "admin write rooms" on public.rooms;
 create policy "admin write rooms" on public.rooms for all to authenticated
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')));
+  using (public.has_profile_role(array['admin', 'superuser']))
+  with check (public.has_profile_role(array['admin', 'superuser']));
 
 -- services
 drop policy if exists "anon read services" on public.services;
 create policy "anon read services" on public.services for select to anon, authenticated using (true);
 drop policy if exists "admin write services" on public.services;
 create policy "admin write services" on public.services for all to authenticated
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')));
+  using (public.has_profile_role(array['admin', 'superuser']))
+  with check (public.has_profile_role(array['admin', 'superuser']));
 
 -- pricing
 drop policy if exists "anon read pricing" on public.pricing;
 create policy "anon read pricing" on public.pricing for select to anon, authenticated using (true);
 drop policy if exists "admin write pricing" on public.pricing;
 create policy "admin write pricing" on public.pricing for all to authenticated
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')));
+  using (public.has_profile_role(array['admin', 'superuser']))
+  with check (public.has_profile_role(array['admin', 'superuser']));
 
 -- app_settings (flag de beta pública em leitura)
 drop policy if exists "anon read app_settings" on public.app_settings;
 create policy "anon read app_settings" on public.app_settings for select to anon, authenticated using (true);
 drop policy if exists "admin write app_settings" on public.app_settings;
 create policy "admin write app_settings" on public.app_settings for all to authenticated
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')));
+  using (public.has_profile_role(array['admin', 'superuser']))
+  with check (public.has_profile_role(array['admin', 'superuser']));
 
 -- bookings: leitura pública (linhas), mas colunas PII restritas por grants abaixo
 drop policy if exists "anon read bookings" on public.bookings;
@@ -73,26 +112,26 @@ drop policy if exists "staff read bookings" on public.bookings;
 create policy "staff read bookings" on public.bookings for select to authenticated using (true);
 drop policy if exists "staff write bookings" on public.bookings;
 create policy "staff write bookings" on public.bookings for all to authenticated
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser','collaborator','technician')))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser','collaborator','technician')));
+  using (public.has_profile_role(array['admin', 'superuser', 'collaborator', 'technician']))
+  with check (public.has_profile_role(array['admin', 'superuser', 'collaborator', 'technician']));
 
 -- profiles: sem acesso anon; autenticado lê o próprio ou admin/superuser
 drop policy if exists "self or admin read profiles" on public.profiles;
 create policy "self or admin read profiles" on public.profiles for select to authenticated
-  using (id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')));
+  using (id = auth.uid() or public.has_profile_role(array['admin', 'superuser']));
 drop policy if exists "admin write profiles" on public.profiles;
 create policy "admin write profiles" on public.profiles for all to authenticated
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')));
+  using (public.has_profile_role(array['admin', 'superuser']))
+  with check (public.has_profile_role(array['admin', 'superuser']));
 
 -- audit_logs: apenas admin/superuser
 drop policy if exists "admin read audit_logs" on public.audit_logs;
 create policy "admin read audit_logs" on public.audit_logs for select to authenticated
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')));
+  using (public.has_profile_role(array['admin', 'superuser']));
 drop policy if exists "admin write audit_logs" on public.audit_logs;
 create policy "admin write audit_logs" on public.audit_logs for all to authenticated
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')));
+  using (public.has_profile_role(array['admin', 'superuser']))
+  with check (public.has_profile_role(array['admin', 'superuser']));
 
 -- ------------------------------------------------------------
 -- 4. Restringir colunas PII em bookings para anon
