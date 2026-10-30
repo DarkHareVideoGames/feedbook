@@ -1597,12 +1597,16 @@ export async function getAppSettings(): Promise<{ betaEnabled: boolean }> {
   return { betaEnabled: data?.betaEnabled !== false };
 }
 
-// Atualiza o estado do badge. Reservado a admin/superuser.
+// Atualiza o estado do badge. Permitido a admin/superuser ou perfis developer.
 export async function updateAppSettings(
   token: string,
   updates: { betaEnabled: boolean },
 ): Promise<{ betaEnabled: boolean }> {
-  const actor = await requireActor(token, ['admin', 'superuser']);
+  const user = await authUserFrom(token);
+  const actor = await profileFor(user);
+  if (!actor.isDeveloper && !['admin', 'superuser'].includes(actor.role)) {
+    throw new ApiError('Access denied.', 403);
+  }
   const betaEnabled = updates.betaEnabled !== false;
 
   const { error } = await supabase

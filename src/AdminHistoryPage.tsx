@@ -910,7 +910,7 @@ function AdminHistoryPage() {
   // Superuser e admin têm acesso total (utilizadores, salas, serviços, preços, contas).
   const isPrivilegedRole = (role: Role | null | undefined) => role === 'admin' || role === 'superuser';
   const isPrivileged = isPrivilegedRole(currentUser?.role);
-  const isSuperuser = currentUser?.role === 'superuser';
+  const canToggleBetaMode = isPrivileged || currentUser?.isDeveloper === true;
   const onboarding = useOnboarding({
     userId: currentUser?.id,
     role: isPrivileged ? currentUser?.role : undefined,
@@ -2991,10 +2991,10 @@ function AdminHistoryPage() {
         </div>
       ) : null}
 
-      {(betaEnabled || isSuperuser) ? (
+      {(betaEnabled || canToggleBetaMode) ? (
         <div className="admin-beta-banner beta-only" role="note">
           <span className="admin-beta-badge">{betaEnabled ? 'Beta' : 'Beta desativada'}</span>
-          {isSuperuser ? (
+          {canToggleBetaMode ? (
             <button
               type="button"
               className="beta-mode-toggle"
