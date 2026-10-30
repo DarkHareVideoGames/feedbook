@@ -588,29 +588,6 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.finance-month-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.finance-month-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.02);
-  color: var(--text-main);
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.finance-month-toggle input {
-  accent-color: #d11323;
-}
-
 .finance-pdf-button {
   justify-self: flex-start;
 }
@@ -729,25 +706,6 @@
   color: var(--text-muted);
 }
 
-.finance-bookings-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.finance-bookings-list li {
-  display: grid;
-  grid-template-columns: 0.8fr 1.4fr 0.9fr 0.8fr 0.9fr 0.8fr;
-  gap: 8px;
-  align-items: center;
-  font-size: 0.76rem;
-  color: var(--text-muted);
-  padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
 .finance-print-layout {
   display: none;
 }
@@ -828,10 +786,6 @@
     border-color: rgba(251, 191, 36, 0.52);
     box-shadow: 0 0 18px rgba(251, 191, 36, 0.18);
   }
-}
-
-.admin-reschedule-wa {
-  padding: 4px 2px 8px;
 }
 
 .history-mobile-card.room-tone-red {
@@ -1115,19 +1069,6 @@
 
 
 /* --- AdminModal: corpo e rodapé do painel --- */
-.admin-modal-body {
-  padding: 24px 28px 8px 28px;
-}
-
-.admin-modal-footer {
-  padding: 12px 28px 24px 28px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  border-top: 1px solid var(--border);
-  margin-top: 8px;
-}
-
 /* --- Ajustes de layout e animação do modal reutilizável --- */
 .admin-modal-backdrop {
   background: rgba(8, 9, 11, 0.62);
