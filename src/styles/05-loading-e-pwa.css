@@ -1,0 +1,97 @@
+/* ===== Global Loading ===== */
+.global-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
+  transition: opacity 0.3s ease;
+}
+.global-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+.global-loading-logo-wrap {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.global-loading-logo {
+  width: 120px;
+  height: auto;
+  object-fit: contain;
+  z-index: 1;
+}
+.global-loading-ring {
+  position: absolute;
+  inset: 0;
+  border: 3px solid transparent;
+  border-top-color: var(--accent, #7c5cff);
+  border-radius: 50%;
+  animation: global-loading-spin 1s linear infinite;
+}
+.global-loading-message {
+  color: var(--text-main, #f2f3f5);
+  font-size: 1rem;
+  opacity: 0.85;
+  text-align: center;
+}
+@keyframes global-loading-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-toast {
+    animation: none;
+  }
+
+  .global-loading-ring {
+    animation: none;
+    border-top-color: var(--accent, #7c5cff);
+    opacity: 0.6;
+  }
+
+  .state-pending,
+  .history-booking-row.history-row-pending td,
+  .history-mobile-card.history-row-pending {
+    animation: none;
+  }
+
+  .state-pending {
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
+  }
+
+  .history-booking-row.history-row-pending td {
+    background-color: rgba(251, 191, 36, 0.055);
+  }
+
+  .history-mobile-card.history-row-pending {
+    border-color: rgba(251, 191, 36, 0.4);
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.12);
+  }
+}
+
+/* PWA admin — melhorias mobile */
+@media (max-width: 640px) {
+  .about-section {
+    border-radius: 6px;
+  }
+  .admin-shell {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .admin-content {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (display-mode: standalone) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
