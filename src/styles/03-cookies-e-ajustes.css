@@ -648,9 +648,7 @@
   .admin-session-pill,
   .admin-user-chip,
   .admin-user-chip-role,
-  .admin-user-badge,
-  .topbar-note span,
-  .history-extras-trigger {
+  .admin-user-badge {
     border-radius: 3px;
     box-shadow: none;
   }
