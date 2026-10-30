@@ -172,7 +172,6 @@
 
   .finance-print-summary span,
   .finance-print-values span,
-  .finance-print-list-head span,
   .finance-print-subhead {
     font-size: 10px;
     text-transform: uppercase;
@@ -449,7 +448,6 @@
     grid-column: 1 / -1;
   }
 
-  .finance-print-list li,
   .finance-print-month-head,
   .finance-print-values {
     grid-template-columns: 1fr 1fr;
