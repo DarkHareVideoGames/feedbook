@@ -835,7 +835,6 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                   ) : null}
                   <div className="room-card-header">
                     <div>
-                      <p className="eyebrow">{room.capacity}</p>
                       <h3>
                         {(() => {
                           const parts = room.name.trim().split(/\s+/);
@@ -853,14 +852,16 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                           );
                         })()}
                       </h3>
+                      <p className="room-card-meta">
+                        {room.capacity}
+                        {' • '}
+                        {room.bookingMode === 'contact'
+                          ? translations.rooms.contactOnly
+                          : `${translations.rooms.priceFrom} ${currency.format(resolveRoomPricePerHour(room.pricePerMemberHour)).replace(/\s/g, '')}`}
+                      </p>
                     </div>
-                    <strong>
-                      {room.bookingMode === 'contact'
-                        ? translations.rooms.contactOnly
-                        : <>{translations.rooms.priceFrom} {currency.format(resolveRoomPricePerHour(room.pricePerMemberHour))}</>}
-                    </strong>
                   </div>
-                  <p>{room.vibe}</p>
+                  <p className="room-card-description">{room.vibe}</p>
                   <button
                       type="button"
                       className="room-card-summary"
