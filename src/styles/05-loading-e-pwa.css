@@ -37,12 +37,6 @@
   border-radius: 50%;
   animation: global-loading-spin 1s linear infinite;
 }
-.global-loading-message {
-  color: var(--text-main, #f2f3f5);
-  font-size: 1rem;
-  opacity: 0.85;
-  text-align: center;
-}
 @keyframes global-loading-spin {
   to { transform: rotate(360deg); }
 }
