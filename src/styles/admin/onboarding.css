@@ -1,0 +1,101 @@
+/* Onboarding administrativo (Driver.js, Issue #135). */
+.onboarding-help-trigger {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+}
+
+.onboarding-welcome-backdrop {
+  z-index: 80;
+}
+
+.onboarding-welcome-modal {
+  display: grid;
+  gap: 16px;
+  max-width: 500px;
+}
+
+.onboarding-welcome-modal h2,
+.onboarding-welcome-modal p {
+  margin: 0;
+}
+
+.onboarding-welcome-modal > p:not(.eyebrow) {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.onboarding-welcome-actions {
+  justify-content: flex-end;
+}
+
+.feedbook-onboarding-popover.driver-popover {
+  max-width: min(360px, calc(100vw - 24px));
+  border: 1px solid rgba(209, 19, 35, 0.7);
+  border-radius: 16px;
+  background: #121318;
+  color: var(--text-main);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
+}
+
+.feedbook-onboarding-popover .driver-popover-title {
+  color: #ffffff;
+  font-size: 1.05rem;
+}
+
+.feedbook-onboarding-popover .driver-popover-description,
+.feedbook-onboarding-popover .driver-popover-progress-text {
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.feedbook-onboarding-popover .driver-popover-footer {
+  margin-top: 16px;
+  justify-content: center;
+}
+
+.feedbook-onboarding-popover .driver-popover-progress-text {
+  margin: 0;
+}
+
+/* A versão instalada do Driver.js pode manter os controlos mesmo com
+   showButtons vazio; esta demonstração avança exclusivamente por tempo. */
+.feedbook-onboarding-popover .driver-popover-prev-btn,
+.feedbook-onboarding-popover .driver-popover-next-btn,
+.feedbook-onboarding-popover .driver-popover-close-btn {
+  display: none !important;
+}
+
+.feedbook-onboarding-popover.driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: #121318;
+}
+
+.feedbook-onboarding-popover.driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: #121318;
+}
+
+.feedbook-onboarding-popover.driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: #121318;
+}
+
+.feedbook-onboarding-popover.driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: #121318;
+}
+
+@media (max-width: 640px) {
+  .onboarding-help-trigger {
+    min-height: 38px;
+  }
+
+  .onboarding-welcome-modal {
+    margin: 16px;
+  }
+
+  .onboarding-welcome-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
