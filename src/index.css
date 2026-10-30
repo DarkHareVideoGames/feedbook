@@ -239,7 +239,7 @@ button {
   justify-content: center;
   gap: 24px;
   align-items: end;
-  margin-bottom: 28px;
+  margin-bottom: 48px;
 }
 
 .brand-wrap {
@@ -430,20 +430,22 @@ button {
 .booking-grid {
   display: grid;
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .rooms-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .room-card {
+  display: flex;
+  flex-direction: column;
   padding: 20px 20px 12px;
   border-width: 2px;
   cursor: pointer;
   overflow: hidden;
   position: relative;
-  align-self: start;
+  align-self: stretch;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
 }
 
@@ -488,7 +490,8 @@ button {
   background: transparent;
   border: none;
   padding: 0;
-  margin-top: 1px;
+  margin-top: auto;
+  padding-right: 28px;
   list-style: none;
   outline: none;
   transition: color 180ms ease, transform 180ms ease;
@@ -1257,21 +1260,33 @@ textarea:focus {
 
 /* --- Fluxo de marcacao: titulo do wizard --- */
 .booking-heading {
-  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 5px;
 }
 
 .booking-heading h1 {
   margin: 0;
   font-family: "IBM Plex Sans", sans-serif;
-  font-size: clamp(1.9rem, 3.4vw, 2.9rem);
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
   line-height: 1.05;
   letter-spacing: 0.01em;
   max-width: 18ch;
 }
 
+.booking-heading-tools {
+  flex: 0 0 auto;
+}
+
+.booking-heading-tools .language-switcher {
+  background: transparent;
+}
+
 .booking-heading h1.booking-heading-single-line {
   max-width: none;
-  font-size: clamp(1.45rem, 5.8vw, 2.9rem);
+  font-size: clamp(1.3rem, 5vw, 2.4rem);
   white-space: nowrap;
 }
 
@@ -2895,8 +2910,42 @@ textarea:focus {
 }
 
 .admin-user-list .room-management-card {
+  position: relative;
   padding: 0;
   overflow: hidden;
+}
+
+.room-order-handle {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  padding: 0;
+  color: var(--text-main);
+  cursor: grab;
+  touch-action: none;
+  background: rgba(8, 9, 11, 0.72);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.room-order-handle:active {
+  cursor: grabbing;
+}
+
+.room-order-handle:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.room-management-card-dragging {
+  opacity: 0.56;
+  outline: 2px dashed var(--accent);
+  outline-offset: -3px;
 }
 
 .room-management-card-trigger {
@@ -2956,6 +3005,7 @@ textarea:focus {
 
 .room-management-card-head {
   justify-content: space-between;
+  padding-right: 42px;
 }
 
 .room-management-card-head strong {
@@ -5773,17 +5823,17 @@ textarea:focus {
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 18px;
   }
 
   .public-topbar .brand-wrap {
     display: flex;
-    width: auto;
+    width: 100%;
     min-width: 0;
-    flex: 1;
-    justify-content: flex-start;
+    flex: initial;
+    justify-content: center;
     align-items: center;
   }
 
@@ -5796,6 +5846,16 @@ textarea:focus {
     position: static;
     flex: 0 0 auto;
     justify-items: end;
+  }
+
+  .confirmation-page .public-topbar {
+    justify-content: space-between;
+  }
+
+  .confirmation-page .public-topbar .brand-wrap {
+    width: auto;
+    flex: 1;
+    justify-content: flex-start;
   }
 
   .public-topbar .language-switcher {
@@ -5959,13 +6019,10 @@ textarea:focus {
 /* --- Secao "Quem somos" (Issue #44) --- */
 .about-section {
   display: grid;
-  gap: 28px;
+  gap: 0px;
   margin-top: 16px;
   padding: 34px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
   background: #000000;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
 }
 
 .about-header {
@@ -5991,27 +6048,24 @@ textarea:focus {
 .about-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: fit-content;
-  padding: 10px 14px;
+  padding: 0;
+  padding-right: 28px;
   border: none;
-  border-radius: 999px;
-  background: var(--surface-soft);
-  color: var(--text-main);
+  border-radius: 0;
+  background: transparent;
+  color: var(--room-card-more-color);
   font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: var(--room-card-more-font-weight);
+  user-select: none;
+  list-style: none;
+  outline: none;
   cursor: pointer;
-  transition: background 180ms ease, transform 180ms ease;
 }
 
 .about-toggle svg {
-  color: #ff5b69;
-}
-
-.about-toggle:hover {
-  background: rgba(255, 255, 255, 0.09);
-  transform: translateY(-1px);
+  color: var(--room-card-more-icon-color);
 }
 
 .about-toggle:focus-visible {
@@ -6021,6 +6075,7 @@ textarea:focus {
 
 .about-details {
   display: grid;
+  margin-top: 18px;
   gap: 24px;
 }
 
@@ -6068,17 +6123,9 @@ textarea:focus {
   gap: 14px;
   align-items: flex-start;
   padding: 16px 18px;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background: var(--surface-soft);
-  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
-}
-
-.about-infra-item:hover,
-.about-amenity:hover {
-  transform: translateY(-2px);
-  border-color: rgba(220, 225, 235, 0.34);
-  background: rgba(255, 255, 255, 0.09);
+  border: 0;
+  border-radius: 0;
+  background: #000000;
 }
 
 .about-icon {
@@ -6145,51 +6192,17 @@ textarea:focus {
 .about-activities-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.about-activity {
-  display: grid;
-  gap: 10px;
-  align-content: start;
-  padding: 20px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--surface-soft);
-  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
-}
-
-.about-activity:hover {
-  transform: translateY(-2px);
-  border-color: rgba(220, 225, 235, 0.34);
-  background: rgba(255, 255, 255, 0.09);
-}
-
-.about-activity-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
-.about-activity-index {
-  color: rgba(220, 225, 235, 0.38);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-}
-
-.about-activity h4 {
-  margin: 0;
-  font-size: 1.05rem;
-  line-height: 1.35;
-}
-
-.about-activity p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.92rem;
-  line-height: 1.65;
+.about-activity {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 0;
+  background: #000000;
 }
 
 @media (max-width: 900px) {
@@ -6210,7 +6223,7 @@ textarea:focus {
 
 @media (max-width: 720px) {
   .about-section {
-    gap: 22px;
+    gap: 0px;
     margin-top: 12px;
     padding: 20px;
     border-radius: 6px;
@@ -6221,12 +6234,9 @@ textarea:focus {
   }
 
   .about-infra-item,
-  .about-amenity {
-    padding: 14px;
-  }
-
+  .about-amenity,
   .about-activity {
-    padding: 16px;
+    padding: 14px;
   }
 }
 

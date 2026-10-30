@@ -91,6 +91,7 @@ const fallbackRooms: RoomDefinition[] = [
     accent: 'var(--room-red)',
     active: true,
     bookingMode: 'booking',
+    sortOrder: 0,
   },
   {
     id: 'sala-grey',
@@ -106,6 +107,7 @@ const fallbackRooms: RoomDefinition[] = [
     accent: 'var(--room-grey)',
     active: true,
     bookingMode: 'booking',
+    sortOrder: 1,
   },
 ];
 
@@ -785,10 +787,11 @@ const [minDelayDone, setMinDelayDone] = useState(false);
             />
           ) : null}
         </a>
-        
-      <div className="topbar-tools">
-          <LanguageSwitcher />
-        </div>
+        {bookingStep === 'confirmation' ? (
+          <div className="topbar-tools">
+            <LanguageSwitcher />
+          </div>
+        ) : null}
       </header>
 
       <main className="layout">
@@ -801,6 +804,9 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                   ? translations.booking.dateTitle
                   : translations.booking.detailsTitle}
             </h1>
+            <div className="booking-heading-tools">
+              <LanguageSwitcher />
+            </div>
           </div>
         ) : null}
 

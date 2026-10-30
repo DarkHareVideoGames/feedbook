@@ -108,6 +108,7 @@ export type ApiRoom = {
   accent: string;
   active: boolean;
   bookingMode: 'booking' | 'contact';
+  sortOrder: number;
 };
 
 export type ApiService = {
@@ -226,6 +227,7 @@ const fallbackRooms: ApiRoom[] = [
     accent: 'var(--room-red)',
     active: true,
     bookingMode: 'booking',
+    sortOrder: 0,
   },
   {
     id: 'sala-grey',
@@ -241,6 +243,7 @@ const fallbackRooms: ApiRoom[] = [
     accent: 'var(--room-grey)',
     active: true,
     bookingMode: 'booking',
+    sortOrder: 1,
   },
 ];
 
@@ -1194,6 +1197,7 @@ function mapRoomRow(row: Record<string, unknown>): ApiRoom {
     accent: String(row.accent ?? 'var(--room-red)'),
     active: row.active !== false,
     bookingMode: row.bookingMode === 'contact' ? 'contact' : 'booking',
+    sortOrder: Number(row.sortOrder ?? (row as Record<string, unknown>).sort_order ?? 0),
   };
 }
 
@@ -1246,7 +1250,7 @@ export async function listRooms(options?: { includeInactive?: boolean }): Promis
     const rooms = options?.includeInactive ? fallbackRooms : fallbackRooms.filter((room) => room.active);
     return { rooms };
   }
-  const query = supabase.from('rooms').select('*').order('createdAt', { ascending: true });
+  const query = supabase.from('rooms').select('*').order('sortOrder', { ascending: true }).order('createdAt', { ascending: true });
   const { data, error } = options?.includeInactive ? await query : await query.eq('active', true);
   if (error) {
     if (isMissingTableError(error)) {
@@ -1276,6 +1280,7 @@ export async function createRoom(token: string, draft: RoomDraft): Promise<{ roo
     throw new ApiError('Invalid room price.', 400);
   }
   const id = String(draft?.id || '').trim() || slugify(name, `sala-${randHex(3).toLowerCase()}`);
+  const { count } = await supabase.from('rooms').select('id', { count: 'exact', head: true });
   const row = {
     id,
     name,
@@ -1291,6 +1296,7 @@ export async function createRoom(token: string, draft: RoomDraft): Promise<{ roo
     accent: String(draft?.accent || 'var(--room-red)'),
     active: draft?.active !== false,
     bookingMode: draft?.bookingMode === 'contact' ? 'contact' : 'booking',
+    sortOrder: count ?? 0,
     updatedAt: new Date().toISOString(),
   };
   const { data, error } = await supabase.from('rooms').insert(row).select().single();
@@ -1335,6 +1341,32 @@ export async function updateRoom(token: string, roomId: string, draft: RoomDraft
   const room = mapRoomRow(data as Record<string, unknown>);
   await recordAudit({ action: 'room-updated', actor: { id: actor.id, name: actor.name, role: actor.role }, target: room.id, details: { name: room.name } });
   return { room };
+}
+
+export async function reorderRooms(token: string, roomIds: string[]): Promise<{ rooms: ApiRoom[] }> {
+  const actor = await requireActor(token, ['admin', 'superuser']);
+  const uniqueRoomIds = [...new Set(roomIds.map((roomId) => String(roomId).trim()).filter(Boolean))];
+  if (uniqueRoomIds.length !== roomIds.length) throw new ApiError('Invalid room order.', 400);
+
+  const { data: existingRows, error: existingError } = await supabase.from('rooms').select('*');
+  if (existingError) throw toError(existingError.message, 'Could not load rooms');
+  if ((existingRows ?? []).length !== uniqueRoomIds.length) throw new ApiError('Room order is incomplete.', 400);
+  if (!(existingRows ?? []).every((row) => uniqueRoomIds.includes(String(row.id)))) throw new ApiError('Room order contains an unknown room.', 400);
+
+  const updates = await Promise.all(
+    uniqueRoomIds.map(async (roomId, sortOrder) => {
+      const { data, error } = await supabase
+        .from('rooms')
+        .update({ sortOrder })
+        .eq('id', roomId)
+        .select()
+        .single();
+      if (error || !data) throw toError(error?.message, 'Could not reorder rooms');
+      return mapRoomRow(data as Record<string, unknown>);
+    }),
+  );
+  await recordAudit({ action: 'rooms-reordered', actor: { id: actor.id, name: actor.name, role: actor.role }, target: 'rooms', details: { roomIds: uniqueRoomIds } });
+  return { rooms: updates.sort((left, right) => left.sortOrder - right.sortOrder) };
 }
 
 export async function deleteRoom(token: string, roomId: string): Promise<{ message: string }> {

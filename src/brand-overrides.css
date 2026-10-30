@@ -23,6 +23,18 @@
   box-shadow: none;
 }
 
+.public-topbar .brand-logo {
+  width: min(100%, 175px);
+}
+
+.public-topbar {
+  justify-content: center;
+}
+
+.public-topbar .brand-wrap {
+  justify-items: center;
+}
+
 .beta-mode-toggle {
   padding: 3px 8px;
   border: 1px solid rgba(209, 19, 35, 0.6);

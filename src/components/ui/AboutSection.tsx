@@ -106,16 +106,13 @@ export default function AboutSection() {
 
                 return (
                   <article className="about-activity" key={item.title}>
-                    <div className="about-activity-head">
-                      <span className="about-icon" aria-hidden="true">
-                        <Icon size={20} />
-                      </span>
-                      <span className="about-activity-index" aria-hidden="true">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
+                    <span className="about-icon" aria-hidden="true">
+                      <Icon size={20} />
+                    </span>
+                    <div className="about-item-body">
+                      <h4>{item.title}</h4>
+                      <p>{item.description}</p>
                     </div>
-                    <h4>{item.title}</h4>
-                    <p>{item.description}</p>
                   </article>
                 );
               })}

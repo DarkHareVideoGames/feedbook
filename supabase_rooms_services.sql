@@ -19,6 +19,7 @@ create table if not exists public.rooms (
   "gearEn" text[] not null default '{}',
   accent text not null default 'var(--room-red)',
   active boolean not null default true,
+  "sortOrder" integer not null default 0,
   "createdAt" timestamptz not null default now(),
   "updatedAt" timestamptz not null default now()
 );
@@ -42,7 +43,7 @@ alter table public.rooms add column if not exists "longDescription" text;
 alter table public.rooms add column if not exists "longDescriptionEn" text;
 notify pgrst, 'reload schema';
 
-insert into public.rooms (id, name, description, "descriptionEn", "maxMembers", "pricePerMemberHour", gear, "gearEn", accent, active)
+insert into public.rooms (id, name, description, "descriptionEn", "maxMembers", "pricePerMemberHour", gear, "gearEn", accent, active, "sortOrder")
 values
   (
     'sala-red',
@@ -54,7 +55,8 @@ values
     array['Bateria completa', '2 amps de guitarra', 'PA com monitores'],
     array['Full drum kit', '2 guitar amps', 'PA with monitors'],
     'var(--room-red)',
-    true
+    true,
+    0
   ),
   (
     'sala-grey',
@@ -66,7 +68,8 @@ values
     array['Bateria compacta', 'Amp de baixo', 'PA com efeitos de voz'],
     array['Compact drum kit', 'Bass amp', 'PA with vocal FX'],
     'var(--room-grey)',
-    true
+    true,
+    1
   )
 on conflict (id) do nothing;
 
