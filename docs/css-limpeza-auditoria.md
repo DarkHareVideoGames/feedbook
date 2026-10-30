@@ -1,0 +1,34 @@
+# Limpeza CSS — análise de duplicações (fase 2)
+
+Branch: `restructure`. Esta fase é de diagnóstico; nenhuma declaração CSS foi eliminada.
+
+## Contagem por ficheiro
+
+| Ficheiro | Linhas | Ocorrências de seletores simples | Seletores simples distintos |
+|---|---:|---:|---:|
+| 01-publico-e-componentes.css | 3036 | 293 | 237 |
+| 02-administracao-e-historico.css | 1961 | 195 | 170 |
+| 03-cookies-e-ajustes.css | 896 | 78 | 67 |
+| 04-quem-somos.css | 233 | 24 | 17 |
+| 05-loading-e-pwa.css | 97 | 12 | 11 |
+
+Contagens obtidas por pesquisa textual de seletores simples `.classe { ... }` e `#id { ... }`; não são uma análise completa da gramática CSS e não incluem seletores compostos. Um seletor repetido não significa necessariamente redundância.
+
+## Exemplos a investigar
+
+- Público: `.layout`, `.booking-grid`, `.room-card`, `.topbar`.
+- Administração: `.admin-sidebar`, `.admin-modal-card`, `.room-editor-actions`.
+- Ajustes finais: `.cookie-banner`, `.page-shell`, `.room-card`.
+- Quem Somos: `.about-section`, `.about-columns`.
+- Loading: `.global-loading-ring`.
+
+A pesquisa preliminar de regras simples com corpos textualmente idênticos dentro de cada ficheiro não encontrou duplicações exatas. Isto não prova ausência de redundância: media queries, especificidade, ordem de cascata e regras compostas exigem análise com parser CSS.
+
+## Critérios para remoção
+
+1. Cruzar seletores com todos os TSX/TS, HTML, código dinâmico e classes de bibliotecas.
+2. Inspecionar seletores repetidos no contexto dos respetivos `@media`, `@supports` e pseudoestados.
+3. Separar candidatos comprovados de regras cuja utilização é incerta.
+4. Remover apenas candidatos comprovados, em commits pequenos e reversíveis, após build/testes e comparação visual.
+
+**Estado:** nenhuma regra removida; build, testes e screenshots ainda não executados nesta fase.
