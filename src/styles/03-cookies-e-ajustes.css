@@ -370,10 +370,6 @@
   .topbar,
   .field-row,
   .hero-metrics,
-  .slot-grid {
-    grid-template-columns: 1fr;
-  }
-
   .booking-form .field-row:first-of-type {
     grid-template-columns: 1fr;
   }
