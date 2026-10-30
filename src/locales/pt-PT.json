@@ -40,19 +40,19 @@
     "sala-red": {
       "name": "SALA RED",
       "vibe": "Sala de impacto forte para ensaios completos e passagens de alinhamento com pressao real.",
-      "capacity": "Ate 6 elementos",
+      "capacity": "Até 6 elementos",
       "gear": ["Bateria completa", "2 amps de guitarra", "PA com monitores"]
     },
     "sala-grey": {
       "name": "SALA GREY",
       "vibe": "Sala equilibrada para composicao, vozes e trabalho de detalhe com mais controlo dinamico.",
-      "capacity": "Ate 5 elementos",
+      "capacity": "Até 5 elementos",
       "gear": ["Bateria compacta", "Amp de baixo", "PA com efeitos de voz"]
     },
     "selected": "Sala selecionada",
     "choose": "Escolher esta sala",
     "priceFrom": "desde",
-    "contactOnly": "Apenas por contacto"
+    "contactOnly": "Sob consulta"
   },
   "about": {
     "eyebrow": "Quem somos",
