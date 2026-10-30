@@ -327,35 +327,6 @@
     color: #111827;
   }
 
-  .finance-print-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid !important;
-    gap: 8px;
-  }
-
-  .finance-print-list-head,
-  .finance-print-list li {
-    display: grid !important;
-    grid-template-columns: 0.8fr 1.4fr 1fr 0.8fr 0.8fr 1.2fr;
-    gap: 8px;
-    align-items: center;
-    font-size: 11px;
-  }
-
-  .finance-print-list-head {
-    font-weight: 700;
-    padding-bottom: 6px;
-    border-bottom: 1px solid rgba(17, 24, 39, 0.08);
-    color: #1f2937;
-  }
-
-  .finance-print-list li {
-    padding-top: 6px;
-    border-top: 1px solid rgba(17, 24, 39, 0.08);
-  }
-
   .finance-print-empty {
     color: #111827;
   }
