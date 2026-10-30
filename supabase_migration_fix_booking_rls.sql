@@ -32,17 +32,17 @@ create policy "staff read bookings" on public.bookings for select to authenticat
 
 drop policy if exists "staff write bookings" on public.bookings;
 create policy "staff write bookings" on public.bookings for all to authenticated
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser','collaborator','technician')))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser','collaborator','technician')));
+  using (public.has_profile_role(array['admin', 'superuser', 'collaborator', 'technician']))
+  with check (public.has_profile_role(array['admin', 'superuser', 'collaborator', 'technician']));
 
 drop policy if exists "admin read audit_logs" on public.audit_logs;
 create policy "admin read audit_logs" on public.audit_logs for select to authenticated
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')));
+  using (public.has_profile_role(array['admin', 'superuser']));
 
 drop policy if exists "admin write audit_logs" on public.audit_logs;
 create policy "admin write audit_logs" on public.audit_logs for all to authenticated
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','superuser')));
+  using (public.has_profile_role(array['admin', 'superuser']))
+  with check (public.has_profile_role(array['admin', 'superuser']));
 
 -- 5. Service role explícito
 drop policy if exists "service write audit_logs" on public.audit_logs;
