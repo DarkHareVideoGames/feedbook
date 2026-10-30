@@ -1,0 +1,27 @@
+:root {
+  font-family: "IBM Plex Sans", sans-serif;
+  color: #f2f3f5;
+  background: #000000;
+  --surface: rgba(0, 0, 0, 0.82);
+  --surface-strong: rgba(0, 0, 0, 0.94);
+  --surface-soft: rgba(0, 0, 0, 0.06);
+  --border: rgba(220, 225, 235, 0.18);
+  --text-main: #f2f3f5;
+  --text-muted: #1e75cc;
+  --accent: #d11323;
+  --accent-deep: #9b0d18;
+  --secondary: #cfd3da;
+  --room-red: #d11323;
+  --room-grey: #8e949f;
+  --room-purple: #540099;
+  --room-card-meta-color: #085ef1;
+  --room-card-description-color: #d5d9e2;
+  --room-card-more-color: #dbdee6;
+  --room-card-more-icon-color: #ff5b69;
+  --room-card-more-hover-background: rgba(255, 255, 255, 0.09);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
