@@ -32,3 +32,13 @@ A pesquisa preliminar de regras simples com corpos textualmente idênticos dentr
 4. Remover apenas candidatos comprovados, em commits pequenos e reversíveis, após build/testes e comparação visual.
 
 **Estado:** nenhuma regra removida; build, testes e screenshots ainda não executados nesta fase.
+
+## Verificação direta no GitHub (sem intervenção do utilizador)
+
+Foram consultados os ficheiros `App.tsx`, `AdminHistoryPage.tsx`, `AboutSection.tsx`, `GlobalLoading.tsx` e `NotFoundPage.tsx`, e cruzados textualmente com os estilos de `04-quem-somos.css` e `05-loading-e-pwa.css`.
+
+- `booking-summary-extras`: não encontrado nesta amostra de componentes; **não confirmado como não utilizado**.
+- `global-loading-message`: não encontrado nesta amostra; **não confirmado como não utilizado**.
+- `history-row-pending`: não encontrado nesta amostra; pode ser construído dinamicamente; **não confirmado como não utilizado**.
+
+Esta amostra não abrange todos os ficheiros nem as classes construídas em runtime. Não foram eliminadas regras CSS. A execução local de um clone foi tentada, mas falhou por indisponibilidade de resolução DNS de github.com no ambiente de execução; a leitura dos ficheiros pelo conector GitHub funcionou.
