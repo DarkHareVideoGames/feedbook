@@ -378,15 +378,6 @@
     grid-template-columns: 1fr;
   }
 
-  .duration-field {
-    width: 100%;
-    justify-self: stretch;
-  }
-
-  .slot-grid-compact {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .duration-select {
     max-width: 100%;
   }
