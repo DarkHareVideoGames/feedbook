@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CalendarClock, ChevronRight, CircleCheck, CircleDashedCheck, Clock3, MessageCircle, Plus, Radio, RefreshCw, Send, X } from 'lucide-react';
+import { FormEvent, PointerEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, CalendarClock, ChevronRight, CircleCheck, CircleDashedCheck, Clock3, GripVertical, MessageCircle, Plus, Radio, RefreshCw, Send, X } from 'lucide-react';
 import * as api from './api';
 import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
@@ -828,6 +828,10 @@ function AdminHistoryPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [rooms, setRooms] = useState<api.ApiRoom[]>([]);
+  const roomsRef = useRef<api.ApiRoom[]>([]);
+  const [draggedRoomId, setDraggedRoomId] = useState<string | null>(null);
+  const [roomOrderSaving, setRoomOrderSaving] = useState(false);
+  const roomOrderBeforeDragRef = useRef<api.ApiRoom[] | null>(null);
   const [services, setServices] = useState<api.ApiService[]>([]);
   const [roomForm, setRoomForm] = useState<RoomFormDraft>(emptyRoomForm);
   const [roomImageFile, setRoomImageFile] = useState<File | null>(null);
@@ -898,6 +902,10 @@ function AdminHistoryPage() {
 
     return () => window.clearTimeout(timeout);
   }, [catalogNotice]);
+
+  useEffect(() => {
+    roomsRef.current = rooms;
+  }, [rooms]);
 
   // Superuser e admin têm acesso total (utilizadores, salas, serviços, preços, contas).
   const isPrivilegedRole = (role: Role | null | undefined) => role === 'admin' || role === 'superuser';
@@ -1252,6 +1260,69 @@ function AdminHistoryPage() {
     setRoomImageFile(null);
     setCatalogNotice('');
     setError('');
+  };
+
+  const moveRoom = (roomId: string, targetRoomId: string) => {
+    if (roomId === targetRoomId) return;
+    setRooms((currentRooms) => {
+      const sourceIndex = currentRooms.findIndex((room) => room.id === roomId);
+      const targetIndex = currentRooms.findIndex((room) => room.id === targetRoomId);
+      if (sourceIndex < 0 || targetIndex < 0) return currentRooms;
+      const nextRooms = [...currentRooms];
+      const [movedRoom] = nextRooms.splice(sourceIndex, 1);
+      nextRooms.splice(targetIndex, 0, movedRoom);
+      roomsRef.current = nextRooms;
+      return nextRooms;
+    });
+  };
+
+  const handleRoomOrderPointerDown = (event: PointerEvent<HTMLButtonElement>, roomId: string) => {
+    if (roomOrderSaving) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    roomOrderBeforeDragRef.current = roomsRef.current;
+    setDraggedRoomId(roomId);
+    setCatalogNotice('');
+    setError('');
+  };
+
+  const handleRoomOrderPointerMove = (event: PointerEvent<HTMLButtonElement>) => {
+    const roomId = draggedRoomId;
+    if (!roomId || roomOrderSaving) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-room-order-id]');
+    const targetRoomId = target?.dataset.roomOrderId;
+    if (targetRoomId) moveRoom(roomId, targetRoomId);
+  };
+
+  const finishRoomOrderDrag = async (event: PointerEvent<HTMLButtonElement>) => {
+    const draggedId = draggedRoomId;
+    if (!draggedId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    setDraggedRoomId(null);
+    const previousRooms = roomOrderBeforeDragRef.current;
+    roomOrderBeforeDragRef.current = null;
+    if (!previousRooms) return;
+    const previousIds = previousRooms.map((room) => room.id);
+    const nextIds = roomsRef.current.map((room) => room.id);
+    if (previousIds.join('|') === nextIds.join('|')) return;
+
+    const sessionToken = window.localStorage.getItem(TOKEN_KEY);
+    if (!sessionToken || !isPrivileged) {
+      setRooms(previousRooms);
+      return;
+    }
+    setRoomOrderSaving(true);
+    try {
+      const payload = await api.reorderRooms(sessionToken, nextIds);
+      setRooms(payload.rooms);
+      setCatalogNotice('Ordem das salas atualizada.');
+    } catch (err) {
+      setRooms(previousRooms);
+      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel atualizar a ordem das salas.');
+    } finally {
+      setRoomOrderSaving(false);
+    }
   };
 
   const closeRoomModal = () => {
@@ -3824,7 +3895,23 @@ function AdminHistoryPage() {
             {catalogLoading ? <p className="summary-copy">A carregar salas...</p> : null}
             <ul className="admin-user-list catalog-list room-management-list">
               {rooms.map((room) => (
-                <li key={room.id} className="room-management-card">
+                <li
+                  key={room.id}
+                  className={`room-management-card ${draggedRoomId === room.id ? 'room-management-card-dragging' : ''}`}
+                  data-room-order-id={room.id}
+                >
+                  <button
+                    type="button"
+                    className="room-order-handle"
+                    aria-label={`Reordenar ${room.name}`}
+                    disabled={roomOrderSaving || Boolean(actionLoading[room.id])}
+                    onPointerDown={(event) => handleRoomOrderPointerDown(event, room.id)}
+                    onPointerMove={handleRoomOrderPointerMove}
+                    onPointerUp={finishRoomOrderDrag}
+                    onPointerCancel={finishRoomOrderDrag}
+                  >
+                    <GripVertical aria-hidden="true" size={20} />
+                  </button>
                   <button
                     type="button"
                     className="room-management-card-trigger"

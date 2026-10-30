@@ -17,6 +17,7 @@ forma de recriar e evoluir a base de dados de forma reprodutível.
 | `supabase_migration_fix_booking_rls.sql` | Após a migração de segurança | Correção de RLS para marcações públicas: GRANTs para service_role, leitura pública mínima em bookings, políticas idempotentes. |
 | `supabase_migration_developer_notifications.sql` | Após a migração de segurança | Issue #121: flag `profiles.isDeveloper`, trigger de criação e função administrativa de atualização de utilizadores. |
 | `supabase_migration_admin_onboarding.sql` | Após a migração de segurança | Issue #135: progresso do walkthrough administrativo por utilizador, com RLS por `auth.uid()`. |
+| `supabase_migration_room_sort_order.sql` | Após `supabase_rooms_services.sql` | Issue #145: coluna `rooms.sortOrder`, preenchimento da ordem atual e índice para persistir a sequência dos cards na front page. |
 | `supabase_seed_audit.sql` | — | Seed opcional do histórico de `audit_logs`. **Sem** hashes de password. |
 
 ## Como aplicar
