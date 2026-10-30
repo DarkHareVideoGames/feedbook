@@ -42,3 +42,11 @@ Foram consultados os ficheiros `App.tsx`, `AdminHistoryPage.tsx`, `AboutSection.
 - `history-row-pending`: não encontrado nesta amostra; pode ser construído dinamicamente; **não confirmado como não utilizado**.
 
 Esta amostra não abrange todos os ficheiros nem as classes construídas em runtime. Não foram eliminadas regras CSS. A execução local de um clone foi tentada, mas falhou por indisponibilidade de resolução DNS de github.com no ambiente de execução; a leitura dos ficheiros pelo conector GitHub funcionou.
+
+## Primeira remoção controlada
+
+Foram removidos os blocos CSS de `.booking-summary-extras` (em `04-quem-somos.css`) e `.global-loading-message` (em `05-loading-e-pwa.css`), num total de 222 caracteres. Não foram encontradas referências na pesquisa de código do GitHub para a branch principal nem nos componentes principais consultados na branch `restructure`. A pesquisa não é uma prova absoluta de ausência de utilização dinâmica.
+
+A classe `.history-row-pending` **foi preservada** porque integra estilos de estados administrativos e pode ser gerada dinamicamente.
+
+**Validação pendente:** build e comparação visual do preview depois dos commits. Reverter os commits de remoção se surgir regressão.
