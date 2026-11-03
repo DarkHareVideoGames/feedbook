@@ -103,6 +103,7 @@ export type ApiRoom = {
   maxMembers: number;
   pricePerMemberHour: number | null;
   imageUrl?: string | null;
+  imageUrls?: string[];
   gear: string[];
   gearEn: string[];
   accent: string;
@@ -130,6 +131,7 @@ export type RoomDraft = {
   maxMembers: number;
   pricePerMemberHour?: number | null;
   imageUrl?: string | null;
+  imageUrls?: string[];
   gear?: string;
   gearEn?: string;
   longDescription?: string;
@@ -1122,6 +1124,7 @@ function isMissingTableError(error: { code?: string; message?: string } | null |
 // Bucket público onde ficam as fotos das salas. A leitura é anónima
 // (o site carrega as fotos sem login); a escrita é restrita a autenticados.
 export const ROOM_IMAGES_BUCKET = 'images';
+export const ROOM_IMAGES_MAX_COUNT = 5;
 const ROOM_IMAGES_FOLDER = 'rooms';
 const ROOM_IMAGE_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 const ROOM_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -1130,6 +1133,19 @@ function normalizeRoomImageUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed === '' ? null : trimmed;
+}
+
+export function getRoomImageUrls(room: { imageUrls?: string[]; imageUrl?: string | null }): string[] {
+  const images = room.imageUrls ?? (room.imageUrl ? [room.imageUrl] : []);
+  return [...new Set(images.map(normalizeRoomImageUrl).filter((url): url is string => url !== null))].slice(0, ROOM_IMAGES_MAX_COUNT);
+}
+
+function roomImageFields(draft: RoomDraft): { imageUrl: string | null; imageUrls: string[] } {
+  if (draft.imageUrls && draft.imageUrls.length > ROOM_IMAGES_MAX_COUNT) {
+    throw new ApiError('Cada sala pode ter no máximo 5 fotografias.', 400);
+  }
+  const imageUrls = getRoomImageUrls(draft);
+  return { imageUrl: imageUrls[0] ?? null, imageUrls };
 }
 
 function roomImageExtension(fileName: string, mimeType: string): string {
@@ -1160,7 +1176,7 @@ export async function uploadRoomImage(
 
   const safeRoom = String(roomId || '').trim() || `sala-${randHex(3).toLowerCase()}`;
   const ext = roomImageExtension(file.name, file.type);
-  const path = `${ROOM_IMAGES_FOLDER}/${safeRoom}-${Date.now()}.${ext}`;
+  const path = `${ROOM_IMAGES_FOLDER}/${safeRoom}-${crypto.randomUUID()}.${ext}`;
 
   const { error } = await supabase.storage.from(ROOM_IMAGES_BUCKET).upload(path, file, {
     cacheControl: '31536000',
@@ -1192,6 +1208,10 @@ function mapRoomRow(row: Record<string, unknown>): ApiRoom {
     maxMembers: Number(row.maxMembers ?? (row as Record<string, unknown>).max_members ?? 4),
     pricePerMemberHour: rawPrice === null || rawPrice === undefined || rawPrice === '' ? null : Number(rawPrice),
     imageUrl: normalizeRoomImageUrl(row.imageUrl ?? (row as Record<string, unknown>).image_url),
+    imageUrls: getRoomImageUrls({
+      imageUrls: Array.isArray(row.imageUrls) ? row.imageUrls.filter((url): url is string => typeof url === 'string') : undefined,
+      imageUrl: normalizeRoomImageUrl(row.imageUrl ?? row.image_url),
+    }),
     gear,
     gearEn,
     accent: String(row.accent ?? 'var(--room-red)'),
@@ -1288,7 +1308,7 @@ export async function createRoom(token: string, draft: RoomDraft): Promise<{ roo
     descriptionEn: String(draft?.descriptionEn ?? ''),
     maxMembers: Math.floor(maxMembers),
     pricePerMemberHour,
-    imageUrl: normalizeRoomImageUrl(draft?.imageUrl),
+    ...roomImageFields(draft),
     gear: splitLines(draft?.gear),
     gearEn: splitLines(draft?.gearEn),
     longDescription: String(draft?.longDescription ?? ''),
@@ -1334,7 +1354,7 @@ export async function updateRoom(token: string, roomId: string, draft: RoomDraft
     accent: String(draft?.accent || 'var(--room-red)'),
     active: draft?.active !== false,
     bookingMode: draft?.bookingMode === 'contact' ? 'contact' : 'booking',
-    imageUrl: normalizeRoomImageUrl(draft?.imageUrl),
+    ...roomImageFields(draft),
   };
   const { data, error } = await supabase.from('rooms').update(patch).eq('id', roomId).select().single();
   if (error || !data) throw toError(error?.message, 'Could not update room');

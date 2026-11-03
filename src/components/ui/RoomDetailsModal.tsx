@@ -1,12 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { getRoomImageUrls } from '../../api';
+import RoomPhotoSlideshow from './RoomPhotoSlideshow';
 
 type RoomDetailsModalProps = {
   room: {
     name: string;
     accent: string;
     imageUrl?: string | null;
+    imageUrls?: string[];
     capacity: string;
     vibe: string;
     longDescription: string;
@@ -19,6 +22,7 @@ type RoomDetailsModalProps = {
 
 function RoomDetailsModal({ room, priceLabel, onClose, onChoose }: RoomDetailsModalProps) {
   const { translations } = useI18n();
+  const images = getRoomImageUrls(room);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const backdropPointerDown = useRef(false);
   const [namePrefix = '', ...nameParts] = room.name.trim().split(/\s+/);
@@ -92,8 +96,8 @@ function RoomDetailsModal({ room, priceLabel, onClose, onChoose }: RoomDetailsMo
             <X size={30} aria-hidden="true" />
           </button>
         <div className="room-details-content">
-          {room.imageUrl ? <img className="room-details-image" src={room.imageUrl} alt={room.name} /> : null}
-          <div className={`room-details-body${room.imageUrl ? '' : ' room-details-body-no-image'}`}>
+          <RoomPhotoSlideshow images={images} roomName={room.name} className="room-details-image" />
+          <div className={`room-details-body${images.length > 0 ? '' : ' room-details-body-no-image'}`}>
           <h2 id="room-modal-title" className="room-details-title">
             {hasRoomPrefix ? (
               <>

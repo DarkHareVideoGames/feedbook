@@ -679,6 +679,70 @@ button {
   object-fit: cover;
 }
 
+.room-photo-slideshow {
+  position: relative;
+  overflow: hidden;
+}
+
+.room-photo-slideshow img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 800ms ease-in-out;
+}
+
+.room-photo-slideshow img.is-active {
+  opacity: 1;
+}
+
+.room-photo-editor {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.room-photo-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.room-photo-editor-item {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.room-photo-editor-item img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.room-photo-editor-item button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.room-photo-spinner {
+  animation: room-photo-spin 1s linear infinite;
+}
+
+@keyframes room-photo-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-photo-slideshow img { transition: none; }
+  .room-photo-spinner { animation: none; }
+}
+
 .room-image-preview {
   display: flex;
   flex-direction: column;

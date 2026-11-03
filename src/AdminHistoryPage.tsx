@@ -1,6 +1,7 @@
 import { FormEvent, PointerEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, CalendarClock, ChevronRight, CircleCheck, CircleDashedCheck, Clock3, GripVertical, MessageCircle, Plus, Radio, RefreshCw, Send, X } from 'lucide-react';
 import * as api from './api';
+import RoomPhotoEditor from './components/ui/RoomPhotoEditor';
 import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
 import AdminSetupDiagnostics from './components/ui/AdminSetupDiagnostics';
@@ -214,7 +215,7 @@ type RoomFormDraft = {
   descriptionEn: string;
   maxMembers: string;
   pricePerMemberHour: string;
-  imageUrl: string;
+  imageUrls: string[];
   gear: string;
   gearEn: string;
   longDescription: string;
@@ -264,7 +265,7 @@ const emptyRoomForm: RoomFormDraft = {
   descriptionEn: '',
   maxMembers: '4',
   pricePerMemberHour: '',
-  imageUrl: '',
+  imageUrls: [],
   gear: '',
   gearEn: '',
   longDescription: '',
@@ -293,7 +294,7 @@ function roomToForm(room: api.ApiRoom): RoomFormDraft {
     maxMembers: String(room.maxMembers),
     pricePerMemberHour:
       room.pricePerMemberHour === null || room.pricePerMemberHour === undefined ? '' : String(room.pricePerMemberHour),
-    imageUrl: room.imageUrl ?? '',
+    imageUrls: api.getRoomImageUrls(room),
     gear: (room.gear ?? []).join('\n'),
     gearEn: (room.gearEn ?? []).join('\n'),
     longDescription: room.longDescription,
@@ -834,7 +835,7 @@ function AdminHistoryPage() {
   const roomOrderBeforeDragRef = useRef<api.ApiRoom[] | null>(null);
   const [services, setServices] = useState<api.ApiService[]>([]);
   const [roomForm, setRoomForm] = useState<RoomFormDraft>(emptyRoomForm);
-  const [roomImageFile, setRoomImageFile] = useState<File | null>(null);
+  const [roomImageFiles, setRoomImageFiles] = useState<File[]>([]);
   const [roomImageUploading, setRoomImageUploading] = useState(false);
   const [roomSaveLoading, setRoomSaveLoading] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
@@ -1257,7 +1258,7 @@ function AdminHistoryPage() {
     setShowNewRoomForm(false);
     setEditingRoomId(room.id);
     setRoomForm(roomToForm(room));
-    setRoomImageFile(null);
+    setRoomImageFiles([]);
     setCatalogNotice('');
     setError('');
   };
@@ -1329,7 +1330,7 @@ function AdminHistoryPage() {
     if (roomSaveLoading || roomImageUploading || (editingRoomId && actionLoading[editingRoomId])) return;
     setEditingRoomId(null);
     setRoomForm(emptyRoomForm);
-    setRoomImageFile(null);
+    setRoomImageFiles([]);
     setShowNewRoomForm(false);
     window.requestAnimationFrame(() => roomModalTriggerRef.current?.focus());
   };
@@ -1978,7 +1979,7 @@ function AdminHistoryPage() {
   const cancelEditRoom = () => {
     setEditingRoomId(null);
     setRoomForm(emptyRoomForm);
-    setRoomImageFile(null);
+    setRoomImageFiles([]);
     setShowNewRoomForm(false);
   };
 
@@ -2011,26 +2012,27 @@ function AdminHistoryPage() {
     setCatalogNotice('');
     setError('');
     setRoomSaveLoading(true);
+    setRoomImageUploading(true);
     try {
       // Determina o id alvo (para novas salas, o id pode ser gerado a partir do nome).
       const roomId = editingRoomId ?? (roomForm.id.trim() || undefined);
 
       // Se há uma imagem nova, envia-a para o bucket e usa o URL público resultante.
-      let imageUrl: string | null = roomForm.imageUrl.trim() || null;
-      if (roomImageFile) {
-        setRoomImageUploading(true);
-        try {
-          const uploaded = await api.uploadRoomImage(
-            sessionToken,
-            roomId || `sala-${trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'nova'}`,
-            roomImageFile,
-          );
-          imageUrl = uploaded.url;
-        } finally {
-          setRoomImageUploading(false);
-        }
+      const imageUrls = [...roomForm.imageUrls];
+      if (imageUrls.length + roomImageFiles.length > api.ROOM_IMAGES_MAX_COUNT) {
+        throw new Error('Cada sala pode ter no máximo 5 fotografias.');
       }
-
+      for (const file of roomImageFiles) {
+        const uploaded = await api.uploadRoomImage(
+          sessionToken,
+          roomId || `sala-${trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'nova'}`,
+          file,
+        );
+        imageUrls.push(uploaded.url);
+        // Preserva uploads concluídos se uma fotografia seguinte ou a gravação falhar.
+        setRoomForm((current) => ({ ...current, imageUrls: [...imageUrls] }));
+        setRoomImageFiles((current) => current.filter((pending) => pending !== file));
+      }
       const draft: api.RoomDraft = {
         id: roomId,
         name: trimmedName,
@@ -2038,7 +2040,7 @@ function AdminHistoryPage() {
         descriptionEn: roomForm.descriptionEn,
         maxMembers: Math.floor(maxMembers),
         pricePerMemberHour,
-        imageUrl,
+        imageUrls,
         gear: roomForm.gear,
         gearEn: roomForm.gearEn,
         longDescription: roomForm.longDescription,
@@ -2060,6 +2062,7 @@ function AdminHistoryPage() {
       setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel guardar a sala.');
     } finally {
       setRoomSaveLoading(false);
+      setRoomImageUploading(false);
     }
   };
 
@@ -2074,7 +2077,7 @@ function AdminHistoryPage() {
       if (editingRoomId === roomId) {
         setEditingRoomId(null);
         setRoomForm(emptyRoomForm);
-        setRoomImageFile(null);
+        setRoomImageFiles([]);
       }
       setRoomToDelete(null);
       await loadCatalogs();
@@ -3723,48 +3726,13 @@ function AdminHistoryPage() {
                   </label>
                 </div>
               </fieldset>
-              <section className="room-editor-image-section">
-                <div className="room-editor-section-heading">
-                  <strong>Imagem da sala</strong>
-                  <small>Recomendado: 1200 × 675 px, formato 16:9, máximo 5 MB.</small>
-                </div>
-                <div className="room-editor-image-grid">
-                  <div className="room-editor-image-preview">
-                    {roomImageFile || roomForm.imageUrl ? (
-                      <img
-                        src={roomImageFile ? URL.createObjectURL(roomImageFile) : roomForm.imageUrl}
-                        alt="Pré-visualização da foto da sala"
-                      />
-                    ) : (
-                      <span>Sem imagem</span>
-                    )}
-                  </div>
-                  <div className="room-editor-image-controls">
-                    <label>
-                      Escolher imagem
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        disabled={roomImageUploading || roomSaveLoading}
-                        onChange={(event) => setRoomImageFile(event.target.files?.[0] ?? null)}
-                      />
-                    </label>
-                    {roomImageFile || roomForm.imageUrl ? (
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        disabled={roomImageUploading || roomSaveLoading}
-                        onClick={() => {
-                          setRoomImageFile(null);
-                          setRoomForm((current) => ({ ...current, imageUrl: '' }));
-                        }}
-                      >
-                        Remover imagem
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              </section>
+              <RoomPhotoEditor
+                imageUrls={roomForm.imageUrls}
+                files={roomImageFiles}
+                disabled={roomImageUploading || roomSaveLoading}
+                onImagesChange={(imageUrls) => setRoomForm((current) => ({ ...current, imageUrls }))}
+                onFilesChange={setRoomImageFiles}
+              />
               <div className="room-editor-language-grid">
               <label>
                 Descricao (PT)

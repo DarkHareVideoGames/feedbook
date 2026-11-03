@@ -24,6 +24,23 @@ forma de recriar e evoluir a base de dados de forma reprodutível.
 
 ## Como aplicar
 
+### Galeria de salas — Issue #154
+
+Aplicar `supabase_migration_room_photo_gallery.sql` **depois de**
+`supabase_migration_room_images.sql` e **antes de publicar o frontend** desta
+funcionalidade. A migração é idempotente, preserva a foto atual em `imageUrls`
+e impõe um máximo de 5 URLs por sala. Não executar novamente o schema base.
+O bucket e as políticas de upload existentes mantêm-se; remover uma foto no
+admin retira a referência da sala, mas não apaga o ficheiro do Storage.
+A primeira foto continua a ser gravada em `imageUrl` para compatibilidade.
+
+Depois de aplicar, validar no admin: carregar 5 fotos, guardar e reabrir a sala;
+confirmar a persistência e a impossibilidade de adicionar uma sexta. Verificar
+remoção individual, JPG/PNG/WebP, rejeição de ficheiros acima de 5 MB e salas
+com zero/uma foto. Na página pública, verificar o ciclo de 5 segundos com
+crossfade de 800 ms, seleção/reserva e movimento reduzido, em mobile e desktop.
+Executar também `npm run build` e `npm test`. Validação a cargo do utilizador.
+
 1. Abrir **Supabase → SQL Editor → New query**.
 2. Colar o conteúdo do ficheiro.
 3. Executar (`Run`).
