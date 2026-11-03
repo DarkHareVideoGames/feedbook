@@ -51,8 +51,11 @@
     },
     "selected": "Selected room",
     "choose": "Choose this room",
+    "chooseShort": "Choose room",
     "priceFrom": "from",
-    "contactOnly": "On request"
+    "contactOnly": "On request",
+    "closeDetails": "Close room details",
+    "equipment": "Included equipment"
   },
   "about": {
     "eyebrow": "About us",
