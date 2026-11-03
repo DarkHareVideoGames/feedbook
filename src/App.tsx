@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Camera, ChevronDown, ChevronUp, Download, Globe, LoaderCircle, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Camera, ChevronDown, Download, Globe, LoaderCircle, PlayCircle } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
@@ -8,6 +8,7 @@ import { calculateRehearsalPrice, resolveRoomPricePerHour } from './helpers/rehe
 import CookieConsent from './components/ui/CookieConsent';
 import AboutSection from './components/ui/AboutSection';
 import GlobalLoading from './components/ui/GlobalLoading';
+import RoomDetailsModal from './components/ui/RoomDetailsModal';
 import { useImagesReady } from './hooks/useImageReady';
 
 type RoomDefinition = api.ApiRoom;
@@ -367,11 +368,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
   const [teamBookings, setTeamBookings] = useState<TeamBooking[]>([]);
   const [bookingStep, setBookingStep] = useState<BookingStep>('room');
 
-  const [expandedRoomIds, setExpandedRoomIds] = useState<Record<string, boolean>>({});
-
-  const toggleRoom = (roomId: string) => {
-    setExpandedRoomIds(prev => ({ ...prev, [roomId]: !prev[roomId] }));
-  };
+  const [detailsRoomId, setDetailsRoomId] = useState<string | null>(null);
   const [betaEnabled, setBetaEnabled] = useState(true);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   // Campos de contacto controlados para validação em tempo real (Issue #5).
@@ -407,10 +404,10 @@ const [minDelayDone, setMinDelayDone] = useState(false);
           : legacy?.capacity || '',
       gear: ((isPt ? room.gear : room.gearEn).length > 0 ? (isPt ? room.gear : room.gearEn) : room.gear.length > 0 ? room.gear : legacy?.gear) || [],
       longDescription: isPt ? room.longDescription : room.longDescriptionEn,
-      isExpanded: expandedRoomIds[room.id] || false,
     };
   });
   const selectedRoom = localizedRooms.find((room) => room.id === selectedRoomId) ?? localizedRooms[0];
+  const detailsRoom = localizedRooms.find((room) => room.id === detailsRoomId);
   const selectedRoomPricePerHour = resolveRoomPricePerHour(selectedRoom.pricePerMemberHour);
   const selectedStartHour = hourLabelToNumber(selectedSlot);
   // O slot escolhido continua válido? (antecedência mínima, fecho e colisões).
@@ -829,6 +826,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                     setBookingStep(room.bookingMode === 'contact' ? 'details' : 'date');
                   }}
                   onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
                       setSelectedRoomId(room.id);
@@ -871,28 +869,15 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                   <button
                       type="button"
                       className="room-card-summary"
-                      aria-expanded={room.isExpanded}
-                      aria-controls={`room-details-${room.id}`}
+                      aria-haspopup="dialog"
                       onClick={(event) => {
                         event.stopPropagation();
-                        toggleRoom(room.id);
+                        setDetailsRoomId(room.id);
                       }}
                     >
-                      <span>{room.isExpanded ? translations.about.collapse : translations.about.expand}</span>
-                      {room.isExpanded ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
+                      <span>{translations.about.expand}</span>
+                      <ChevronDown size={16} aria-hidden="true" />
                     </button>
-                    {room.isExpanded ? (
-                      <div id={`room-details-${room.id}`} className="room-card-details">
-                        {room.longDescription ? (
-                          <p className="room-card-long-text">{room.longDescription}</p>
-                        ) : null}
-                        <ul className="gear-list">
-                          {room.gear.map((item) => (
-                            <li key={item}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
                   <span className="room-card-arrow">&gt;</span>
                 </article>
               );
@@ -1378,6 +1363,21 @@ const [minDelayDone, setMinDelayDone] = useState(false);
         ) : null}
 
         {bookingStep === 'room' ? <AboutSection /> : null}
+
+        {bookingStep === 'room' && detailsRoom ? (
+          <RoomDetailsModal
+            room={detailsRoom}
+            priceLabel={detailsRoom.bookingMode === 'contact'
+              ? translations.rooms.contactOnly
+              : `${translations.rooms.priceFrom} ${currency.format(resolveRoomPricePerHour(detailsRoom.pricePerMemberHour)).replace(/\s/g, '')}`}
+            onClose={() => setDetailsRoomId(null)}
+            onChoose={() => {
+              setSelectedRoomId(detailsRoom.id);
+              setDetailsRoomId(null);
+              setBookingStep(detailsRoom.bookingMode === 'contact' ? 'details' : 'date');
+            }}
+          />
+        ) : null}
 
       </main>
 

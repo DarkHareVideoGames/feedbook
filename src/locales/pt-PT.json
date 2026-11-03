@@ -51,8 +51,11 @@
     },
     "selected": "Sala selecionada",
     "choose": "Escolher esta sala",
+    "chooseShort": "Escolher sala",
     "priceFrom": "desde",
-    "contactOnly": "Sob consulta"
+    "contactOnly": "Sob consulta",
+    "closeDetails": "Fechar detalhes da sala",
+    "equipment": "Equipamento incluído"
   },
   "about": {
     "eyebrow": "Quem somos",
