@@ -9,6 +9,7 @@ import CookieConsent from './components/ui/CookieConsent';
 import AboutSection from './components/ui/AboutSection';
 import GlobalLoading from './components/ui/GlobalLoading';
 import RoomDetailsModal from './components/ui/RoomDetailsModal';
+import RoomPhotoSlideshow from './components/ui/RoomPhotoSlideshow';
 import { useImagesReady } from './hooks/useImageReady';
 
 type RoomDefinition = api.ApiRoom;
@@ -834,9 +835,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                     }
                   }}
                 >
-                  {room.imageUrl ? (
-                    <img className="room-card-image" src={room.imageUrl} alt={room.name} loading="lazy" />
-                  ) : null}
+                  <RoomPhotoSlideshow images={api.getRoomImageUrls(room)} roomName={room.name} />
                   <div className="room-card-header">
                     <div>
                       <h3>

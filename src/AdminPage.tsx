@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import * as api from './api';
+import RoomPhotoEditor from './components/ui/RoomPhotoEditor';
 import { Locale, useI18n } from './i18n';
 
 type Role = api.Role;
@@ -69,7 +70,7 @@ type RoomFormDraft = {
   descriptionEn: string;
   maxMembers: string;
   pricePerMemberHour: string;
-  imageUrl: string;
+  imageUrls: string[];
   gear: string;
   gearEn: string;
   longDescription: string;
@@ -94,7 +95,7 @@ const emptyRoomForm: RoomFormDraft = {
   descriptionEn: '',
   maxMembers: '4',
   pricePerMemberHour: '',
-  imageUrl: '',
+  imageUrls: [],
   gear: '',
   gearEn: '',
   longDescription: '',
@@ -181,7 +182,7 @@ function roomToForm(room: AdminRoom): RoomFormDraft {
     descriptionEn: room.descriptionEn,
     maxMembers: String(room.maxMembers),
     pricePerMemberHour: room.pricePerMemberHour === null || room.pricePerMemberHour === undefined ? '' : String(room.pricePerMemberHour),
-    imageUrl: room.imageUrl ?? '',
+    imageUrls: api.getRoomImageUrls(room),
     gear: (room.gear ?? []).join('\n'),
     gearEn: (room.gearEn ?? []).join('\n'),
     longDescription: room.longDescription,
@@ -273,7 +274,7 @@ function AdminPage() {
   const [rooms, setRooms] = useState<AdminRoom[]>([]);
   const [services, setServices] = useState<AdminService[]>([]);
   const [roomForm, setRoomForm] = useState<RoomFormDraft>(emptyRoomForm);
-  const [roomImageFile, setRoomImageFile] = useState<File | null>(null);
+  const [roomImageFiles, setRoomImageFiles] = useState<File[]>([]);
   const [roomImageUploading, setRoomImageUploading] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [serviceForm, setServiceForm] = useState<ServiceFormDraft>(emptyServiceForm);
@@ -605,7 +606,7 @@ function AdminPage() {
   function startEditRoom(room: AdminRoom) {
     setEditingRoomId(room.id);
     setRoomForm(roomToForm(room));
-    setRoomImageFile(null);
+    setRoomImageFiles([]);
     setNotice('');
     setError('');
   }
@@ -613,12 +614,12 @@ function AdminPage() {
   function cancelEditRoom() {
     setEditingRoomId(null);
     setRoomForm(emptyRoomForm);
-    setRoomImageFile(null);
+    setRoomImageFiles([]);
   }
 
   async function handleSaveRoom(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token || !isAdmin) return;
+    if (!token || !isAdmin || roomImageUploading) return;
     const maxMembers = Number(roomForm.maxMembers);
     const trimmedName = roomForm.name.trim();
     if (!trimmedName) {
@@ -637,24 +638,25 @@ function AdminPage() {
     }
     setNotice('');
     setError('');
+    setRoomImageUploading(true);
     try {
       const roomId = editingRoomId ?? (roomForm.id.trim() || undefined);
 
-      let imageUrl: string | null = roomForm.imageUrl.trim() || null;
-      if (roomImageFile) {
-        setRoomImageUploading(true);
-        try {
-          const uploaded = await api.uploadRoomImage(
-            token,
-            roomId || `sala-${trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'nova'}`,
-            roomImageFile,
-          );
-          imageUrl = uploaded.url;
-        } finally {
-          setRoomImageUploading(false);
-        }
+      const imageUrls = [...roomForm.imageUrls];
+      if (imageUrls.length + roomImageFiles.length > api.ROOM_IMAGES_MAX_COUNT) {
+        throw new Error('Cada sala pode ter no máximo 5 fotografias.');
       }
-
+      for (const file of roomImageFiles) {
+        const uploaded = await api.uploadRoomImage(
+          token,
+          roomId || `sala-${trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'nova'}`,
+          file,
+        );
+        imageUrls.push(uploaded.url);
+        // Preserva uploads concluídos se uma fotografia seguinte ou a gravação falhar.
+        setRoomForm((current) => ({ ...current, imageUrls: [...imageUrls] }));
+        setRoomImageFiles((current) => current.filter((pending) => pending !== file));
+      }
       const draft: api.RoomDraft = {
         id: roomId,
         name: trimmedName,
@@ -662,7 +664,7 @@ function AdminPage() {
         descriptionEn: roomForm.descriptionEn,
         maxMembers: Math.floor(maxMembers),
         pricePerMemberHour,
-        imageUrl,
+        imageUrls,
         gear: roomForm.gear,
         gearEn: roomForm.gearEn,
         longDescription: roomForm.longDescription,
@@ -681,6 +683,8 @@ function AdminPage() {
       await Promise.all([loadCatalogs(), loadPricing(), loadAuditLogs(token)]);
     } catch (error) {
       setError(error instanceof Error && error.message ? error.message : 'Nao foi possivel guardar a sala.');
+    } finally {
+      setRoomImageUploading(false);
     }
   }
 
@@ -1427,34 +1431,13 @@ function AdminPage() {
                   />
                 </label>
               </div>
-              <div className="field-row">
-                <label>
-                  Foto da sala (recomendado 1200 × 675 px, 16:9, max 5 MB)
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(event) => setRoomImageFile(event.target.files?.[0] ?? null)}
-                  />
-                </label>
-                {roomImageFile || roomForm.imageUrl ? (
-                  <div className="room-image-preview">
-                    <img
-                      src={roomImageFile ? URL.createObjectURL(roomImageFile) : roomForm.imageUrl}
-                      alt="Pre-visualizacao da foto da sala"
-                    />
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => {
-                        setRoomImageFile(null);
-                        setRoomForm((current) => ({ ...current, imageUrl: '' }));
-                      }}
-                    >
-                      Remover foto
-                    </button>
-                  </div>
-                ) : null}
-              </div>
+              <RoomPhotoEditor
+                imageUrls={roomForm.imageUrls}
+                files={roomImageFiles}
+                disabled={roomImageUploading}
+                onImagesChange={(imageUrls) => setRoomForm((current) => ({ ...current, imageUrls }))}
+                onFilesChange={setRoomImageFiles}
+              />
               <label>
                 Descricao (PT)
                 <textarea
