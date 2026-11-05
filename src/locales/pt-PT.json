@@ -106,10 +106,10 @@
     ]
   },
   "cookies": {
-    "title": "Este site usa cookies",
-    "message": "Usamos cookies essenciais para o site funcionar e, com o teu consentimento, cookies para melhorar a tua experiencia. Podes aceitar todos ou apenas os essenciais.",
-    "accept": "Aceitar todos",
-    "reject": "Apenas essenciais",
+    "title": "Valorizamos a sua privacidade",
+    "message": "Este site utiliza cookies para assegurar o seu funcionamento básico e melhorar a sua navegação. Pode optar por aceitar ou rejeitar.",
+    "accept": "Aceitar",
+    "reject": "Rejeitar",
     "privacy": "Politica de privacidade"
   },
   "booking": {
