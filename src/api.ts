@@ -1,5 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { getRoomBaseName } from './helpers/roomName';
 import {
   calculateRehearsalPrice,
   resolveRoomPricePerHour,
@@ -1289,7 +1290,7 @@ export async function listRooms(options?: { includeInactive?: boolean }): Promis
 
 export async function createRoom(token: string, draft: RoomDraft): Promise<{ room: ApiRoom }> {
   const actor = await requireActor(token, ['admin', 'superuser']);
-  const name = String(draft?.name || '').trim();
+  const name = getRoomBaseName(String(draft?.name || ''));
   const maxMembers = Number(draft?.maxMembers);
   if (!name) throw new ApiError('Room name is required.', 400);
   if (!Number.isFinite(maxMembers) || maxMembers <= 0) throw new ApiError('Invalid capacity.', 400);
@@ -1331,7 +1332,7 @@ export async function createRoom(token: string, draft: RoomDraft): Promise<{ roo
 
 export async function updateRoom(token: string, roomId: string, draft: RoomDraft): Promise<{ room: ApiRoom }> {
   const actor = await requireActor(token, ['admin', 'superuser']);
-  const name = String(draft?.name || '').trim();
+  const name = getRoomBaseName(String(draft?.name || ''));
   const maxMembers = Number(draft?.maxMembers);
   if (!name) throw new ApiError('Room name is required.', 400);
   if (!Number.isFinite(maxMembers) || maxMembers <= 0) throw new ApiError('Invalid capacity.', 400);
