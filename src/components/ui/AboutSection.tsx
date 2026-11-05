@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   CalendarCheck,
   ChevronDown,
@@ -28,13 +28,38 @@ const ACTIVITY_ICONS: LucideIcon[] = [CalendarCheck, Mic, Radio, PartyPopper];
  * Conteudo 100% traduzido a partir de `translations.about`, para funcionar
  * em pt-PT e en sem duplicar texto no componente.
  */
-export default function AboutSection() {
+export default function AboutSection({ onReadingChange }: { onReadingChange: (visible: boolean) => void }) {
   const { translations } = useI18n();
   const { about } = translations;
   const [expanded, setExpanded] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const mobile = window.matchMedia('(max-width: 720px)');
+    let frame = 0;
+    const updateReading = () => {
+      frame = 0;
+      onReadingChange(mobile.matches && section.getBoundingClientRect().top <= window.innerHeight * 0.75);
+    };
+    const scheduleUpdate = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateReading);
+    };
+
+    updateReading();
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+    };
+  }, [onReadingChange]);
 
   return (
-    <section className="about-section" aria-labelledby="about-title">
+    <section ref={sectionRef} className="about-section" aria-labelledby="about-title">
       <header className="about-header">
         <p className="eyebrow">{about.eyebrow}</p>
         <h2 id="about-title">{about.title}</h2>
@@ -52,8 +77,7 @@ export default function AboutSection() {
         {expanded ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
       </button>
 
-      {expanded ? (
-        <div id="about-details" className="about-details">
+        <div id="about-details" className={`about-details ${expanded ? 'about-details-expanded' : ''}`}>
           <div className="about-columns">
             <div className="about-block">
               <h3 className="about-block-title">{about.infrastructureTitle}</h3>
@@ -119,7 +143,6 @@ export default function AboutSection() {
             </div>
           </div>
         </div>
-      ) : null}
     </section>
   );
 }

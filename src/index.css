@@ -361,6 +361,12 @@ button {
   gap: 24px;
 }
 
+.booking-content {
+  display: grid;
+  gap: inherit;
+  min-width: 0;
+}
+
 .card {
   background: var(--surface);
   backdrop-filter: blur(16px);
@@ -5735,7 +5741,24 @@ textarea:focus {
 
 @media (max-width: 720px) {
   .page-shell {
+    /* Corta o excesso horizontal sem criar um contentor de scroll que
+       impediria o cabeçalho sticky de acompanhar o scroll da página. */
+    overflow-x: clip;
     padding: 20px 16px 48px;
+  }
+
+  .booking-heading {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin-inline: -16px;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px;
+    background: #000000;
+  }
+
+  .booking-heading-away {
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .topbar,
@@ -6323,9 +6346,13 @@ textarea:focus {
 }
 
 .about-details {
-  display: grid;
+  display: none;
   margin-top: 18px;
   gap: 24px;
+}
+
+.about-details-expanded {
+  display: grid;
 }
 
 .about-columns {
@@ -6476,10 +6503,32 @@ textarea:focus {
     margin-top: 12px;
     padding: 20px;
     border-radius: 6px;
+    align-items: start;
+  }
+
+  .about-header {
+    position: sticky;
+    top: 0;
+    z-index: 11;
+    align-self: start;
+    max-width: none;
+    gap: 8px;
+    margin-inline: -36px;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 16px;
+    background: #000000;
+  }
+
+  .about-toggle {
+    display: none;
+  }
+
+  .about-details {
+    display: grid;
   }
 
   .about-lede {
     font-size: 0.95rem;
+    line-height: 1.45;
   }
 
   .about-infra-item,

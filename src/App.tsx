@@ -368,6 +368,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
   // Só mostra erro de um campo depois de interagir/submeter (evita "vermelho" inicial).
   const [showContactErrors, setShowContactErrors] = useState(false);
   const confirmationRef = useRef<HTMLDivElement>(null);
+  const [isAboutVisible, setIsAboutVisible] = useState(false);
 
   const currency = useMemo(
     () =>
@@ -782,8 +783,9 @@ const [minDelayDone, setMinDelayDone] = useState(false);
       </header>
 
       <main className="layout">
+        <div className="booking-content">
         {bookingStep !== 'confirmation' ? (
-          <div className="booking-heading">
+          <div className={`booking-heading ${bookingStep === 'room' && isAboutVisible ? 'booking-heading-away' : ''}`}>
             <h1 className={bookingStep === 'details' ? 'booking-heading-single-line' : undefined}>
               {bookingStep === 'room'
                 ? translations.booking.roomTitle
@@ -1336,7 +1338,9 @@ const [minDelayDone, setMinDelayDone] = useState(false);
           </section>
         ) : null}
 
-        {bookingStep === 'room' ? <AboutSection /> : null}
+        </div>
+
+        {bookingStep === 'room' ? <AboutSection onReadingChange={setIsAboutVisible} /> : null}
 
         {bookingStep === 'room' && detailsRoom ? (
           <RoomDetailsModal
