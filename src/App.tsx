@@ -400,7 +400,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
       capacity:
         room.maxMembers > 0
           ? isPt
-            ? `Ate ${room.maxMembers} elementos`
+            ? `Até ${room.maxMembers} elementos`
             : `Up to ${room.maxMembers} members`
           : legacy?.capacity || '',
       gear: ((isPt ? room.gear : room.gearEn).length > 0 ? (isPt ? room.gear : room.gearEn) : room.gear.length > 0 ? room.gear : legacy?.gear) || [],
@@ -875,7 +875,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                       }}
                     >
                       <span>{translations.about.expand}</span>
-                      <ChevronDown size={16} aria-hidden="true" />
+                      <ChevronDown size={18} aria-hidden="true" />
                     </button>
                   <span className="room-card-arrow">&gt;</span>
                 </article>

@@ -39,13 +39,13 @@
   "rooms": {
     "sala-red": {
       "name": "SALA RED",
-      "vibe": "Sala de impacto forte para ensaios completos e passagens de alinhamento com pressao real.",
+      "vibe": "Sala de impacto forte para ensaios completos e passagens de alinhamento com pressão real.",
       "capacity": "Até 6 elementos",
       "gear": ["Bateria completa", "2 amps de guitarra", "PA com monitores"]
     },
     "sala-grey": {
       "name": "SALA GREY",
-      "vibe": "Sala equilibrada para composicao, vozes e trabalho de detalhe com mais controlo dinamico.",
+      "vibe": "Sala equilibrada para composição, vozes e trabalho de detalhe com mais controlo dinâmico.",
       "capacity": "Até 5 elementos",
       "gear": ["Bateria compacta", "Amp de baixo", "PA com efeitos de voz"]
     },
