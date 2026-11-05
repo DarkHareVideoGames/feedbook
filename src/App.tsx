@@ -10,6 +10,8 @@ import AboutSection from './components/ui/AboutSection';
 import GlobalLoading from './components/ui/GlobalLoading';
 import RoomDetailsModal from './components/ui/RoomDetailsModal';
 import RoomPhotoSlideshow from './components/ui/RoomPhotoSlideshow';
+import RoomName from './components/ui/RoomName';
+import { getRoomBaseName } from './helpers/roomName';
 import { useImagesReady } from './hooks/useImageReady';
 
 type RoomDefinition = api.ApiRoom;
@@ -325,7 +327,7 @@ function formatDateForDisplay(locale: Locale, date: string): string {
 }
 
 function formatPublicBookingReference(bookingId: string, roomName: string): string {
-  const roomWords = roomName
+  const roomWords = getRoomBaseName(roomName)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
@@ -338,10 +340,6 @@ function formatPublicBookingReference(bookingId: string, roomName: string): stri
   const shortId = bookingId.replace(/[^a-z0-9]/gi, '').slice(0, 6).toUpperCase().padEnd(6, '0');
 
   return `FB-${roomInitial}-${shortId}`;
-}
-
-function formatPublicRoomName(roomName: string): string {
-  return roomName.replace(/^(sala|room)\s+/i, '').trim() || roomName;
 }
 
 function App() {
@@ -395,7 +393,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
     const isPt = locale.startsWith('pt');
     return {
       ...room,
-      name: room.name || legacy?.name || room.id,
+      name: getRoomBaseName(room.name || legacy?.name || room.id),
       vibe: (isPt ? room.description : room.descriptionEn) || room.description || legacy?.vibe || '',
       capacity:
         room.maxMembers > 0
@@ -715,7 +713,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
         .filter((extra) => selectedExtras.includes(extra.id))
         .map((extra) => ({ id: extra.id, price: extra.price })));
       setConfirmationDetails(selectedRoomContactOnly ? null : {
-        roomName: formatPublicRoomName(selectedRoom.name),
+        roomName: selectedRoom.name,
         date: displayDate,
         time: selectedSlot,
         duration,
@@ -839,21 +837,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                   <div className="room-card-header">
                     <div>
                       <h3>
-                        {(() => {
-                          const parts = room.name.trim().split(/\s+/);
-                          const prefix = parts[0] || '';
-                          const rest = parts.slice(1).join(' ');
-                          const isRoomPrefix = /^(sala|room)$/i.test(prefix);
-                          if (!isRoomPrefix || !rest) {
-                            return <span style={{ color: room.accent }}>{room.name}</span>;
-                          }
-                          return (
-                            <>
-                              <span>{prefix}</span>{' '}
-                              <span style={{ color: room.accent }}>{rest}</span>
-                            </>
-                          );
-                        })()}
+                        <RoomName name={room.name} accent={room.accent} />
                       </h3>
                       <p className="room-card-meta">
                         {room.capacity}

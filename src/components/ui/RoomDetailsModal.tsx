@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { getRoomImageUrls } from '../../api';
 import RoomPhotoSlideshow from './RoomPhotoSlideshow';
+import RoomName from './RoomName';
 
 type RoomDetailsModalProps = {
   room: {
@@ -25,9 +26,6 @@ function RoomDetailsModal({ room, priceLabel, onClose, onChoose }: RoomDetailsMo
   const images = getRoomImageUrls(room);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const backdropPointerDown = useRef(false);
-  const [namePrefix = '', ...nameParts] = room.name.trim().split(/\s+/);
-  const nameRest = nameParts.join(' ');
-  const hasRoomPrefix = /^(sala|room)$/i.test(namePrefix) && Boolean(nameRest);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -99,12 +97,7 @@ function RoomDetailsModal({ room, priceLabel, onClose, onChoose }: RoomDetailsMo
           <RoomPhotoSlideshow images={images} roomName={room.name} className="room-details-image" />
           <div className={`room-details-body${images.length > 0 ? '' : ' room-details-body-no-image'}`}>
           <h2 id="room-modal-title" className="room-details-title">
-            {hasRoomPrefix ? (
-              <>
-                <span>{namePrefix}</span>{' '}
-                <span style={{ color: room.accent }}>{nameRest}</span>
-              </>
-            ) : <span style={{ color: room.accent }}>{room.name}</span>}
+            <RoomName name={room.name} accent={room.accent} />
           </h2>
           <p className="room-details-meta">{room.capacity} • {priceLabel}</p>
           <p id="room-modal-summary" className="room-details-summary">{room.vibe}</p>

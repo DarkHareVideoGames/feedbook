@@ -1,6 +1,7 @@
 import { FormEvent, PointerEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, CalendarClock, ChevronRight, CircleCheck, CircleDashedCheck, Clock3, GripVertical, MessageCircle, Plus, Radio, RefreshCw, Send, X } from 'lucide-react';
 import * as api from './api';
+import { getRoomBaseName } from './helpers/roomName';
 import RoomPhotoEditor from './components/ui/RoomPhotoEditor';
 import GlobalLoading from './components/ui/GlobalLoading';
 import InstallPwaPrompt from './components/ui/InstallPwaPrompt';
@@ -288,7 +289,7 @@ const emptyServiceForm: ServiceFormDraft = {
 function roomToForm(room: api.ApiRoom): RoomFormDraft {
   return {
     id: room.id,
-    name: room.name,
+    name: getRoomBaseName(room.name),
     description: room.description,
     descriptionEn: room.descriptionEn,
     maxMembers: String(room.maxMembers),
@@ -1988,7 +1989,7 @@ function AdminHistoryPage() {
     const sessionToken = window.localStorage.getItem(TOKEN_KEY);
     if (!sessionToken || !isPrivileged || roomSaveLoading) return;
     const maxMembers = Number(roomForm.maxMembers);
-    const trimmedName = roomForm.name.trim();
+    const trimmedName = getRoomBaseName(roomForm.name);
     if (!trimmedName) {
       setError('A sala precisa de um nome.');
       return;
@@ -3661,15 +3662,16 @@ function AdminHistoryPage() {
                 </label>
               ) : null}
               <label>
-                Nome *
+                Nome da sala (sem Sala ou Room) *
                 <input
                   type="text"
                   required
                   autoComplete="off"
                   value={roomForm.name}
                   onChange={(event) => setRoomForm((current) => ({ ...current, name: event.target.value }))}
-                  placeholder="SALA BLUE"
+                  placeholder="RED"
                 />
+                <small>Escreve apenas o nome, por exemplo RED. O site apresenta esse nome em ambos os idiomas, sem acrescentar Sala ou Room.</small>
               </label>
               <div className="field-row">
                 <label>
