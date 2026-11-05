@@ -3,9 +3,9 @@ import { useI18n } from './i18n';
 import { Globe, Camera, PlayCircle } from 'lucide-react';
 
 const FOOTER_LINKS = [
-  { id: 'site', href: 'https://www.feedbackproductions.pt/', labelKey: 'site' as const, Icon: Globe },
-  { id: 'instagram', href: 'https://www.instagram.com/feedbackproductions/', labelKey: 'instagram' as const, Icon: Camera },
-  { id: 'youtube', href: 'https://www.youtube.com/playlist?list=PLaTuYjte7L3UDZq7x0etlaHAkDmO7LXAX', labelKey: 'youtube' as const, Icon: PlayCircle },
+  { id: 'site', href: 'https://www.feedbackproductions.pt', labelKey: 'site' as const, Icon: Globe },
+  { id: 'instagram', href: 'https://www.instagram.com/feedbackproductions', labelKey: 'instagram' as const, Icon: Camera },
+  { id: 'youtube', href: 'https://www.youtube.com/@feedbackproductions', labelKey: 'youtube' as const, Icon: PlayCircle },
 ];
 
 const NotFoundPage: React.FC = () => {

@@ -75,9 +75,9 @@ type TeamBooking = {
 // Nota: o lucide-react (nesta versão) já não inclui ícones de marcas
 // (Instagram/YouTube), por isso usamos equivalentes genéricos.
 const FOOTER_LINKS = [
-  { id: 'site', href: 'https://www.feedbackproductions.pt/', labelKey: 'site' as const, Icon: Globe },
-  { id: 'instagram', href: 'https://www.instagram.com/feedbackproductions/', labelKey: 'instagram' as const, Icon: Camera },
-  { id: 'youtube', href: 'https://www.youtube.com/playlist?list=PLaTuYjte7L3UDZq7x0etlaHAkDmO7LXAX', labelKey: 'youtube' as const, Icon: PlayCircle },
+  { id: 'site', href: 'https://www.feedbackproductions.pt', labelKey: 'site' as const, Icon: Globe },
+  { id: 'instagram', href: 'https://www.instagram.com/feedbackproductions', labelKey: 'instagram' as const, Icon: Camera },
+  { id: 'youtube', href: 'https://www.youtube.com/@feedbackproductions', labelKey: 'youtube' as const, Icon: PlayCircle },
 ];
 
 const fallbackRooms: RoomDefinition[] = [
