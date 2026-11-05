@@ -106,8 +106,8 @@
     ]
   },
   "cookies": {
-    "title": "Este site usa cookies",
-    "message": "Usamos cookies essenciais para o site funcionar e, com o teu consentimento, cookies para melhorar a tua experiencia. Podes aceitar todos ou apenas os essenciais.",
+    "title": "Cookies",
+    "message": "Usamos cookies essenciais para o funcionamento do site e, com o teu consentimento, cookies analiticos para melhorar a experiencia. Podes aceitar todos ou apenas os essenciais.",
     "accept": "Aceitar todos",
     "reject": "Apenas essenciais",
     "privacy": "Politica de privacidade"
