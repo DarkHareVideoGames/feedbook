@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Camera, ChevronDown, Download, Globe, LoaderCircle, PlayCircle } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Download, LoaderCircle } from 'lucide-react';
+import { FOOTER_LINKS } from './constants/footerLinks';
 import { toPng } from 'html-to-image';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
@@ -69,16 +70,6 @@ type TeamBooking = {
   paymentMethod?: PaymentMethod;
   paymentStatus?: string;
 };
-
-// Links do rodapé (Issue #10). O texto visível é minimalista — nunca mostra
-// o endereço completo; só o ícone + label curta.
-// Nota: o lucide-react (nesta versão) já não inclui ícones de marcas
-// (Instagram/YouTube), por isso usamos equivalentes genéricos.
-const FOOTER_LINKS = [
-  { id: 'site', href: 'https://www.feedbackproductions.pt', labelKey: 'site' as const, Icon: Globe },
-  { id: 'instagram', href: 'https://www.instagram.com/feedbackproductions', labelKey: 'instagram' as const, Icon: Camera },
-  { id: 'youtube', href: 'https://www.youtube.com/@feedbackproductions', labelKey: 'youtube' as const, Icon: PlayCircle },
-];
 
 const fallbackRooms: RoomDefinition[] = [
   {

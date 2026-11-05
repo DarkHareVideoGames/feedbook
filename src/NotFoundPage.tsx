@@ -1,12 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useI18n } from './i18n';
-import { Globe, Camera, PlayCircle } from 'lucide-react';
-
-const FOOTER_LINKS = [
-  { id: 'site', href: 'https://www.feedbackproductions.pt', labelKey: 'site' as const, Icon: Globe },
-  { id: 'instagram', href: 'https://www.instagram.com/feedbackproductions', labelKey: 'instagram' as const, Icon: Camera },
-  { id: 'youtube', href: 'https://www.youtube.com/@feedbackproductions', labelKey: 'youtube' as const, Icon: PlayCircle },
-];
+import { FOOTER_LINKS } from './constants/footerLinks';
 
 const NotFoundPage: React.FC = () => {
   const { translations } = useI18n();
