@@ -439,6 +439,7 @@ button {
 
 .room-card {
   display: flex;
+  background: #000000;
   flex-direction: column;
   padding: 20px 20px 12px;
   border-width: 2px;
@@ -538,7 +539,7 @@ button {
   max-height: calc(100dvh - 32px);
   border: 2px solid var(--border);
   border-radius: 12px;
-  background: #101114;
+  background: #000000;
   overflow: hidden;
   overflow-wrap: anywhere;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
@@ -761,7 +762,7 @@ button {
 }
 
 .room-card-selected {
-  background: rgba(255, 255, 255, 0.08);
+  background: #000000;
 }
 
 .room-card-header {
@@ -5940,12 +5941,13 @@ textarea:focus {
 
   .room-card {
     border-radius: 6px;
+    background: #000000;
     box-shadow: none;
   }
 
   .room-card:hover {
     transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.045);
+    background: #000000;
   }
 
   .room-image-preview img {
