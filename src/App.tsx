@@ -8,6 +8,7 @@ import LanguageSwitcher from './components/ui/LanguageSwitcher';
 import { calculateRehearsalPrice, resolveRoomPricePerHour } from './helpers/rehearsalPricing';
 import CookieConsent from './components/ui/CookieConsent';
 import AboutSection from './components/ui/AboutSection';
+import ExploreNavigation from './components/ui/ExploreNavigation';
 import GlobalLoading from './components/ui/GlobalLoading';
 import RoomDetailsModal from './components/ui/RoomDetailsModal';
 import RoomPhotoSlideshow from './components/ui/RoomPhotoSlideshow';
@@ -368,7 +369,12 @@ const [minDelayDone, setMinDelayDone] = useState(false);
   // Só mostra erro de um campo depois de interagir/submeter (evita "vermelho" inicial).
   const [showContactErrors, setShowContactErrors] = useState(false);
   const confirmationRef = useRef<HTMLDivElement>(null);
-  const [isAboutVisible, setIsAboutVisible] = useState(false);
+  const pageScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    document.documentElement.classList.add('public-booking-page');
+    return () => document.documentElement.classList.remove('public-booking-page');
+  }, []);
 
   const currency = useMemo(
     () =>
@@ -517,7 +523,10 @@ const [minDelayDone, setMinDelayDone] = useState(false);
   }, [duration, selectedDate, selectedSlot, selectedRoomId, teamBookings]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const scrollTarget = window.matchMedia('(max-width: 980px)').matches
+      ? pageScrollRef.current
+      : window;
+    scrollTarget?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [bookingStep]);
 
   useEffect(() => {
@@ -754,7 +763,8 @@ const [minDelayDone, setMinDelayDone] = useState(false);
     <>
       <GlobalLoading visible={!isReady} />
       {isReady ? (
-        <div className={`page-shell ${bookingStep === 'confirmation' ? 'confirmation-page' : ''}`}>
+        <div className="public-booking-frame">
+        <div ref={pageScrollRef} className={`page-shell ${bookingStep === 'confirmation' ? 'confirmation-page' : ''}`}>
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
 
@@ -783,9 +793,9 @@ const [minDelayDone, setMinDelayDone] = useState(false);
       </header>
 
       <main className="layout">
-        <div className="booking-content">
+        <div id="explore-rooms" className="booking-content">
         {bookingStep !== 'confirmation' ? (
-          <div className={`booking-heading ${bookingStep === 'room' && isAboutVisible ? 'booking-heading-away' : ''}`}>
+          <div className="booking-heading">
             <h1 className={bookingStep === 'details' ? 'booking-heading-single-line' : undefined}>
               {bookingStep === 'room'
                 ? translations.booking.roomTitle
@@ -1340,7 +1350,8 @@ const [minDelayDone, setMinDelayDone] = useState(false);
 
         </div>
 
-        {bookingStep === 'room' ? <AboutSection onReadingChange={setIsAboutVisible} /> : null}
+        {bookingStep === 'room' ? <ExploreNavigation /> : null}
+        {bookingStep === 'room' ? <AboutSection /> : null}
 
         {bookingStep === 'room' && detailsRoom ? (
           <RoomDetailsModal
@@ -1359,6 +1370,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
 
       </main>
 
+        </div>
       <footer className="site-footer">
         <div className="site-footer-inner">
           <nav className="site-footer-links" aria-label={translations.footer.linksLabel}>

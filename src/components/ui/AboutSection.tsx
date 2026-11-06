@@ -28,7 +28,7 @@ const ACTIVITY_ICONS: LucideIcon[] = [CalendarCheck, Mic, Radio, PartyPopper];
  * Conteudo 100% traduzido a partir de `translations.about`, para funcionar
  * em pt-PT e en sem duplicar texto no componente.
  */
-export default function AboutSection({ onReadingChange }: { onReadingChange: (visible: boolean) => void }) {
+export default function AboutSection() {
   const { translations } = useI18n();
   const { about } = translations;
   const [expanded, setExpanded] = useState(false);
@@ -38,32 +38,79 @@ export default function AboutSection({ onReadingChange }: { onReadingChange: (vi
     const section = sectionRef.current;
     if (!section) return;
 
-    const mobile = window.matchMedia('(max-width: 720px)');
+    const desktop = window.matchMedia('(min-width: 981px)');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let entryFocusArmed = window.scrollY <= 2;
+    let previousScrollY = window.scrollY;
     let frame = 0;
     const updateReading = () => {
       frame = 0;
-      onReadingChange(mobile.matches && section.getBoundingClientRect().top <= window.innerHeight * 0.75);
+      const top = section.getBoundingClientRect().top;
+      // Em mobile não há transição desktop; evita invalidar estilos globais
+      // durante o scroll e a abertura/fecho das barras do browser.
+      if (!desktop.matches) {
+        document.documentElement.style.removeProperty('--explore-progress');
+        document.documentElement.style.removeProperty('--about-header-height');
+        return;
+      }
+      const entryTop = top + window.scrollY;
+      const progress = Math.max(0, Math.min(1, window.scrollY / Math.max(1, entryTop - 32)));
+      section.style.setProperty('--about-progress', String(progress));
+      document.documentElement.style.setProperty('--explore-progress', String(progress));
+      const header = section.querySelector<HTMLElement>('.about-header');
+      if (header) {
+        section.style.setProperty('--about-entry-bottom', `${entryTop + header.offsetHeight}px`);
+        document.documentElement.style.setProperty('--about-header-height', `${header.offsetHeight}px`);
+      }
     };
     const scheduleUpdate = () => {
       if (!frame) frame = window.requestAnimationFrame(updateReading);
     };
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const movingDown = scrollY > previousScrollY;
+      previousScrollY = scrollY;
+
+      // Só acompanha a primeira intenção de descer a partir da entrada.
+      // Subir para as salas ou continuar a ler nunca força outra transição.
+      if (scrollY <= 2) entryFocusArmed = true;
+      if (desktop.matches && entryFocusArmed && movingDown && scrollY >= 8) {
+        entryFocusArmed = false;
+        const target = section.getBoundingClientRect().top + scrollY - 32;
+        if (target > scrollY) {
+          window.scrollTo({
+            top: target,
+            behavior: reducedMotion.matches ? 'instant' : 'smooth',
+          });
+        }
+      }
+      scheduleUpdate();
+    };
 
     updateReading();
-    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    const pageScroller = section.closest('.page-shell');
+    pageScroller?.addEventListener('scroll', scheduleUpdate, { passive: true });
     window.addEventListener('resize', scheduleUpdate);
     return () => {
       window.cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('scroll', handleScroll);
+      pageScroller?.removeEventListener('scroll', scheduleUpdate);
       window.removeEventListener('resize', scheduleUpdate);
+      document.documentElement.style.removeProperty('--explore-progress');
+      document.documentElement.style.removeProperty('--about-header-height');
     };
-  }, [onReadingChange]);
+  }, []);
 
   return (
-    <section ref={sectionRef} className="about-section" aria-labelledby="about-title">
+    <section id="explore-studio" ref={sectionRef} className="about-section" aria-labelledby="about-title">
       <header className="about-header">
         <p className="eyebrow">{about.eyebrow}</p>
         <h2 id="about-title">{about.title}</h2>
         <p className="about-lede">{about.lede}</p>
+        <a className="about-scroll-cue" href="#about-details" aria-label={about.expand}>
+          <ChevronDown size={18} aria-hidden="true" />
+        </a>
       </header>
 
       <button
@@ -122,7 +169,7 @@ export default function AboutSection({ onReadingChange }: { onReadingChange: (vi
             </div>
           </div>
 
-          <div className="about-block">
+          <div id="explore-activities" className="about-block">
             <h3 className="about-block-title">{about.activitiesTitle}</h3>
             <div className="about-activities-grid">
               {about.activities.map((item, index) => {
