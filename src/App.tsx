@@ -8,6 +8,7 @@ import LanguageSwitcher from './components/ui/LanguageSwitcher';
 import { calculateRehearsalPrice, resolveRoomPricePerHour } from './helpers/rehearsalPricing';
 import CookieConsent from './components/ui/CookieConsent';
 import AboutSection from './components/ui/AboutSection';
+import ExploreNavigation from './components/ui/ExploreNavigation';
 import GlobalLoading from './components/ui/GlobalLoading';
 import RoomDetailsModal from './components/ui/RoomDetailsModal';
 import RoomPhotoSlideshow from './components/ui/RoomPhotoSlideshow';
@@ -783,7 +784,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
       </header>
 
       <main className="layout">
-        <div className="booking-content">
+        <div id="explore-rooms" className="booking-content">
         {bookingStep !== 'confirmation' ? (
           <div className={`booking-heading ${bookingStep === 'room' && isAboutVisible ? 'booking-heading-away' : ''}`}>
             <h1 className={bookingStep === 'details' ? 'booking-heading-single-line' : undefined}>
@@ -1340,6 +1341,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
 
         </div>
 
+        {bookingStep === 'room' ? <ExploreNavigation /> : null}
         {bookingStep === 'room' ? <AboutSection onReadingChange={setIsAboutVisible} /> : null}
 
         {bookingStep === 'room' && detailsRoom ? (
