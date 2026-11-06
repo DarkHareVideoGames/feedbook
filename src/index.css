@@ -1330,7 +1330,7 @@ textarea:focus {
   inset: auto 0 0;
   z-index: 30;
   margin-top: 0;
-  padding: 6px 16px calc(6px + env(safe-area-inset-bottom, 0px));
+  padding: 2px 16px 6px;
   background: #000000;
   isolation: isolate;
 }
@@ -1340,10 +1340,43 @@ textarea:focus {
 .site-footer::before {
   content: '';
   position: absolute;
-  inset: -24px 0 -1px;
+  inset: -2px 0 -1px;
   z-index: -1;
   background: #000000;
   pointer-events: none;
+}
+
+@media screen and (max-width: 980px) {
+  html.public-booking-page,
+  html.public-booking-page body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  .public-booking-frame {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .public-booking-frame > .page-shell {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: none;
+  }
+
+  .public-booking-frame > .site-footer {
+    position: relative;
+    inset: auto;
+    padding-top: 2px;
+  }
+
+  .public-booking-frame > .site-footer::before {
+    content: none;
+  }
 }
 
 .page-shell {
@@ -1356,7 +1389,7 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 0;
   text-align: center;
 }
 
@@ -1411,6 +1444,7 @@ textarea:focus {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.68rem;
+  line-height: 1;
   letter-spacing: 0.02em;
 }
 
@@ -5872,11 +5906,6 @@ textarea:focus {
     background: #000000;
   }
 
-  .booking-heading-away {
-    visibility: hidden;
-    pointer-events: none;
-  }
-
   .topbar,
   .field-row,
   .hero-metrics,
@@ -6826,6 +6855,26 @@ textarea:focus {
   .about-amenity,
   .about-activity {
     padding: 14px;
+  }
+
+  /* O sticky é composto numa camada opaca independente. A máscara cobre
+     também o topo e a junção inferior durante inversões rápidas do scroll. */
+  .public-booking-frame .booking-heading,
+  .public-booking-frame .about-header {
+    isolation: isolate;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    background: #000000;
+  }
+
+  .public-booking-frame .booking-heading::before,
+  .public-booking-frame .about-header::before {
+    content: '';
+    position: absolute;
+    inset: -32px 0 -2px;
+    z-index: -1;
+    background: #000000;
+    pointer-events: none;
   }
 }
 

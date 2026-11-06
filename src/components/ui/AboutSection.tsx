@@ -28,7 +28,7 @@ const ACTIVITY_ICONS: LucideIcon[] = [CalendarCheck, Mic, Radio, PartyPopper];
  * Conteudo 100% traduzido a partir de `translations.about`, para funcionar
  * em pt-PT e en sem duplicar texto no componente.
  */
-export default function AboutSection({ onReadingChange }: { onReadingChange: (visible: boolean) => void }) {
+export default function AboutSection() {
   const { translations } = useI18n();
   const { about } = translations;
   const [expanded, setExpanded] = useState(false);
@@ -38,7 +38,6 @@ export default function AboutSection({ onReadingChange }: { onReadingChange: (vi
     const section = sectionRef.current;
     if (!section) return;
 
-    const mobile = window.matchMedia('(max-width: 720px)');
     const desktop = window.matchMedia('(min-width: 981px)');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let entryFocusArmed = window.scrollY <= 2;
@@ -47,7 +46,13 @@ export default function AboutSection({ onReadingChange }: { onReadingChange: (vi
     const updateReading = () => {
       frame = 0;
       const top = section.getBoundingClientRect().top;
-      onReadingChange(mobile.matches && top <= window.innerHeight * 0.75);
+      // Em mobile não há transição desktop; evita invalidar estilos globais
+      // durante o scroll e a abertura/fecho das barras do browser.
+      if (!desktop.matches) {
+        document.documentElement.style.removeProperty('--explore-progress');
+        document.documentElement.style.removeProperty('--about-header-height');
+        return;
+      }
       const entryTop = top + window.scrollY;
       const progress = Math.max(0, Math.min(1, window.scrollY / Math.max(1, entryTop - 32)));
       section.style.setProperty('--about-progress', String(progress));
@@ -84,15 +89,18 @@ export default function AboutSection({ onReadingChange }: { onReadingChange: (vi
 
     updateReading();
     window.addEventListener('scroll', handleScroll, { passive: true });
+    const pageScroller = section.closest('.page-shell');
+    pageScroller?.addEventListener('scroll', scheduleUpdate, { passive: true });
     window.addEventListener('resize', scheduleUpdate);
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', handleScroll);
+      pageScroller?.removeEventListener('scroll', scheduleUpdate);
       window.removeEventListener('resize', scheduleUpdate);
       document.documentElement.style.removeProperty('--explore-progress');
       document.documentElement.style.removeProperty('--about-header-height');
     };
-  }, [onReadingChange]);
+  }, []);
 
   return (
     <section id="explore-studio" ref={sectionRef} className="about-section" aria-labelledby="about-title">
