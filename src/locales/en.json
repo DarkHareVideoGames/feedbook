@@ -1,8 +1,7 @@
 {
   "meta": {
-    "brand": "Feedback - Ensaios",
-    "title": "Feedback - Ensaios — rehearsal room booking",
-    "description": "Feedback - Ensaios — book rehearsal rooms with upfront pricing, session planning, and live availability."
+    "title": "Feedback - Rehearsal Room Booking",
+    "description": "Rehearsal room booking in Montijo, a production control room and a creative space."
   },
   "footer": {
     "linksLabel": "Feedback Productions links",
@@ -11,34 +10,12 @@
     "youtube": "YouTube",
     "credit": "®FEEDBACKPRODUCTIONS ©2026"
   },
-  "explore": {
-    "navigation": "Explore the studio",
-    "discover": "Discover the studio"
-  },
   "languages": {
     "pt-PT": "PT",
     "en": "EN"
   },
   "topbar": {
-    "title": "Book rehearsal rooms without endless back-and-forth.",
-    "notes": ["Downtown rooms", "Instant pricing", "Mock availability"],
     "languageLabel": "Language"
-  },
-  "hero": {
-    "eyebrow": "For bands, solo artists, and tour prep",
-    "title": "Choose a room, lock a slot, and show up ready to play.",
-    "lede": "This MVP is designed for rehearsal spaces that want a clean booking funnel, upfront pricing, and better pre-session detail from artists.",
-    "metrics": [
-      { "value": "2", "label": "distinct rehearsal rooms" },
-      { "value": "100%", "label": "full payment on rehearsal day" },
-      { "value": "Pending", "label": "confirmation handled by staff in the backend" }
-    ],
-    "panelTitle": "Tonight's pulse",
-    "panelItems": [
-      "SALA RED is best for full-energy rehearsals and set run-throughs.",
-      "SALA GREY works best for writing and arrangement detail.",
-      "All bookings stay pending until confirmed by staff."
-    ]
   },
   "rooms": {
     "sala-red": {
@@ -113,50 +90,35 @@
     "title": "We value your privacy",
     "message": "This website uses cookies to ensure its basic functionality and improve your browsing experience. You may choose to accept or reject them.",
     "accept": "Accept",
-    "reject": "Reject",
-    "privacy": "Privacy policy"
+    "reject": "Reject"
   },
   "booking": {
     "roomTitle": "Choose your room",
     "dateTitle": "Choose the day and time",
     "detailsTitle": "Fill in your details",
-    "contactTitle": "Contact us now!",
     "next": "Continue",
     "back": "Back",
-    "stepRoom": "Room",
-    "stepDate": "Date",
-    "stepExtras": "Add-ons",
-    "stepDetails": "Details",
     "dateLabel": "Date",
     "durationLabel": "Duration",
     "calendarPrev": "Previous month",
     "calendarNext": "Next month",
-    "calendarOccupiedHint": "Occupied days for this room cannot be selected.",
     "durationOption": "{{count}} hours",
     "startTimeLabel": "Start time",
-    "paymentOnSite": "On rehearsal day",
     "addonsLabel": "Add-ons",
     "summaryTitle": "Your booking",
     "bandNameLabel": "Band or artist name",
-    "bandNamePlaceholder": "Midnight Broadcast",
     "contactNameLabel": "Contact name",
-    "contactNamePlaceholder": "Alex",
     "contactPhoneLabel": "Phone",
-    "contactPhonePlaceholder": "+351 912 345 678",
     "emailLabel": "Email",
-    "emailPlaceholder": "alex@bandmail.com",
     "focusLabel": "Anything specific? Write it here",
-    "focusPlaceholder": "Set run-through, vocal balance, camera rehearsal, writing session...",
     "submit": "Request booking",
     "submitContact": "REQUEST CONTACT",
     "contactSummary": "This room works by contact only. Send your details and our team will get in touch to arrange all the details.",
     "contactPendingBadge": "Please wait!",
     "contactConfirmation": "We received your contact request for {{room}}. Our team will contact you shortly.",
-    "defaultFocus": "Full band rehearsal",
     "confirmation": "Your booking is not confirmed yet. We will notify you by email or WhatsApp as soon as the team validates your request.",
     "pendingBadge": "Request received",
     "submitting": "Submitting booking...",
-    "apiError": "Could not reach the backend. Please try again.",
     "validationError": "Please fill in all required fields (marked with *).",
     "slotUnavailableError": "The selected slot is no longer available (in the past or already booked). Please pick another date and time.",
     "requiredError": "This field is required.",
@@ -172,12 +134,6 @@
     "savingCard": "Saving card...",
     "saveCardError": "Could not save the card. Please try again.",
     "noExtras": "Rehearsal only",
-    "teamTitle": "Team confirmation",
-    "teamRefresh": "Refresh pending list",
-    "teamLoading": "Loading...",
-    "teamEmpty": "No pending bookings right now.",
-    "teamConfirm": "Confirm",
-    "teamReject": "Reject",
     "termsTitle": "Terms and Conditions",
     "termsSubtitle": "Feedback — Rehearsal Booking",
     "termsIntro": "By confirming a booking, I declare that:",
@@ -194,9 +150,6 @@
     "termsError": "You must accept the Terms and Conditions to request the booking."
   },
   "slots": {
-    "open": "Open",
-    "fewLeft": "Few left",
-    "booked": "Booked",
     "unavailable": "Unavailable"
   },
   "extras": {
@@ -205,36 +158,10 @@
     "backline": "Extra backline setup"
   },
   "summary": {
-    "eyebrow": "Live summary",
     "date": "Date",
     "startTime": "Start time",
     "duration": "Duration",
     "hours": "{{count}} hours",
-    "participants": "Players",
-    "participantsValue": "{{count}} players",
-    "paymentMethod": "Payment",
-    "availableSlots": "Available slots",
-    "availableSlotsValue": "{{count}} today",
-    "roomTotal": "Room total",
-    "addons": "Add-ons",
-    "estimatedTotal": "Estimated total",
-      "policyTitle": "House policy",
-      "policyItems": [
-        "Free reschedule up to 24 hours before the slot.",
-        "Full payment is made on rehearsal day.",
-        "Mock availability in this MVP can be replaced with real inventory later.",
-        "Final approval is handled in the backend by rehearsal staff."
-      ]
-  },
-  "admin": {
-    "title": "Admin panel",
-    "engineerPrice": "Extra: Session engineer (EUR)",
-    "recordingPrice": "Extra: Stereo capture (EUR)",
-    "backlinePrice": "Extra: Backline (EUR)",
-    "save": "Save pricing",
-    "saving": "Saving...",
-    "saved": "Pricing updated successfully.",
-    "saveError": "Could not save pricing.",
-    "invalidValues": "Check values: use valid numbers."
+    "addons": "Add-ons"
   }
 }
