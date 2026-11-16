@@ -1,8 +1,7 @@
 {
   "meta": {
-    "brand": "Feedback - Ensaios",
-    "title": "Feedback - Ensaios — reserva de salas de ensaio",
-    "description": "Feedback - Ensaios — reserva de salas de ensaio com preços à vista, planeamento de sessões e disponibilidade ao vivo."
+    "title": "Feedback - Reserva de Salas de Ensaio",
+    "description": "Reserva de salas de ensaio no Montijo, régie de produção e espaço criativo."
   },
   "footer": {
     "linksLabel": "Links da Feedback Productions",
@@ -11,34 +10,12 @@
     "youtube": "YouTube",
     "credit": "®FEEDBACKPRODUCTIONS ©2026"
   },
-  "explore": {
-    "navigation": "Explorar o estúdio",
-    "discover": "Descobre o estúdio"
-  },
   "languages": {
     "pt-PT": "PT",
     "en": "EN"
   },
   "topbar": {
-    "title": "Marca salas de ensaio sem trocas de mensagens interminaveis.",
-    "notes": ["Salas no centro", "Precos imediatos", "Disponibilidade simulada"],
     "languageLabel": "Idioma"
-  },
-  "hero": {
-    "eyebrow": "Para bandas, artistas a solo e preparacao de tour",
-    "title": "Escolhe a sala, fecha o horario e chega pronto para tocar.",
-    "lede": "Este MVP foi pensado para estudios de ensaio que querem um fluxo de marcacao simples, precos claros e melhor contexto antes da sessao.",
-    "metrics": [
-      { "value": "2", "label": "salas de ensaio distintas" },
-      { "value": "100%", "label": "pagamento total no dia" },
-      { "value": "Pendente", "label": "confirmacao feita pela equipa no backend" }
-    ],
-    "panelTitle": "Pulso desta noite",
-    "panelItems": [
-      "A SALA RED e ideal para ensaios com energia e volume.",
-      "A SALA GREY e ideal para escrita e detalhes de arranjo.",
-      "Todas as reservas ficam pendentes ate confirmacao da equipa."
-    ]
   },
   "rooms": {
     "sala-red": {
@@ -110,53 +87,38 @@
     ]
   },
   "cookies": {
-    "title": "Valorizamos a sua privacidade",
-    "message": "Este site utiliza cookies para assegurar o seu funcionamento básico e melhorar a sua navegação. Pode optar por aceitar ou rejeitar.",
+    "title": "Valorizamos a tua privacidade",
+    "message": "Este site utiliza cookies para assegurar o seu funcionamento básico e melhorar a tua navegação. Podes optar por aceitar ou rejeitar.",
     "accept": "Aceitar",
-    "reject": "Rejeitar",
-    "privacy": "Politica de privacidade"
+    "reject": "Rejeitar"
   },
   "booking": {
     "roomTitle": "Escolhe a tua sala",
     "dateTitle": "Escolhe o dia e a hora",
     "detailsTitle": "Preenche os teus dados",
-    "contactTitle": "Contata-nos agora!",
     "next": "Continuar",
     "back": "Voltar",
-    "stepRoom": "Sala",
-    "stepDate": "Data",
-    "stepExtras": "Extras",
-    "stepDetails": "Dados",
     "dateLabel": "Data",
     "durationLabel": "Duração",
     "calendarPrev": "Mes anterior",
     "calendarNext": "Proximo mes",
-    "calendarOccupiedHint": "Dias ocupados para esta sala nao podem ser selecionados.",
     "durationOption": "{{count}} horas",
     "startTimeLabel": "Hora de início",
-    "paymentOnSite": "No dia do ensaio",
     "addonsLabel": "Extras",
     "summaryTitle": "A tua marcacao",
     "bandNameLabel": "Nome da banda ou artista",
-    "bandNamePlaceholder": "Midnight Broadcast",
     "contactNameLabel": "Nome do contacto",
-    "contactNamePlaceholder": "Alex",
     "contactPhoneLabel": "Telemovel",
-    "contactPhonePlaceholder": "+351 912 345 678",
     "emailLabel": "Email",
-    "emailPlaceholder": "alex@bandmail.com",
     "focusLabel": "Algo específico? Escreve aqui",
-    "focusPlaceholder": "Passagem do alinhamento, equilibrio de voz, ensaio com camara, escrita...",
     "submit": "Pedir marcacao",
     "submitContact": "PEDIR CONTATO",
     "contactSummary": "Esta sala funciona apenas por contacto. Envia os teus dados e a equipa irá falar contigo para combinar todos os detalhes.",
     "contactPendingBadge": "Aguarda!",
     "contactConfirmation": "Recebemos o teu pedido de contacto para {{room}}. A nossa equipa irá contactar-te em breve.",
-    "defaultFocus": "Ensaio com banda completa",
     "confirmation": "A tua reserva ainda não está confirmada. Vamos avisar-te por email ou WhatsApp assim que a equipa validar o pedido.",
     "pendingBadge": "Pedido recebido",
     "submitting": "A enviar reserva...",
-    "apiError": "Nao foi possivel comunicar com o backend. Tenta novamente.",
     "validationError": "Preenche os campos obrigatorios (marcados com *).",
     "slotUnavailableError": "O horario escolhido ja nao esta disponivel (passado ou ocupado). Escolhe outra data e hora.",
     "requiredError": "Campo obrigatorio.",
@@ -172,12 +134,6 @@
     "savingCard": "A guardar cartão...",
     "saveCardError": "Não foi possível guardar o cartão. Tenta novamente.",
     "noExtras": "Apenas o ensaio",
-    "teamTitle": "Confirmacao da equipa",
-    "teamRefresh": "Atualizar pendentes",
-    "teamLoading": "A carregar...",
-    "teamEmpty": "Sem reservas pendentes neste momento.",
-    "teamConfirm": "Confirmar",
-    "teamReject": "Rejeitar",
     "termsTitle": "Termos e Condições",
     "termsSubtitle": "Feedback — Reserva de Ensaios",
     "termsIntro": "Ao confirmar uma reserva, declaro que:",
@@ -194,9 +150,6 @@
     "termsError": "Tens de aceitar os Termos e Condições para pedir a marcação."
   },
   "slots": {
-    "open": "Livre",
-    "fewLeft": "Poucos lugares",
-    "booked": "Esgotado",
     "unavailable": "Nao disponivel"
   },
   "extras": {
@@ -205,36 +158,10 @@
     "backline": "Preparacao extra de backline"
   },
   "summary": {
-    "eyebrow": "Resumo em direto",
     "date": "Data",
     "startTime": "Hora de inicio",
     "duration": "Duracao",
     "hours": "{{count}} horas",
-    "participants": "Elementos",
-    "participantsValue": "{{count}} elementos",
-    "paymentMethod": "Pagamento",
-    "availableSlots": "Horarios disponiveis",
-    "availableSlotsValue": "{{count}} hoje",
-    "roomTotal": "Total da sala",
-    "addons": "Extras",
-    "estimatedTotal": "Total estimado",
-      "policyTitle": "Politica da casa",
-      "policyItems": [
-        "Remarcacao gratuita ate 24 horas antes do horario.",
-        "Pagamento total no dia do ensaio.",
-        "A disponibilidade simulada deste MVP pode ser substituida por inventario real mais tarde.",
-        "A confirmacao final e feita no backend por um elemento da equipa de ensaios."
-      ]
-  },
-  "admin": {
-    "title": "Painel de administracao",
-    "engineerPrice": "Extra: Tecnico de sessao (EUR)",
-    "recordingPrice": "Extra: Captacao stereo (EUR)",
-    "backlinePrice": "Extra: Backline (EUR)",
-    "save": "Guardar precos",
-    "saving": "A guardar...",
-    "saved": "Precos atualizados com sucesso.",
-    "saveError": "Nao foi possivel guardar os precos.",
-    "invalidValues": "Revê os valores: usa numeros validos."
+    "addons": "Extras"
   }
 }

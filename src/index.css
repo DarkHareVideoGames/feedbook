@@ -1349,6 +1349,21 @@ textarea:focus {
 @media screen and (max-width: 980px) {
   html.public-booking-page,
   html.public-booking-page body {
+    overflow: visible;
+    /* Permite que o gesto vertical no topo chegue ao browser (pull-to-refresh),
+       mantendo bloqueado o overscroll horizontal. */
+    overscroll-behavior: none auto;
+  }
+
+  html.public-booking-page body,
+  html.public-booking-page #root {
+    /* O frame fixo ocupa o viewport; evita scroll adicional causado por 100vh
+       quando as barras do navegador Android estão visíveis. */
+    min-height: 0;
+  }
+
+  html.public-booking-page:has(dialog[open]),
+  html.public-booking-page:has(dialog[open]) body {
     overflow: hidden;
     overscroll-behavior: none;
   }
@@ -1365,6 +1380,10 @@ textarea:focus {
   .public-booking-frame > .page-shell {
     min-height: 0;
     overflow-y: auto;
+    overscroll-behavior-y: auto;
+  }
+
+  .public-booking-frame:has(dialog[open]) > .page-shell {
     overscroll-behavior-y: none;
   }
 
