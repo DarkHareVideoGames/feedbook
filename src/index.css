@@ -6482,10 +6482,10 @@ textarea:focus {
 
   .public-explore .booking-heading {
     position: sticky;
-    /* Reserva espaço para o logótipo do cabeçalho enquanto o título adere
-       ao ecrã, evitando que o título o cubra durante o scroll. O logótipo
-       ocupa cerca de 103px e precisa de uma margem inferior de segurança. */
-    top: 128px;
+    /* Reserva 104px até ao limite inferior do logótipo (medido em cerca
+       de 103px, arredondado para cima) e 24px de margem de segurança,
+       evitando que o título o cubra enquanto adere ao ecrã. */
+    top: calc(104px + 24px);
     z-index: 10;
     padding-block: 8px;
     background: #000000;
