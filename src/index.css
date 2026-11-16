@@ -6821,6 +6821,17 @@ textarea:focus {
 }
 
 @media (max-width: 720px) {
+  /* Mantém o título acessível durante o scroll sem a máscara superior que
+     anteriormente invadia a área do logótipo. */
+  .public-booking-frame .booking-heading {
+    position: sticky;
+    top: -24px;
+    z-index: 10;
+    margin-inline: -24px;
+    padding: 24px 24px 12px;
+    background: #000000;
+  }
+
   .about-section {
     gap: 0px;
     margin-top: 12px;
@@ -6860,9 +6871,8 @@ textarea:focus {
     padding: 14px;
   }
 
-  /* O sticky é composto numa camada opaca independente. A máscara cobre
-     também o topo e a junção inferior durante inversões rápidas do scroll. */
-  .public-booking-frame .booking-heading,
+  /* O cabeçalho "Sobre" continua sticky e precisa de uma camada opaca
+     independente durante o scroll. */
   .public-booking-frame .about-header {
     isolation: isolate;
     transform: translateZ(0);
@@ -6870,7 +6880,6 @@ textarea:focus {
     background: #000000;
   }
 
-  .public-booking-frame .booking-heading::before,
   .public-booking-frame .about-header::before {
     content: '';
     position: absolute;
