@@ -195,11 +195,11 @@ swRegistration = found ?? (await navigator.serviceWorker.getRegistration()) ?? n
     <>
       <div className="admin-diagnostics-header">
         <div className="admin-diagnostics-title">
-          <h3 className="text-[11px] font-semibold text-[var(--text-main)]">Diagnóstico de configuração</h3>
+          <h3>Diagnóstico de configuração</h3>
           {overall === 'ready' ? (
-            <CheckCircle2 className="h-3.5 w-3.5 admin-diagnostic-status-ok" />
+            <CheckCircle2 className="admin-diagnostics-status-icon admin-diagnostic-status-ok" aria-hidden="true" />
           ) : (
-            <AlertTriangle className={`h-3.5 w-3.5 ${overall === 'unavailable' ? 'admin-diagnostic-status-error' : 'admin-diagnostic-status-warning'}`} />
+            <AlertTriangle className={`admin-diagnostics-status-icon ${overall === 'unavailable' ? 'admin-diagnostic-status-error' : 'admin-diagnostic-status-warning'}`} aria-hidden="true" />
           )}
         </div>
         <div className="admin-diagnostics-actions">
@@ -207,56 +207,56 @@ swRegistration = found ?? (await navigator.serviceWorker.getRegistration()) ?? n
             type="button"
             onClick={() => void runDiagnostics()}
             disabled={loading}
-            className="secondary-button"
-            style={{ padding: '4px 8px', fontSize: '10px' }}
+            className="secondary-button admin-diagnostics-button"
           >
-            <RefreshCw className="mr-1 inline h-2.5 w-2.5" />
+            <RefreshCw size={14} aria-hidden="true" />
             {loading ? 'A verificar...' : 'Reverificar'}
           </button>
           <button
             type="button"
             onClick={() => void enablePush()}
             disabled={pushLoading || overall === 'unavailable'}
-            className="primary-button"
-            style={{ padding: '4px 8px', fontSize: '10px' }}
+            className="primary-button admin-diagnostics-button"
           >
-            <Bell className="mr-1 inline h-2.5 w-2.5" />
+            <Bell size={14} aria-hidden="true" />
             {pushLoading ? 'A ativar...' : 'Ativar notificações'}
           </button>
         </div>
       </div>
 
       {expanded ? (
-        <div className="space-y-1">
+        <div id="admin-diagnostics-details" className="admin-diagnostics-list">
           {items.map((item) => (
-            <div key={item.id} className="card flex items-start gap-1.5" style={{ padding: '6px', borderRadius: '8px', boxShadow: 'none' }}>
+            <div key={item.id} className="card admin-diagnostics-item">
               {item.status === 'ok' ? (
-                <CheckCircle2 className={`mt-0.5 h-3 w-3 ${STATUS_CLASS[item.status]}`} />
+                <CheckCircle2 className={`admin-diagnostics-item-icon ${STATUS_CLASS[item.status]}`} aria-hidden="true" />
               ) : (
-                <AlertTriangle className={`mt-0.5 h-3 w-3 ${STATUS_CLASS[item.status]}`} />
+                <AlertTriangle className={`admin-diagnostics-item-icon ${STATUS_CLASS[item.status]}`} aria-hidden="true" />
               )}
-              <div className="min-w-0">
-                <p className="text-[10px] font-medium text-[var(--text-main)]">{item.label}</p>
-                <p className="text-[9px] text-[var(--text-muted)]">{item.detail}</p>
+              <div className="admin-diagnostics-item-body">
+                <p className="admin-diagnostics-item-label">{item.label}</p>
+                <p className="admin-diagnostics-note">{item.detail}</p>
               </div>
             </div>
           ))}
         </div>
       ) : null}
 
-      <div className="mt-1 flex items-center justify-between">
+      <div className="admin-diagnostics-footer">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="text-[9px] text-[var(--text-muted)]"
+          className="admin-diagnostics-toggle"
+          aria-expanded={expanded}
+          aria-controls={expanded ? 'admin-diagnostics-details' : undefined}
         >
           {expanded ? 'Ocultar' : 'Ver detalhes'}
         </button>
       </div>
 
-      {message ? <p className="mt-1 text-[10px] text-[var(--text-muted)]">{message}</p> : null}
+      {message ? <p className="admin-diagnostics-note" role="status">{message}</p> : null}
 
-      <p className="mt-1 text-[9px] text-[var(--text-muted)]">
+      <p className="admin-diagnostics-note">
         As permissões do browser só são pedidas após clicar em “Ativar notificações”. Nenhuma permissão protegida é concedida automaticamente.
       </p>
     </>
