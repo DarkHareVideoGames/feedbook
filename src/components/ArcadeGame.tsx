@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n';
-import { collides, difficulty, GRAVITY, JUMP, PLAYER_X, validNick } from '../helpers/arcade';
+import { collides, difficulty, GRAVITY, JUMP, PLAYER_X, PLAYER_WIDTH, PLAYER_HEIGHT, OBSTACLE_WIDTH, OBSTACLE_HEIGHT, validNick } from '../helpers/arcade';
 import './arcade.css';
 import { playArcadeAudio, stopArcadeAudio } from '../helpers/arcadeAudio';
 
@@ -120,6 +120,14 @@ export default function ArcadeGame() {
           let el = obstacles.current!.children[i] as HTMLDivElement | undefined;
           if (!el) {
             el = document.createElement('div'); el.className = 'arcade-amp';
+            el.style.width = `${OBSTACLE_WIDTH}px`;
+            el.style.height = `${OBSTACLE_HEIGHT}px`;
+            const image = document.createElement('img');
+            image.src = '/amp.png';
+            image.alt = '';
+            image.draggable = false;
+            image.onerror = () => { image.hidden = true; };
+            el.append(image);
             obstacles.current!.append(el);
           }
           el.style.transform = `translateX(${x}px)`;
@@ -197,13 +205,13 @@ export default function ArcadeGame() {
         if (phase === 'idle') start(); else jump();
       }}>
       <div className="arcade-floor" />
-      <div className="arcade-player" ref={player} style={{ left: PLAYER_X }} aria-hidden="true">
+      <div className="arcade-player" ref={player} style={{ left: PLAYER_X, width: PLAYER_WIDTH, height: PLAYER_HEIGHT }} aria-hidden="true">
         <img src="/guitarrist.png" alt="" onError={event => {
           event.currentTarget.style.display = 'none';
           event.currentTarget.parentElement?.classList.add('arcade-player-fallback');
         }} />
       </div>
-      <div ref={obstacles} aria-hidden="true" />
+      <div className="arcade-obstacles" ref={obstacles} aria-hidden="true" />
       <div className="arcade-score">{t.points}: {score}</div>
       {phase === 'playing' && board === 'ready' && entries.length > 0 &&
         <aside className="arcade-leaders" aria-label="Top 3">

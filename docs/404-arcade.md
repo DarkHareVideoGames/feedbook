@@ -25,6 +25,10 @@ Não houve migração remota, deploy nem escrita em base de dados real durante a
 
 ## Verificações
 
+### Jogador maior e obstáculos explícitos
+
+Jogador aumentado de 44×64 para 60×88 px, largura de colisão atualizada e limites cobertos por teste. Obstáculos com camada absoluta explícita, imagem `<img>` reutilizada e bloco de contraste como fallback se `/amp.png` falhar. O desaparecimento reportado não foi reproduzido no Vite anterior (nós dentro do jogo e fundo CSS presente); não se atribui uma causa não confirmada. Browser a 320/1440 px confirmou tamanho do jogador, amplificadores 30×50 com imagem carregada dentro do jogo, game over por colisão e fallback visível com pedido de imagem deliberadamente bloqueado.
+
 ### Ranking visível antes e durante a partida
 
 Por pedido posterior, o top 10 aparece automaticamente sobre o jogo antes de Jogar. Durante a partida é substituído pelo top 3 no canto superior esquerdo, sem captar cliques, mantendo pontos no canto direito. No game over o formulário mantém-se e o top 10 pode ser consultado pela divulgação existente. Browser com dez pontuações simuladas: ranking inicial completo e botão Jogar sem colisão a 320×568, 390×844, 1440×900 e 844×390, sem scroll; durante a partida três entradas e sem ranking inicial, sem sobreposição com o chão. Formulário de nick confirmado no fim. Build e 61 testes passaram; persistência real continua pendente da migração.

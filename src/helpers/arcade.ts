@@ -1,7 +1,8 @@
 export const GRAVITY = 1900;
 export const JUMP = 580;
 export const PLAYER_X = 52;
-export const PLAYER_WIDTH = 44;
+export const PLAYER_WIDTH = 60;
+export const PLAYER_HEIGHT = 88;
 export const OBSTACLE_WIDTH = 30;
 export const OBSTACLE_HEIGHT = 50;
 

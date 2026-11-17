@@ -14,6 +14,8 @@ describe('404 arcade', () => {
   });
   it('deteta colisões e permite saltar amplificadores', () => {
     expect(collides(70, 0)).toBe(true);
+    expect(collides(110, 0)).toBe(true);
+    expect(collides(112, 0)).toBe(false);
     expect(collides(70, 60)).toBe(false);
     expect(collides(300, 0)).toBe(false);
     expect(collides(0, 0)).toBe(false);
