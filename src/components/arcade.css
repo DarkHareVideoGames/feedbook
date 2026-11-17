@@ -9,6 +9,19 @@
 .arcade-score { position: absolute; top: 12px; right: 14px; color: #f4d58d; font: bold 16px monospace; }
 .arcade-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: #090910aa; }
 .arcade-overlay strong { font: bold 22px monospace; color: #f4d58d; }
+.arcade-preview-board { width: min(94%, 480px); color: #f4d58d; font-family: monospace; }
+.arcade-preview-board h2 { font-size: 15px; margin: 0 0 8px; letter-spacing: 0.08em; }
+.arcade-preview-board p { font-size: 12px; margin: 4px; }
+.arcade-preview-board ol { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; row-gap: 4px; margin: 0; padding-left: 24px; font-size: 12px; text-align: left; }
+.arcade-preview-board li { min-width: 0; }
+.arcade-preview-board li span { display: inline-block; max-width: 65%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.arcade-preview-board li b { float: right; }
+.arcade-leaders { position: absolute; top: 10px; left: 10px; width: min(160px, 52%); color: #f4d58d; background: #111119c9; padding: 5px 8px; border-radius: 4px; font: 10px monospace; pointer-events: none; }
+.arcade-leaders > strong { font-size: 10px; }
+.arcade-leaders ol { margin: 3px 0 0; padding-left: 16px; }
+.arcade-leaders li { padding: 1px 0; }
+.arcade-leaders li span { display: inline-block; max-width: 76px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.arcade-leaders li b { float: right; }
 .arcade-jump { margin-top: 12px; min-height: 44px; }
 .arcade-entry { display: grid; justify-items: center; gap: 10px; margin: 20px auto; }
 .arcade-entry input { max-width: 100%; width: 220px; padding: 10px; border: 1px solid #a9956b; border-radius: 4px; background: #111119; color: #f4d58d; font: bold 20px monospace; text-align: center; }

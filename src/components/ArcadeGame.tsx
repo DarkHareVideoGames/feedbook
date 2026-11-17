@@ -205,7 +205,19 @@ export default function ArcadeGame() {
       </div>
       <div ref={obstacles} aria-hidden="true" />
       <div className="arcade-score">{t.points}: {score}</div>
+      {phase === 'playing' && board === 'ready' && entries.length > 0 &&
+        <aside className="arcade-leaders" aria-label="Top 3">
+          <strong>TOP 3</strong>
+          <ol>{entries.slice(0, 3).map((entry, i) =>
+            <li key={i}><span>{entry.nick}</span><b>{entry.score}</b></li>)}</ol>
+        </aside>}
       {phase !== 'playing' && <div className="arcade-overlay">
+        {phase === 'idle' && <div className="arcade-preview-board">
+          <h2>{t.board}</h2>
+          {board !== 'ready' ? <p role="status">{board === 'loading' ? t.loading : t.unavailable}</p>
+            : entries.length === 0 ? <p>{t.empty}</p>
+            : <ol>{entries.map((entry, i) => <li key={i}><span>{entry.nick}</span><b>{entry.score.toString().padStart(6, '0')}</b></li>)}</ol>}
+        </div>}
         {phase === 'over' && <strong role="status">GAME OVER · {score}</strong>}
         <button type="button" className="primary-button" onClick={() => { start(); arena.current?.focus(); }}>
           {phase === 'over' ? t.again : t.start}
@@ -226,11 +238,11 @@ export default function ArcadeGame() {
     </form>}
     </div>
     <button type="button" className="secondary-button arcade-jump" disabled={phase !== 'playing'} onClick={jump}>{t.jump} ↑</button>
-    <details className="arcade-board">
+    {phase === 'over' && <details className="arcade-board">
       <summary>{t.board}</summary>
       {board !== 'ready' ? <p role="status">{board === 'loading' ? t.loading : t.unavailable}</p>
         : entries.length === 0 ? <p>{t.empty}</p>
         : <ol>{entries.map((entry, i) => <li key={i}><span>{entry.nick}</span><strong>{entry.score.toString().padStart(6, '0')}</strong></li>)}</ol>}
-    </details>
+    </details>}
   </section>;
 }

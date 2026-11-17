@@ -25,6 +25,10 @@ Não houve migração remota, deploy nem escrita em base de dados real durante a
 
 ## Verificações
 
+### Ranking visível antes e durante a partida
+
+Por pedido posterior, o top 10 aparece automaticamente sobre o jogo antes de Jogar. Durante a partida é substituído pelo top 3 no canto superior esquerdo, sem captar cliques, mantendo pontos no canto direito. No game over o formulário mantém-se e o top 10 pode ser consultado pela divulgação existente. Browser com dez pontuações simuladas: ranking inicial completo e botão Jogar sem colisão a 320×568, 390×844, 1440×900 e 844×390, sem scroll; durante a partida três entradas e sem ranking inicial, sem sobreposição com o chão. Formulário de nick confirmado no fim. Build e 61 testes passaram; persistência real continua pendente da migração.
+
 ### Layout compacto pedido na revisão
 
 Retirados os três parágrafos indicados pelo utilizador, reduzidos 404/cabeçalho/espaçamentos. Ranking recolhido por defeito, expansível sobre a área do jogo; formulário de nick dentro da área de game over. Sem `overflow:hidden` na página: zoom/teclado virtual e ecrãs extremos podem exigir scroll para preservar acessibilidade. Browser sem scroll a 320×568, 390×844, 1440×900, 1366×768 e 844×390; a 320×568 também sem scroll com top 10 simulado aberto e formulário de nick visível. Em ecrãs baixos o logo e a nota secundária são omitidos; navegação de regresso e rodapé preservados.
