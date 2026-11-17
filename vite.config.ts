@@ -59,7 +59,7 @@ export default defineConfig({
         // aviso de chunk > 500 kB — jspdf/supabase sao pesados e nao precisam
         // de estar no bundle principal.
         manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'react-vendor': ['react', 'react-dom'],
           supabase: ['@supabase/supabase-js'],
           jspdf: ['jspdf', 'jspdf-autotable'],
           icons: ['lucide-react'],
