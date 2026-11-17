@@ -170,7 +170,7 @@ export default function ArcadeGame() {
     } finally { savingRef.current = false; }
   }
 
-  return <section className="arcade" aria-label="404 Arcade">
+  return <section className={`arcade${phase === 'over' ? ' arcade-over' : ''}`} aria-label="404 Arcade">
     <audio ref={music} src="/feedbook_404_arcade_loop.ogg" loop preload="none" aria-hidden="true" />
     <audio ref={jumpSound} src="/feedbook_404_jump.ogg" preload="none" aria-hidden="true" />
     <p id="arcade-instructions">{t.instructions}</p>
@@ -183,6 +183,7 @@ export default function ArcadeGame() {
         stopArcadeAudio(jumpSound.current);
       } else if (state.current.running) playArcadeAudio(music.current);
     }}>{t.sound}: {muted ? 'OFF' : 'ON'}</button>
+    <div className="arcade-stage">
     <div className="arcade-arena" ref={arena} tabIndex={0} role="group" aria-label="404 Arcade"
       aria-describedby="arcade-instructions"
       onKeyDown={event => {
@@ -211,7 +212,6 @@ export default function ArcadeGame() {
         </button>
       </div>}
     </div>
-    <button type="button" className="secondary-button arcade-jump" disabled={phase !== 'playing'} onClick={jump}>{t.jump} ↑</button>
     {phase === 'over' && score > 0 && <form className="arcade-entry" onSubmit={event => { event.preventDefault(); void save(); }}>
       <label htmlFor="arcade-nick">{t.nick}</label>
       <input id="arcade-nick" value={nick} maxLength={12} minLength={3} required pattern={'[A-Z0-9_\\-]{3,12}'}
@@ -224,11 +224,13 @@ export default function ArcadeGame() {
       </button>
       <p role="status">{!token ? t.offline : saveState === 'saved' ? t.saved : saveState === 'error' ? t.failed : saveState === 'rate' ? t.rate : ''}</p>
     </form>}
-    <div className="arcade-board">
-      <h2>{t.board}</h2>
+    </div>
+    <button type="button" className="secondary-button arcade-jump" disabled={phase !== 'playing'} onClick={jump}>{t.jump} ↑</button>
+    <details className="arcade-board">
+      <summary>{t.board}</summary>
       {board !== 'ready' ? <p role="status">{board === 'loading' ? t.loading : t.unavailable}</p>
         : entries.length === 0 ? <p>{t.empty}</p>
         : <ol>{entries.map((entry, i) => <li key={i}><span>{entry.nick}</span><strong>{entry.score.toString().padStart(6, '0')}</strong></li>)}</ol>}
-    </div>
+    </details>
   </section>;
 }

@@ -25,6 +25,10 @@ Não houve migração remota, deploy nem escrita em base de dados real durante a
 
 ## Verificações
 
+### Layout compacto pedido na revisão
+
+Retirados os três parágrafos indicados pelo utilizador, reduzidos 404/cabeçalho/espaçamentos. Ranking recolhido por defeito, expansível sobre a área do jogo; formulário de nick dentro da área de game over. Sem `overflow:hidden` na página: zoom/teclado virtual e ecrãs extremos podem exigir scroll para preservar acessibilidade. Browser sem scroll a 320×568, 390×844, 1440×900, 1366×768 e 844×390; a 320×568 também sem scroll com top 10 simulado aberto e formulário de nick visível. Em ecrãs baixos o logo e a nota secundária são omitidos; navegação de regresso e rodapé preservados.
+
 ### Áudio acrescentado ao PR #192
 
 - `/home/noct2600/feedbook/public/feedbook_404_arcade_loop.ogg`: música de 8 s em loop durante a partida, volume 30%, sem autoplay ao abrir a página.

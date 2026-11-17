@@ -8,7 +8,7 @@ const NotFoundPage: React.FC = () => {
   const [logoVisible, setLogoVisible] = useState(true);
 
   return (
-    <div className="page-shell">
+    <div className="page-shell not-found-shell">
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
 
@@ -29,37 +29,27 @@ const NotFoundPage: React.FC = () => {
         <section
           className="not-found"
           aria-labelledby="not-found-title"
-          style={{ textAlign: 'center', padding: '2rem 1rem', maxWidth: 820, margin: '0 auto' }}
         >
           <p
             className="eyebrow"
-            style={{ fontSize: 'clamp(4rem, 12vw, 8rem)', letterSpacing: '0.1em', opacity: 0.9, lineHeight: 1, margin: 0 }}
           >
             404
           </p>
           <h1
             id="not-found-title"
-            style={{ fontSize: 'clamp(1.25rem, 4vw, 2rem)', marginTop: '1rem', lineHeight: 1.2 }}
           >
             Esta página fez um stage dive e ninguém a apanhou.
           </h1>
-          <p style={{ marginTop: '1.5rem', lineHeight: 1.6, maxWidth: 640, marginInline: 'auto' }}>
-            Procurámos nos bastidores, debaixo da mesa de mistura e até no camarim. Nada. Nem um cabo XLR esquecido.
-          </p>
-          <p style={{ marginTop: '1rem', lineHeight: 1.6, maxWidth: 640, marginInline: 'auto' }}>
-            Pode ter sido apagada, movida ou nunca ter existido. Às vezes o URL é só um riff mal tocado.
-          </p>
-          <p style={{ marginTop: '1.5rem', fontWeight: 600 }}>Mas o espetáculo continua.</p>
 
           <ArcadeGame />
 
-          <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
+          <div className="not-found-return">
             <a className="primary-button" href="/" style={{ textDecoration: 'none' }}>
               Voltar às salas de ensaio
             </a>
           </div>
 
-          <p style={{ marginTop: '2.5rem', fontSize: '0.9rem', opacity: 0.7 }}>
+          <p className="not-found-note">
             Se acreditas que isto é um erro, avisa-nos. Prometemos não partir nenhuma guitarra.
           </p>
         </section>

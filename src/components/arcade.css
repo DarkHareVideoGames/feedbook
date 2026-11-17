@@ -20,3 +20,59 @@
 .arcade-board li strong { float: right; margin-left: 12px; }
 .arcade :focus-visible { outline: 3px solid #f4d58d; outline-offset: 3px; }
 @media (max-width: 420px) { .arcade-arena { height: 260px; } .arcade-board { padding: 12px; } }
+
+/* Compact 404 layout: keep normal play within the viewport, without clipping content. */
+.not-found-shell { padding: 8px 16px; min-height: 100svh; }
+.not-found-shell .topbar { position: static; padding: 0; min-height: 0; margin: 0 auto 4px; }
+.not-found-shell .brand-logo { height: 36px; width: auto; }
+.not-found-shell .layout { display: block; margin: 0 auto; padding: 0; width: 100%; }
+.not-found { text-align: center; max-width: 820px; margin: 0 auto; }
+.not-found .eyebrow { font-size: clamp(28px, 6vh, 48px); line-height: 1; margin: 0; }
+.not-found h1 { font-size: clamp(15px, 2.6vw, 22px); line-height: 1.15; margin: 4px 0; }
+.not-found .arcade { position: relative; margin: 6px auto 0; }
+.not-found .arcade > p { margin: 4px 0; font-size: 12px; }
+.not-found .arcade > button { padding: 5px 12px; min-height: 32px; }
+.arcade-stage { position: relative; margin-top: 4px; }
+.not-found .arcade-arena { height: clamp(270px, 38svh, 340px); }
+.not-found .arcade-jump { margin-top: 4px; }
+.not-found .arcade-board { margin-top: 4px; padding: 6px 12px; }
+.arcade-board summary { cursor: pointer; font-weight: bold; letter-spacing: 0.08em; font-size: 14px; }
+.not-found .arcade-board ol { margin-top: 6px; }
+.not-found .arcade-board li { padding: 2px 0; }
+.not-found .arcade-board[open] { position: absolute; bottom: 0; left: 0; right: 0; z-index: 2; box-shadow: 0 0 0 2px #73634a; }
+.not-found .arcade-board[open] ol { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; font-size: 12px; }
+.not-found .arcade-board[open] li { min-width: 0; }
+.not-found .arcade-board[open] li span { overflow-wrap: anywhere; }
+.not-found-return { margin-top: 6px; }
+.not-found-return a { padding: 6px 12px; min-height: 32px; }
+.not-found-note { margin: 4px 0; font-size: 11px; opacity: 0.7; }
+.not-found-shell .site-footer { margin-top: 4px; padding: 4px 0; }
+.not-found-shell .site-footer-inner { gap: 4px; padding: 0; }
+.not-found-shell .site-footer-links { gap: 12px; }
+.not-found-shell .site-footer-credit { margin: 0; font-size: 10px; }
+.arcade-over .arcade-overlay { justify-content: flex-start; padding: 8px; gap: 4px; }
+.arcade-over .arcade-overlay strong { font-size: 16px; }
+.arcade-over .arcade-overlay button { padding: 4px 12px; min-height: 30px; }
+.not-found .arcade-entry { position: absolute; top: 74px; left: 8px; right: 8px; margin: 0; gap: 4px; padding: 4px; background: #111119f5; border-radius: 6px; }
+.arcade-entry label { font-size: 12px; }
+.arcade-entry small { font-size: 10px; line-height: 1.2; }
+.arcade-entry p { margin: 0; font-size: 11px; line-height: 1.2; }
+.arcade-entry button { padding: 4px 12px; min-height: 30px; }
+.arcade-entry input { padding: 5px; font-size: 16px; }
+@media (max-height: 600px) and (min-width: 700px) {
+  .not-found .eyebrow { display: inline; font-size: 20px; margin-right: 8px; }
+  .not-found h1 { display: inline; font-size: 15px; }
+  .not-found .arcade { position: relative; }
+  .not-found .arcade > button:not(.arcade-jump) { position: absolute; right: 0; top: -28px; }
+  .not-found-shell .topbar { display: none; }
+  .not-found .arcade { max-width: 100%; }
+  .not-found .arcade-arena { height: 200px; }
+  .not-found .arcade-entry { top: 4px; left: auto; width: 260px; }
+  .arcade-over .arcade-overlay { align-items: flex-start; padding-left: 16px; }
+  .not-found-note { display: none; }
+}
+@media (max-height: 650px) and (max-width: 699px) {
+  .not-found-shell .topbar { display: none; }
+  .not-found-note { display: none; }
+  .not-found-shell .site-footer-links svg { display: none; }
+}
