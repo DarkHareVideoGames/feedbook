@@ -689,11 +689,25 @@ app.post('/api/push/subscribe', async (req, res) => {
 
 // --- SERVE APP BUILD (Frontend) ---
 const DIST_PATH = path.join(__dirname, '../dist');
-app.use(express.static(DIST_PATH));
+app.get('/index.html', (req, res) => {
+  const queryStart = req.originalUrl.indexOf('?');
+  const query = queryStart === -1 ? '' : req.originalUrl.slice(queryStart);
+  res.redirect(308, `/${query}`);
+});
+app.use(express.static(DIST_PATH, {
+  setHeaders(res, filePath) {
+    if (filePath === path.join(DIST_PATH, 'admin.html')) {
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    }
+  },
+}));
+app.get(/^\/admin/, (_req, res) => {
+  res.set('X-Robots-Tag', 'noindex, nofollow');
+  res.sendFile(path.join(DIST_PATH, 'admin.html'));
+});
 
-// React SPA fallback (ignore API routes)
-app.get(/^(?!\/api(?:\/|$)).*/, (req, res) => {
-  res.sendFile(path.join(DIST_PATH, 'index.html'));
+app.get(/^(?!\/api(?:\/|$)).*/, (_req, res) => {
+  res.status(404).sendFile(path.join(DIST_PATH, '404.html'));
 });
 
 // --- INICIALIZAÇÃO DO SERVIDOR ---

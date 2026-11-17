@@ -5,8 +5,8 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
+      "source": "/admin(.*)",
+      "destination": "/admin.html"
     }
   ],
   "headers": [
@@ -44,6 +44,24 @@
           "value": "public, max-age=3600"
         }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "ensaiosfeedback.pt"
+        }
+      ],
+      "destination": "https://www.ensaiosfeedback.pt/:path*",
+      "permanent": true
     }
   ]
 }

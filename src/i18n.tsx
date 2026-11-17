@@ -74,16 +74,15 @@ function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
 function applyHead(locale: Locale) {
   const t = dictionaries[locale];
   document.documentElement.lang = locale === 'en' ? 'en' : 'pt-PT';
+  if (window.location.pathname !== '/') return;
+
   document.title = t.meta.title;
   upsertMeta('name', 'description', t.meta.description);
-  upsertMeta('property', 'og:site_name', t.meta.title);
   upsertMeta('property', 'og:title', t.meta.title);
   upsertMeta('property', 'og:description', t.meta.description);
   upsertMeta('property', 'og:locale', ogLocale[locale]);
-  upsertMeta('property', 'og:image:alt', t.meta.title);
   upsertMeta('name', 'twitter:title', t.meta.title);
   upsertMeta('name', 'twitter:description', t.meta.description);
-  upsertMeta('name', 'twitter:image:alt', t.meta.title);
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {

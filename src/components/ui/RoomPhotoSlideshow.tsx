@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useI18n } from '../../i18n';
 
 type Props = { images: string[]; roomName: string; className?: string };
 
 export default function RoomPhotoSlideshow({ images, roomName, className = 'room-card-image' }: Props) {
+  const { translations } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [loaded, setLoaded] = useState<string[]>([]);
@@ -48,13 +50,13 @@ export default function RoomPhotoSlideshow({ images, roomName, className = 'room
   if (images.length === 0 || failed.length === images.length) return null;
 
   return (
-    <div ref={containerRef} className={`${className} room-photo-slideshow`} role="img" aria-label={roomName}>
+    <div ref={containerRef} className={`${className} room-photo-slideshow`}>
       {images.map((url, index) => (
         <img
           key={url}
           src={url}
-          alt=""
-          aria-hidden="true"
+          alt={index === visible ? `${translations.rooms.photoLabel} — ${roomName}` : ''}
+          aria-hidden={index !== visible}
           className={index === visible ? 'is-active' : ''}
           loading="lazy"
           decoding="async"

@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Feedback - Reserva de Salas de Ensaio",
-    "description": "Reserva de salas de ensaio no Montijo, régie de produção e espaço criativo."
+    "title": "Salas de ensaio no Montijo | Feedback Studios",
+    "description": "Reserva as salas de ensaio RED e GREY no Montijo, na Margem Sul. Conhece a CONTROL ROOM, régie de produção musical, e a LIVE, espaço para eventos."
   },
   "footer": {
     "linksLabel": "Links da Feedback Productions",
@@ -15,9 +15,11 @@
     "en": "EN"
   },
   "topbar": {
+    "homeLink": "Ir para a página inicial da Feedback Studios",
     "languageLabel": "Idioma"
   },
   "rooms": {
+    "photoLabel": "Fotografia do espaço",
     "sala-red": {
       "name": "SALA RED",
       "vibe": "Sala de impacto forte para ensaios completos e passagens de alinhamento com pressão real.",
@@ -41,7 +43,7 @@
   "about": {
     "eyebrow": "Quem somos",
     "title": "Feedback Studios, o teu hub criativo",
-    "lede": "Somos um hub criativo “tudo-em-um”, desenvolvido especificamente para responder a todas as necessidades de bandas, músicos e criadores de conteúdos num único teto. O espaço foi desenhado para ligar de forma fluida todas as fases do teu projeto: as salas comunicam entre si, permitindo-te passar da imersão criativa de um ensaio para uma gravação de áudio multitrack, produção de videoclipe, transmissão em streaming ou um concerto intimista.",
+    "lede": "Na Feedback Studios podes alugar as salas de ensaio RED e GREY no Montijo, na Margem Sul. O estúdio inclui a CONTROL ROOM, régie de produção musical, e a LIVE, espaço para eventos.",
     "expand": "Ver mais",
     "collapse": "Ver menos",
     "infrastructureTitle": "A nossa infraestrutura",
@@ -93,7 +95,7 @@
     "reject": "Rejeitar"
   },
   "booking": {
-    "roomTitle": "Escolhe a tua sala",
+    "roomTitle": "Salas de ensaio no Montijo",
     "dateTitle": "Escolhe o dia e a hora",
     "detailsTitle": "Preenche os teus dados",
     "next": "Continuar",

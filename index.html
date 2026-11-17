@@ -4,77 +4,69 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#12141a" />
+    <title>Salas de ensaio no Montijo | Feedback Studios</title>
+    <meta name="description" content="Reserva as salas de ensaio RED e GREY no Montijo, na Margem Sul. Conhece a CONTROL ROOM, régie de produção musical, e a LIVE, espaço para eventos." />
+    <link rel="canonical" href="https://www.ensaiosfeedback.pt/" />
 
-    <!-- ============================================================
-         SEO BASE (PT = idioma por omissão)
-         A descrição abaixo é a que o Google lê. O React (i18n.tsx)
-         actualiza-a em runtime quando o utilizador troca de idioma.
-         ============================================================ -->
-    <meta
-      name="description"
-      content="Reserva de salas de ensaio no Montijo, régie de produção e espaço criativo."
-    />
-    <title>Feedback - Reserva de Salas de Ensaio</title>
-
-    <!-- ============================================================
-         OPEN GRAPH (Facebook, WhatsApp, LinkedIn, Discord, ...)
-         A imagem do card (og:image / twitter:image) é ogimage.png,
-         servida a partir da pasta public/ (https://.../ogimage.png).
-         Recomendado: 1200x630 px, JPG/PNG, < 300 KB.
-         ============================================================ -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Feedback - Reserva de Salas de Ensaio" />
-    <meta property="og:title" content="Feedback - Reserva de Salas de Ensaio" />
-    <meta
-      property="og:description"
-      content="Reserva de salas de ensaio no Montijo, régie de produção e espaço criativo."
-    />
-    <!-- URL CANÓNICA DO SITE — substitui SEU-DOMINIO pelo domínio final -->
+    <meta property="og:site_name" content="Feedback Studios" />
+    <meta property="og:title" content="Salas de ensaio no Montijo | Feedback Studios" />
+    <meta property="og:description" content="Reserva as salas de ensaio RED e GREY no Montijo, na Margem Sul. Conhece a CONTROL ROOM, régie de produção musical, e a LIVE, espaço para eventos." />
     <meta property="og:url" content="https://www.ensaiosfeedback.pt/" />
-    <!-- IMAGEM DO CARD — ogimage.png servida a partir de public/ -->
     <meta property="og:image" content="https://www.ensaiosfeedback.pt/ogimage.png" />
-    <meta property="og:image:alt" content="Feedback - Reserva de Salas de Ensaio" />
-    <!-- Locale PT (formato Open Graph usa sublinhado) -->
+    <meta property="og:image:alt" content="Feedback Studios" />
     <meta property="og:locale" content="pt_PT" />
-    <!-- Idiomas alternantes (preencher só se houver URLs distintas por idioma) -->
-    <!-- <meta property="og:locale:alternate" content="en_US" /> -->
 
-    <!-- ============================================================
-         TWITTER CARDS
-         A imagem (twitter:image) é ogimage.png, servida de public/.
-         twitter:card usa "summary_large_image" para imagem grande.
-         ============================================================ -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Feedback - Reserva de Salas de Ensaio" />
-    <meta
-      name="twitter:description"
-      content="Reserva de salas de ensaio no Montijo, régie de produção e espaço criativo."
-    />
+    <meta name="twitter:title" content="Salas de ensaio no Montijo | Feedback Studios" />
+    <meta name="twitter:description" content="Reserva as salas de ensaio RED e GREY no Montijo, na Margem Sul. Conhece a CONTROL ROOM, régie de produção musical, e a LIVE, espaço para eventos." />
     <meta name="twitter:image" content="https://www.ensaiosfeedback.pt/ogimage.png" />
-    <meta name="twitter:image:alt" content="Feedback - Reserva de Salas de Ensaio" />
+    <meta name="twitter:image:alt" content="Feedback Studios" />
 
-    <!-- ============================================================
-         MULTILINGUE (PT / EN)
-         O React (src/i18n.tsx) actualiza dinamicamente:
-           - <html lang> (pt-PT / en)
-           - <title>
-           - <meta name="description">
-           - og:title, og:description, og:locale
-           - twitter:title, twitter:description
-         quando o utilizador troca de idioma. O estado acima é o
-         default (PT) que os crawlers veem sem executar JS.
-
-         NOTA: hreflang só é útil com URLs distintas por idioma
-         (ex: / e /en/). Como este site guarda o idioma em
-         localStorage (sem trocar a URL), omitimos hreflang de forma
-         intencional para não gerar URLs duplicadas no Google.
-         ============================================================ -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://www.ensaiosfeedback.pt/#website",
+            "url": "https://www.ensaiosfeedback.pt/",
+            "name": "Feedback Studios",
+            "publisher": { "@id": "https://www.ensaiosfeedback.pt/#studio" }
+          },
+          {
+            "@type": "LocalBusiness",
+            "@id": "https://www.ensaiosfeedback.pt/#studio",
+            "name": "Feedback Studios",
+            "url": "https://www.ensaiosfeedback.pt/",
+            "image": "https://www.ensaiosfeedback.pt/ogimage.png",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Montijo",
+              "addressCountry": "PT"
+            },
+            "sameAs": [
+              "https://www.instagram.com/feedbackproductions",
+              "https://www.youtube.com/@feedbackproductions"
+            ]
+          }
+        ]
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="layout">
+        <div class="booking-heading">
+          <h1>Salas de ensaio no Montijo</h1>
+        </div>
+        <p>Na Feedback Studios podes alugar as salas de ensaio RED e GREY no Montijo, na Margem Sul. O estúdio inclui a CONTROL ROOM, régie de produção musical, e a LIVE, espaço para eventos.</p>
+        <noscript><p>Ativa o JavaScript para consultar a disponibilidade e reservar.</p></noscript>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

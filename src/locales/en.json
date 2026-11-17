@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Feedback - Rehearsal Room Booking",
-    "description": "Rehearsal room booking in Montijo, a production control room and a creative space."
+    "title": "Rehearsal rooms in Montijo | Feedback Studios",
+    "description": "Book the RED and GREY rehearsal rooms in Montijo, on Lisbon’s south bank. Explore the CONTROL ROOM for music production and LIVE for events."
   },
   "footer": {
     "linksLabel": "Feedback Productions links",
@@ -15,9 +15,11 @@
     "en": "EN"
   },
   "topbar": {
+    "homeLink": "Go to the Feedback Studios homepage",
     "languageLabel": "Language"
   },
   "rooms": {
+    "photoLabel": "Photo of the space",
     "sala-red": {
       "name": "SALA RED",
       "vibe": "High-impact room for full-band rehearsals and pressure-tested run-throughs.",
@@ -41,7 +43,7 @@
   "about": {
     "eyebrow": "About us",
     "title": "Feedback Studios, your creative hub",
-    "lede": "We are an all-in-one creative hub built specifically to answer every need of bands, musicians and content creators under a single roof. The space was designed to connect every stage of your project fluidly: the rooms talk to each other, letting you move from the creative immersion of a rehearsal to a multitrack audio recording, a music video shoot, a live stream or an intimate concert.",
+    "lede": "At Feedback Studios you can hire the RED and GREY rehearsal rooms in Montijo, on Lisbon’s south bank. The studio includes the CONTROL ROOM for music production and LIVE, a space for events.",
     "expand": "See more",
     "collapse": "See less",
     "infrastructureTitle": "Our infrastructure",
@@ -93,7 +95,7 @@
     "reject": "Reject"
   },
   "booking": {
-    "roomTitle": "Choose your room",
+    "roomTitle": "Rehearsal rooms in Montijo",
     "dateTitle": "Choose the day and time",
     "detailsTitle": "Fill in your details",
     "next": "Continue",
