@@ -24,17 +24,6 @@ export type StaffFunction =
   | 'gestor-manutencao'
   | 'tecnico';
 
-// O role privilegiado (superuser) é determinado apenas na base de dados
-// (tabela profiles.role). O front-end não aplica qualquer fallback por email.
-export const staffFunctionLabels: Record<StaffFunction, string> = {
-  'diretor-producao': 'Diretor de Produção',
-  'diretor-tecnico': 'Diretor Técnico',
-  'produtor-executivo': 'Produtor Executivo',
-  'gestor-operativo': 'Gestor Operativo',
-  'gestor-manutencao': 'Gestor de Manutenção',
-  tecnico: 'Técnico',
-};
-
 export type ApiUser = {
   id: string;
   name: string;
@@ -170,15 +159,6 @@ export type ServiceDraft = {
   price: number;
   active?: boolean;
   sortOrder?: number;
-};
-
-export type ApiAuditEntry = {
-  id: string;
-  action: string;
-  actor: { id: string; name: string; role: string };
-  target: string;
-  details: string;
-  createdAt: string;
 };
 
 export type FinanceBooking = {
@@ -638,32 +618,6 @@ export async function adminContactRequests(token: string): Promise<{ contactRequ
     .order('createdAt', { ascending: false });
   if (error) throw toError(error.message, 'Could not load contact requests.', 400);
   return { contactRequests: (data ?? []).map((row) => mapContactRequestRow(row as Record<string, unknown>)) };
-}
-
-export async function updateContactRequestStatus(
-  token: string,
-  contactRequestId: string,
-  status: ContactRequestStatus,
-): Promise<{ contactRequest: ApiContactRequest }> {
-  if (!['pending', 'contacted', 'closed'].includes(status)) {
-    throw new ApiError('Invalid contact request status.', 400);
-  }
-  const actor = await requireActor(token, ['superuser', 'admin', 'collaborator', 'technician']);
-  const { data, error } = await supabase
-    .from('contact_requests')
-    .update({ status })
-    .eq('id', contactRequestId)
-    .select()
-    .single();
-  if (error || !data) throw toError(error?.message, 'Nao foi possivel atualizar o pedido de contacto.');
-  const contactRequest = mapContactRequestRow(data as Record<string, unknown>);
-  await recordAudit({
-    action: 'contact-request-status-updated',
-    actor: { id: actor.id, name: actor.name, role: actor.role },
-    target: contactRequest.id,
-    details: { sala: contactRequest.roomName, estado: status },
-  });
-  return { contactRequest };
 }
 
 export async function adminContactRequestReply(
@@ -1253,17 +1207,6 @@ function splitLines(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
-export function servicesToPricingExtras(services: ApiService[]): Record<string, number> {
-  const extras: Record<string, number> = {};
-  for (const service of services) {
-    if (service.active) extras[service.id] = Number(service.price || 0);
-  }
-  if (Object.keys(extras).length === 0) {
-    for (const fallback of fallbackServices) extras[fallback.id] = fallback.price;
-  }
-  return extras;
-}
-
 // --- Salas (pie-menu) -----------------------------------------
 
 export async function listRooms(options?: { includeInactive?: boolean }): Promise<{ rooms: ApiRoom[] }> {
@@ -1537,64 +1480,6 @@ export async function pricing(): Promise<{ pricing: PricingConfig }> {
   }
 
   return { pricing: { extras } };
-}
-
-export async function updatePricing(
-  token: string,
-  updates: { extras?: Record<string, number | string> },
-): Promise<{ pricing: PricingConfig }> {
-  const actor = await requireActor(token, ['admin', 'superuser']);
-  const { data: current } = await supabase.from('pricing').select('*').eq('id', 1).maybeSingle();
-  // Fonte unica de extras: tabela services. Se updates.extras vier omitido,
-  // nao toca no legado — evita ressuscitar servicos apagados.
-  const { data: liveServices } = await supabase.from('services').select('id,price').eq('active', true);
-  const mergedExtras: Record<string, number> = {};
-  if (updates.extras) {
-    const currentExtras = ((current?.extras ?? {}) as Record<string, unknown>);
-    const knownIds = new Set<string>([
-      ...fallbackServices.map((service) => service.id),
-      ...Object.keys(currentExtras),
-      ...Object.keys(updates.extras ?? {}),
-    ]);
-    for (const id of knownIds) {
-      const candidate = updates.extras && id in updates.extras ? updates.extras[id] : currentExtras[id];
-      const fallbackPrice = fallbackServices.find((service) => service.id === id)?.price ?? 0;
-      mergedExtras[id] = Number.isFinite(Number(candidate)) ? Number(candidate) : Number(fallbackPrice);
-    }
-  } else if (liveServices) {
-    for (const row of liveServices) {
-      const id = String((row as Record<string, unknown>).id ?? '');
-      if (id) mergedExtras[id] = Number((row as Record<string, unknown>).price ?? 0);
-    }
-  }
-
-  const merged: PricingConfig = {
-    extras: mergedExtras,
-  };
-
-  const { error } = await supabase
-    .from('pricing')
-    .upsert(
-      {
-        id: 1,
-        extras: merged.extras,
-        updatedAt: new Date().toISOString(),
-      },
-      { onConflict: 'id' },
-    );
-
-  if (error) {
-    throw toError(error.message, 'Could not update pricing');
-  }
-
-  await recordAudit({
-    action: 'pricing-updated',
-    actor: { id: actor.id, name: actor.name, role: actor.role },
-    target: 'pricing',
-    details: { pricing: merged },
-  });
-
-  return { pricing: merged };
 }
 
 // --- Definições da app (feature flags globais) ---------------
@@ -1975,30 +1860,6 @@ export async function clearAllBookings(token: string): Promise<{ deletedCount: n
 }
 
 // --- Auditoria ----------------------------------------------
-
-export async function auditLogs(token: string): Promise<{ auditLogs: ApiAuditEntry[] }> {
-  await requireActor(token, ['admin', 'superuser']);
-
-  const { data, error } = await supabase
-    .from('audit_logs')
-    .select('*')
-    .order('createdAt', { ascending: true });
-
-  if (error) {
-    throw toError(error.message, 'Could not load audit logs', 400);
-  }
-
-  return {
-    auditLogs: (data ?? []).map((row) => ({
-      id: String(row.id),
-      action: String(row.action),
-      actor: (row.actor ?? {}) as ApiAuditEntry['actor'],
-      target: String(row.target ?? ''),
-      details: String(row.details ?? ''),
-      createdAt: String(row.createdAt ?? ''),
-    })),
-  };
-}
 
 async function recordAudit(entry: {
   action: string;
