@@ -319,7 +319,7 @@ const NotFoundPage: React.FC = () => {
 
           <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
             <a className="primary-button" href="/" style={{ textDecoration: 'none' }}>
-              Voltar ao palco principal
+              Voltar às salas de ensaio
             </a>
           </div>
 

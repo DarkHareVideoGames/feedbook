@@ -53,15 +53,15 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      input: ['index.html', 'admin.html', '404.html'],
       output: {
         // Separa as dependencias vendor em chunks proprios. Melhora a cache
         // do browser (cada lib muda menos que o codigo da app) e evita o
-        // aviso de chunk > 500 kB — jspdf/supabase sao pesados e nao precisam
-        // de estar no bundle principal.
+        // carregamento inicial. As dependências de PDF ficam no carregamento
+        // dinâmico da exportação administrativa.
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
           supabase: ['@supabase/supabase-js'],
-          jspdf: ['jspdf', 'jspdf-autotable'],
           icons: ['lucide-react'],
         },
       },

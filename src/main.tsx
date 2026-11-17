@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import AdminHistoryPage from './AdminHistoryPage';
 import SetPasswordModal from './SetPasswordModal';
-import NotFoundPage from './NotFoundPage';
 import { I18nProvider } from './i18n';
 import './index.css';
 import './brand-overrides.css';
+
+const AdminHistoryPage = lazy(() => import('./AdminHistoryPage'));
+const NotFoundPage = lazy(() => import('./NotFoundPage'));
 
 // Captura precoce do hash de erro do Supabase (token expirado), antes de o
 // cliente Supabase o processar/limpar da URL.
@@ -70,13 +71,15 @@ function Root() {
     <>
       {/* Modal de convite "define a tua password" — ativo em todas as páginas. */}
       <SetPasswordModal />
-      {path.startsWith('/admin') ? (
-        <AdminHistoryPage />
-      ) : path === '/' ? (
-        <App />
-      ) : (
-        <NotFoundPage />
-      )}
+      <Suspense fallback={null}>
+        {path.startsWith('/admin') ? (
+          <AdminHistoryPage />
+        ) : path === '/' ? (
+          <App />
+        ) : (
+          <NotFoundPage />
+        )}
+      </Suspense>
     </>
   );
 }

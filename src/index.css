@@ -201,7 +201,7 @@ button {
 .topbar h1,
 .section-heading h2,
 .booking-heading h1,
-.room-card h3 {
+.room-card h2 {
   font-family: "IBM Plex Sans", sans-serif;
   letter-spacing: 0.01em;
 }
@@ -629,7 +629,11 @@ button {
   margin-top: 1.6em;
 }
 
-.room-card h3,
+.room-card h2 {
+  font-size: 1.17em;
+}
+
+.room-card h2,
 .section-heading h2 {
   margin: 6px 0 0;
 }
@@ -1772,7 +1776,7 @@ textarea:focus {
     white-space: nowrap;
   }
 
-  .room-card h3,
+  .room-card h2,
   .room-details-title {
     font-size: 1.6rem;
   }

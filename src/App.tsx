@@ -1,7 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ChevronDown, Download, LoaderCircle } from 'lucide-react';
 import { FOOTER_LINKS } from './constants/footerLinks';
-import { toPng } from 'html-to-image';
 import * as api from './api';
 import { Locale, useI18n } from './i18n';
 import LanguageSwitcher from './components/ui/LanguageSwitcher';
@@ -575,6 +574,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
     setConfirmationSaveError('');
 
     try {
+      const { toPng } = await import('html-to-image');
       await document.fonts?.ready;
       const dataUrl = await toPng(confirmationRef.current, {
         cacheBust: true,
@@ -776,12 +776,12 @@ const [minDelayDone, setMinDelayDone] = useState(false);
       ) : null}
 
       <header className="topbar public-topbar">
-        <a className="brand-wrap" href="/" aria-label="Ir para a pagina inicial">
+        <a className="brand-wrap" href="/" aria-label={translations.topbar.homeLink}>
           {logoVisible ? (
             <img
               className="brand-logo"
               src="/feedbook-logo.png"
-              alt="Feedback - Ensaios"
+              alt="Feedback Studios"
               onError={() => setLogoVisible(false)}
             />
           ) : null}
@@ -797,7 +797,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
         <div id="explore-rooms" className="booking-content">
         {bookingStep !== 'confirmation' ? (
           <div className="booking-heading">
-            <h1 className={bookingStep === 'details' ? 'booking-heading-single-line' : undefined}>
+            <h1 id="booking-title" className={bookingStep === 'details' ? 'booking-heading-single-line' : undefined}>
               {bookingStep === 'room'
                 ? translations.booking.roomTitle
                 : bookingStep === 'date'
@@ -811,7 +811,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
         ) : null}
 
         {bookingStep === 'room' ? (
-          <section className="rooms-grid">
+          <section className="rooms-grid" aria-labelledby="booking-title">
             {localizedRooms.map((room) => {
               const isSelected = room.id === selectedRoom.id;
 
@@ -840,9 +840,9 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                   <RoomPhotoSlideshow images={api.getRoomImageUrls(room)} roomName={room.name} />
                   <div className="room-card-header">
                     <div>
-                      <h3>
+                      <h2>
                         <RoomName name={room.name} accent={room.accent} />
-                      </h3>
+                      </h2>
                       <p className="room-card-meta">
                         {room.capacity}
                         {' • '}
