@@ -1,0 +1,22 @@
+.arcade { width: 100%; max-width: 760px; margin: 2rem auto 0; }
+.arcade > p { font-size: 0.9rem; }
+.arcade-arena { position: relative; width: 100%; height: 280px; overflow: hidden; border: 2px solid #73634a; border-radius: 12px; background: linear-gradient(#151522, #09090e); touch-action: manipulation; user-select: none; cursor: pointer; }
+.arcade-floor { position: absolute; inset: auto 0 0; height: 40px; background: #24232b; border-top: 2px solid #a9956b; }
+.arcade-player { position: absolute; bottom: 40px; width: 44px; height: 64px; font-size: 32px; line-height: 64px; }
+.arcade-player img { width: 100%; height: 100%; object-fit: contain; }
+.arcade-player-fallback::after { content: '🎸'; }
+.arcade-amp { position: absolute; left: 0; bottom: 40px; width: 30px; height: 50px; border: 2px solid #b3a17d; border-radius: 3px; background: #35333a url('/amp.png') center / contain no-repeat; }
+.arcade-score { position: absolute; top: 12px; right: 14px; color: #f4d58d; font: bold 16px monospace; }
+.arcade-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: #090910aa; }
+.arcade-overlay strong { font: bold 22px monospace; color: #f4d58d; }
+.arcade-jump { margin-top: 12px; min-height: 44px; }
+.arcade-entry { display: grid; justify-items: center; gap: 10px; margin: 20px auto; }
+.arcade-entry input { max-width: 100%; width: 220px; padding: 10px; border: 1px solid #a9956b; border-radius: 4px; background: #111119; color: #f4d58d; font: bold 20px monospace; text-align: center; }
+.arcade-entry small { max-width: 100%; }
+.arcade-board { margin-top: 24px; padding: 20px; border: 2px solid #73634a; background: #111119; color: #f4d58d; font-family: monospace; border-radius: 8px; }
+.arcade-board h2 { font-size: clamp(16px, 4vw, 22px); letter-spacing: 0.08em; }
+.arcade-board ol { max-width: 420px; margin: 18px auto 0; padding-left: 28px; }
+.arcade-board li { padding: 6px 0; text-align: left; }
+.arcade-board li strong { float: right; margin-left: 12px; }
+.arcade :focus-visible { outline: 3px solid #f4d58d; outline-offset: 3px; }
+@media (max-width: 420px) { .arcade-arena { height: 260px; } .arcade-board { padding: 12px; } }
