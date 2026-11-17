@@ -48,12 +48,6 @@ function getInitialLocale(): Locale {
     return storedLocale;
   }
 
-  // Deteção inicial pelo idioma do browser, com PT como omissão.
-  const browserLocale = window.navigator.language.toLowerCase();
-  if (browserLocale.startsWith('en')) {
-    return 'en';
-  }
-
   return 'pt-PT';
 }
 
