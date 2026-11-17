@@ -647,9 +647,6 @@ button {
 
 .booking-form {
   padding: 28px;
-}
-
-.booking-form {
   display: grid;
   gap: 18px;
   position: relative;
@@ -1386,11 +1383,6 @@ textarea:focus {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html.public-explore { scroll-behavior: auto; }
-  .public-explore .room-card { transition: none; }
-}
-
 .booking-summary-list {
   display: grid;
   gap: 10px;
@@ -1787,9 +1779,6 @@ textarea:focus {
 
   .gear-list {
     margin-bottom: 14px;
-  }
-
-  .gear-list {
     gap: 6px;
     padding-left: 18px;
   }
@@ -1824,9 +1813,6 @@ textarea:focus {
 .admin-message-error {
   margin: 0;
   font-size: 0.88rem;
-}
-
-.admin-message-error {
   color: #fca5a5;
 }
 
@@ -6174,6 +6160,19 @@ textarea:focus {
   to { transform: rotate(360deg); }
 }
 @media (prefers-reduced-motion: reduce) {
+  /* Depois dos overrides desktop para preservar a preferência na cascata. */
+  html.public-explore {
+    scroll-behavior: auto;
+  }
+
+  .public-explore .room-card {
+    transition: none;
+  }
+
+  .booking-step {
+    animation: none;
+  }
+
   .admin-toast {
     animation: none;
   }

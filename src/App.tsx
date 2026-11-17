@@ -15,6 +15,7 @@ import RoomPhotoSlideshow from './components/ui/RoomPhotoSlideshow';
 import RoomName from './components/ui/RoomName';
 import { getRoomBaseName } from './helpers/roomName';
 import { useImagesReady } from './hooks/useImageReady';
+import { getScrollBehavior } from './helpers/motion';
 
 type RoomDefinition = api.ApiRoom;
 
@@ -526,12 +527,12 @@ const [minDelayDone, setMinDelayDone] = useState(false);
     const scrollTarget = window.matchMedia('(max-width: 980px)').matches
       ? pageScrollRef.current
       : window;
-    scrollTarget?.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollTarget?.scrollTo({ top: 0, behavior: getScrollBehavior() });
   }, [bookingStep]);
 
   useEffect(() => {
     if (bookingStep !== 'confirmation' || !confirmationRef.current) return;
-    confirmationRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    confirmationRef.current.scrollIntoView({ behavior: getScrollBehavior(), block: 'center' });
     confirmationRef.current.focus({ preventScroll: true });
   }, [bookingStep]);
 

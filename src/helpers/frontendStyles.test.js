@@ -54,4 +54,12 @@ describe('frontend styles retained after legacy cleanup', () => {
     expect(styles).toContain('.public-booking-frame .about-header::before');
     expect(styles).toContain('overscroll-behavior-y: auto');
   });
+
+  it('keeps reduced-motion overrides after desktop scroll and card overrides', () => {
+    const reducedMotion = styles.slice(styles.lastIndexOf('@media (prefers-reduced-motion: reduce)'));
+    expect(reducedMotion).toMatch(/html\.public-explore\s*\{\s*scroll-behavior: auto;/);
+    expect(reducedMotion).toMatch(/\.public-explore \.room-card\s*\{\s*transition: none;/);
+    expect(reducedMotion).toMatch(/\.booking-step\s*\{\s*animation: none;/);
+    expect(styles.lastIndexOf('scroll-behavior: smooth')).toBeLessThan(styles.lastIndexOf('scroll-behavior: auto'));
+  });
 });
