@@ -25,6 +25,14 @@ Não houve migração remota, deploy nem escrita em base de dados real durante a
 
 ## Verificações
 
+### Áudio acrescentado ao PR #192
+
+- `/home/noct2600/feedbook/public/feedbook_404_arcade_loop.ogg`: música de 8 s em loop durante a partida, volume 30%, sem autoplay ao abrir a página.
+- `/home/noct2600/feedbook/public/feedbook_404_jump.ogg`: efeito de 0,32 s por salto aceite, volume 60%.
+- Botão Som ON/OFF (PT/EN), pausa em separador oculto, paragem/reset no game over e desmontagem; falhas de reprodução não bloqueiam o jogo. Sem pré-carregamento de áudio antes de jogar.
+- Build e 61 testes passaram (três testes novos de áudio). Browser confirmou ausência de autoplay, música em reprodução, efeito concluído, mute e paragem no game over. Não substitui audição e teste em dispositivos físicos; codecs/bloqueios podem variar.
+- Os dois ficheiros de áudio fornecidos pelo utilizador estão agora incluídos no commit.
+
 - `npm run build`: passou; `npm test`: 58 testes, incluindo 13 novos para física/dificuldade/nicks, assinatura/validação e endpoint com Supabase simulado.
 - Browser Vite com API simulada: 320/390/760/1440 px sem overflow da página; salto por Espaço, colisão/game over, nick não captura atalhos, conversão para maiúsculas, guardar, limite 429, ranking indisponível/jogo offline e idioma inglês.
 - Corrigido pattern HTML com hífen escapado após erro detetado no browser; validade confirmada para `ABC-12`.

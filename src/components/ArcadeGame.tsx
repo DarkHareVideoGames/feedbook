@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n';
 import { collides, difficulty, GRAVITY, JUMP, PLAYER_X, validNick } from '../helpers/arcade';
 import './arcade.css';
+import { playArcadeAudio, stopArcadeAudio } from '../helpers/arcadeAudio';
 
 type Entry = { nick: string; score: number };
 const copy = {
@@ -14,6 +15,7 @@ const copy = {
     save: 'Guardar pontuação', saving: 'A guardar…', saved: 'Pontuação guardada!',
     failed: 'Não foi possível guardar. Tenta novamente.', rate: 'Demasiados envios. Aguarda um minuto.',
     offline: 'Esta partida não está ligada ao ranking. Joga novamente para tentar ligar.',
+    sound: 'Som',
   },
   en: {
     start: 'Play', jump: 'Jump', again: 'Try again', points: 'Score',
@@ -24,6 +26,7 @@ const copy = {
     save: 'Save score', saving: 'Saving…', saved: 'Score saved!',
     failed: 'Could not save. Please try again.', rate: 'Too many submissions. Wait a minute.',
     offline: 'This run is not connected to the leaderboard. Play again to reconnect.',
+    sound: 'Sound',
   },
 };
 
@@ -42,6 +45,10 @@ export default function ArcadeGame() {
   const arena = useRef<HTMLDivElement>(null);
   const player = useRef<HTMLDivElement>(null);
   const obstacles = useRef<HTMLDivElement>(null);
+  const music = useRef<HTMLAudioElement>(null);
+  const jumpSound = useRef<HTMLAudioElement>(null);
+  const mutedRef = useRef(false);
+  const [muted, setMuted] = useState(false);
   const state = useRef({ running: false, y: 0, vy: 0, score: 0, last: 0, spawn: 1, raf: 0, xs: [] as number[] });
   const runId = useRef(0);
   const savingRef = useRef(false);
@@ -62,6 +69,13 @@ export default function ArcadeGame() {
   }, []);
 
   useEffect(() => { void loadBoard(); }, [loadBoard]);
+  useEffect(() => {
+    const background = music.current;
+    const effect = jumpSound.current;
+    if (background) background.volume = 0.3;
+    if (effect) effect.volume = 0.6;
+    return () => { stopArcadeAudio(background); stopArcadeAudio(effect); };
+  }, []);
   useEffect(() => () => {
     state.current.running = false;
     cancelAnimationFrame(state.current.raf);
@@ -69,6 +83,8 @@ export default function ArcadeGame() {
   }, []);
 
   const start = useCallback(() => {
+    stopArcadeAudio(jumpSound.current);
+    if (!mutedRef.current) playArcadeAudio(music.current, true);
     cancelAnimationFrame(state.current.raf);
     const id = ++runId.current;
     Object.assign(state.current, { running: true, y: 0, vy: 0, score: 0, last: performance.now(), spawn: 1, xs: [] });
@@ -110,6 +126,8 @@ export default function ArcadeGame() {
         });
       }
       if (s.xs.some(x => collides(x, s.y))) {
+        stopArcadeAudio(music.current);
+        stopArcadeAudio(jumpSound.current);
         s.running = false; setPhase('over'); return;
       }
       s.raf = requestAnimationFrame(loop);
@@ -118,11 +136,20 @@ export default function ArcadeGame() {
   }, []);
 
   const jump = useCallback(() => {
-    if (state.current.running && state.current.y === 0) state.current.vy = JUMP;
+    if (state.current.running && state.current.y === 0) {
+      state.current.vy = JUMP;
+      if (!mutedRef.current) playArcadeAudio(jumpSound.current, true);
+    }
   }, []);
 
   useEffect(() => {
-    const pause = () => { state.current.last = performance.now(); };
+    const pause = () => {
+      state.current.last = performance.now();
+      if (document.hidden) {
+        music.current?.pause();
+        stopArcadeAudio(jumpSound.current);
+      } else if (state.current.running && !mutedRef.current) playArcadeAudio(music.current);
+    };
     document.addEventListener('visibilitychange', pause);
     return () => document.removeEventListener('visibilitychange', pause);
   }, []);
@@ -144,7 +171,18 @@ export default function ArcadeGame() {
   }
 
   return <section className="arcade" aria-label="404 Arcade">
+    <audio ref={music} src="/feedbook_404_arcade_loop.ogg" loop preload="none" aria-hidden="true" />
+    <audio ref={jumpSound} src="/feedbook_404_jump.ogg" preload="none" aria-hidden="true" />
     <p id="arcade-instructions">{t.instructions}</p>
+    <button type="button" className="secondary-button" aria-pressed={!muted} onClick={() => {
+      const next = !mutedRef.current;
+      mutedRef.current = next;
+      setMuted(next);
+      if (next) {
+        music.current?.pause();
+        stopArcadeAudio(jumpSound.current);
+      } else if (state.current.running) playArcadeAudio(music.current);
+    }}>{t.sound}: {muted ? 'OFF' : 'ON'}</button>
     <div className="arcade-arena" ref={arena} tabIndex={0} role="group" aria-label="404 Arcade"
       aria-describedby="arcade-instructions"
       onKeyDown={event => {
