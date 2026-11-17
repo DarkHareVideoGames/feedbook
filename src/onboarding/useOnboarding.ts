@@ -3,6 +3,7 @@ import { driver, type Driver } from 'driver.js';
 import { isSupabaseConfigured, supabase } from '../supabaseClient';
 import { renderOnboardingPopover } from './StepPopover';
 import { getOnboardingSteps, toDriverSteps, type OnboardingPanel, type OnboardingRole } from './steps';
+import { prefersReducedMotion } from '../helpers/motion';
 
 const ONBOARDING_VERSION = 1;
 const LOCAL_COMPLETION_KEY_PREFIX = 'feedbook-admin-onboarding-completed';
@@ -22,10 +23,6 @@ type UseOnboardingOptions = {
   setActivePanel: (panel: OnboardingPanel) => void;
   setSidebarOpen: (open: boolean) => void;
 };
-
-function prefersReducedMotion(): boolean {
-  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-}
 
 export function useOnboarding({ userId, role, setActivePanel, setSidebarOpen }: UseOnboardingOptions) {
   const [isReady, setIsReady] = useState(false);
@@ -152,12 +149,13 @@ export function useOnboarding({ userId, role, setActivePanel, setSidebarOpen }: 
       });
     };
 
+    const reducedMotion = prefersReducedMotion();
     const tour = driver({
       steps: toDriverSteps(tourSteps),
-      animate: !prefersReducedMotion(),
+      animate: !reducedMotion,
       overlayColor: '#000000',
       overlayOpacity: 0.72,
-      smoothScroll: true,
+      smoothScroll: !reducedMotion,
       allowClose: false,
       allowKeyboardControl: false,
       overlayClickBehavior: 'none',
