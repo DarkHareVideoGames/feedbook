@@ -6229,3 +6229,201 @@ textarea:focus {
     padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* Componentes administrativos sem dependência de classes utilitárias externas. */
+.admin-install-prompt {
+  position: fixed;
+  inset: auto 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 40; /* Abaixo dos modais (50+) e do tutorial. */
+  width: auto;
+  max-width: 448px;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-bottom, 0px));
+  margin-inline: auto;
+  overflow-y: auto;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-main);
+}
+
+.admin-install-prompt-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin-install-prompt-icon {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+}
+
+.admin-install-prompt-body,
+.admin-diagnostics-item-body {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-install-prompt-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.admin-install-prompt-description,
+.admin-install-prompt-instructions {
+  margin: 6px 0 0;
+  color: var(--text-main);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.admin-install-prompt-instructions {
+  padding-left: 18px;
+}
+
+.admin-install-prompt-instructions li + li {
+  margin-top: 4px;
+}
+
+.admin-install-prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.admin-install-prompt .admin-install-prompt-button {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+.admin-install-prompt-close {
+  display: inline-flex;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-main);
+}
+
+.admin-install-prompt-close:hover {
+  border-color: var(--border);
+  background: var(--surface-soft);
+}
+
+.admin-install-prompt button:focus-visible,
+.admin-diagnostics-button:focus-visible,
+.admin-diagnostics-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.admin-diagnostics-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-diagnostics-title {
+  position: static;
+  min-width: 0;
+  transform: none;
+}
+
+.admin-diagnostics-title h3 {
+  color: var(--text-main);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.admin-diagnostics-status-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.admin-diagnostics-actions {
+  flex-wrap: wrap;
+}
+
+.admin-diagnostics-actions .admin-diagnostics-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+}
+
+.admin-diagnostics-list {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-diagnostics-item.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.admin-diagnostics-item-icon {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.admin-diagnostics-item-label {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.admin-diagnostics-note {
+  margin: 4px 0 0;
+  color: #cfd3da;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.admin-diagnostics-footer {
+  display: flex;
+  margin-top: 4px;
+}
+
+.admin-diagnostics-toggle {
+  min-height: 32px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media print {
+  .admin-install-prompt {
+    display: none;
+  }
+}

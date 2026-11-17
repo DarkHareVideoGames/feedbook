@@ -4,6 +4,17 @@ import { FOOTER_LINKS } from '../constants/footerLinks';
 
 const styles = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
 
+describe('admin local visual styles', () => {
+  it('preserves diagnostic states, keyboard focus and safe-area rules', () => {
+    for (const status of ['ok', 'warning', 'error', 'pending']) {
+      expect(styles).toContain(`.admin-diagnostic-status-${status}`);
+    }
+    expect(styles).toContain('.admin-install-prompt button:focus-visible');
+    expect(styles).toContain('.admin-diagnostics-toggle:focus-visible');
+    expect(styles).toContain('env(safe-area-inset-bottom, 0px)');
+  });
+});
+
 // These class names are composed at runtime, so a literal-only CSS purge
 // cannot distinguish them from unused selectors.
 describe('frontend styles retained after legacy cleanup', () => {
