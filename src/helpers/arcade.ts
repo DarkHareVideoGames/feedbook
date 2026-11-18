@@ -1,5 +1,5 @@
 export const GRAVITY = 1900;
-export const JUMP = 580;
+export const JUMP = 620;
 export const PLAYER_X = 52;
 export const PLAYER_WIDTH = 60;
 export const PLAYER_HEIGHT = 88;
