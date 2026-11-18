@@ -25,6 +25,10 @@ Não houve migração remota, deploy nem escrita em base de dados real durante a
 
 ## Verificações
 
+### Espaçamento e contorno dos obstáculos
+
+Botão de regresso afastado 18 px do ranking (antes 6 px). Removidas borda e sombra amarelas dos amplificadores; imagem com fundo transparente e bloco neutro apenas quando a imagem falha. Preview de produção: sem scroll a 320×568, 390×844, 1440×900 e 844×390; gap medido de 18 px no game over; imagem carregada com borda 0 e sombra none. A primeira tentativa em dev tinha uma resposta CSS vazia e não foi usada como evidência do layout; repetida no build de produção. Build/testes novamente executados.
+
 ### Jogador maior e obstáculos explícitos
 
 Jogador aumentado de 44×64 para 60×88 px, largura de colisão atualizada e limites cobertos por teste. Obstáculos com camada absoluta explícita, imagem `<img>` reutilizada e bloco de contraste como fallback se `/amp.png` falhar. O desaparecimento reportado não foi reproduzido no Vite anterior (nós dentro do jogo e fundo CSS presente); não se atribui uma causa não confirmada. Browser a 320/1440 px confirmou tamanho do jogador, amplificadores 30×50 com imagem carregada dentro do jogo, game over por colisão e fallback visível com pedido de imagem deliberadamente bloqueado.

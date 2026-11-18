@@ -126,7 +126,10 @@ export default function ArcadeGame() {
             image.src = '/amp.png';
             image.alt = '';
             image.draggable = false;
-            image.onerror = () => { image.hidden = true; };
+            image.onerror = () => {
+              image.hidden = true;
+              image.parentElement?.classList.add('arcade-amp-fallback');
+            };
             el.append(image);
             obstacles.current!.append(el);
           }
