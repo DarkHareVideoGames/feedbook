@@ -8,6 +8,7 @@ import webpush from 'web-push';
 import { fileURLToPath } from 'url';
 import { generateIcs } from '../lib/generateIcs.js';
 import createBookingHandler from '../api/create-booking.js';
+import arcadeHandler from '../api/arcade.js';
 
 // Carrega as variáveis do ficheiro .env (raiz do projeto) para process.env.
 // Necessário para que SMTP_* e as restantes integrações funcionem em desenvolvimento.
@@ -54,6 +55,7 @@ app.use(express.json());
 // Espelha a função Vercel para que a criação pública segura de marcações
 // também funcione com `npm run dev:api`.
 app.post('/api/create-booking', createBookingHandler);
+app.all('/api/arcade', arcadeHandler);
 
 // --- Configuração SMTP (servidor próprio; sem SMTP_PASS os emails são ignorados) ---
 const SMTP_HOST = String(process.env.SMTP_HOST || 'mail.feedbackproductions.pt').trim();
