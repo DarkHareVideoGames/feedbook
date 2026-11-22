@@ -2,6 +2,7 @@ import { CSSProperties, MouseEvent, useEffect, useRef, useState } from 'react';
 import { ArrowDown, ChevronDown } from 'lucide-react';
 import { getRoomImageUrls } from '../../api';
 import { getScrollBehavior } from '../../helpers/motion';
+import { roomJourneyPhase } from '../../helpers/roomJourneyPhase';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useI18n } from '../../i18n';
 import RoomName from './RoomName';
@@ -61,10 +62,14 @@ function RoomChapter({ room, nextRoom, onChoose }: {
       frame = 0;
       const viewport = scroller.getBoundingClientRect();
       const cover = chapter.querySelector('.room-journey-cover')!.getBoundingClientRect();
-      const movingDown = scroller.scrollTop > previousScroll;
+      const direction = scroller.scrollTop - previousScroll;
       previousScroll = scroller.scrollTop;
-      if (movingDown && cover.top < viewport.top + viewport.height * 0.35 && cover.bottom < viewport.bottom - 36) {
-        setRevealed(true);
+      const phase = roomJourneyPhase(direction, cover.top, cover.bottom, viewport.top, viewport.height);
+      if (phase !== undefined) {
+        if (!phase && detailsRef.current?.contains(document.activeElement)) {
+          chapter.querySelector<HTMLButtonElement>('.room-journey-scroll')?.focus({ preventScroll: true });
+        }
+        setRevealed(phase);
       }
       if (reducedMotion) return;
       const progress = Math.min(1, Math.max(0, (viewport.top - cover.top) / Math.max(cover.height, 1)));
@@ -102,8 +107,7 @@ function RoomChapter({ room, nextRoom, onChoose }: {
           <button type="button" className="room-journey-scroll" aria-expanded={revealed} aria-controls={detailsId}
             onClick={() => {
               if (revealed) {
-                detailsRef.current?.focus({ preventScroll: true });
-                detailsRef.current?.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
+                setRevealed(false);
               } else {
                 openFromArrow.current = true;
                 setRevealed(true);

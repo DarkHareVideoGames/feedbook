@@ -47,7 +47,10 @@
 .room-journey :is(section, div)[tabindex='-1']:focus { outline: none; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .room-journey-details { transition: grid-template-rows 950ms cubic-bezier(0.22, 1, 0.36, 1), margin 950ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s; }
+  .room-journey-details { transition: grid-template-rows 950ms cubic-bezier(0.22, 1, 0.36, 1), margin 950ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s 950ms; }
+  .room-journey-details.is-revealed { transition-delay: 0s; }
+  .room-journey-scroll-icon { transition: transform 650ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .room-journey-scroll[aria-expanded='true'] .room-journey-scroll-icon { transform: rotate(180deg); }
   .room-journey-scroll-icon { border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--journey-accent) 14%, transparent), transparent 70%); }
   .room-journey-details.is-revealed::after { content: ''; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, var(--journey-accent), transparent); transform-origin: left; animation: room-journey-scan 950ms cubic-bezier(0.22, 1, 0.36, 1) both; pointer-events: none; }
   .room-journey-scroll-icon svg { animation: room-journey-nudge 2s ease-in-out infinite; }
