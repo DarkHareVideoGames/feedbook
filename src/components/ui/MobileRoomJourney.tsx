@@ -61,7 +61,8 @@ function RoomChapter({ room, nextRoom, onChoose }: {
     const update = () => {
       frame = 0;
       const viewport = scroller.getBoundingClientRect();
-      const cover = chapter.querySelector('.room-journey-cover')!.getBoundingClientRect();
+      // Measure the fixed summary, not the card that grows with its details.
+      const cover = chapter.querySelector('.room-journey-summary')!.getBoundingClientRect();
       const direction = scroller.scrollTop - previousScroll;
       previousScroll = scroller.scrollTop;
       const phase = roomJourneyPhase(direction, cover.top, cover.bottom, viewport.top, viewport.height, scroller.scrollTop);
@@ -117,8 +118,9 @@ function RoomChapter({ room, nextRoom, onChoose }: {
             <span>{translations.rooms.scrollDetails}</span>
           </button>
         </div>
-        <div className="room-card card room-journey-original" role="button" tabIndex={0}
-          aria-label={`${room.name} — ${translations.rooms.choose}`} style={{ borderColor: room.accent }}
+        <div className="room-card card room-journey-original" style={{ borderColor: room.accent }}>
+        <div className="room-journey-summary" role="button" tabIndex={0}
+          aria-label={`${room.name} — ${translations.rooms.choose}`}
           onClick={() => onChoose(room.id)}
           onKeyDown={(event) => {
             if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
@@ -134,7 +136,6 @@ function RoomChapter({ room, nextRoom, onChoose }: {
           <p className="room-card-description">{room.vibe}</p>
           <span className="room-card-arrow" aria-hidden="true">&gt;</span>
         </div>
-      </section>
 
       <div ref={detailsRef} id={detailsId} tabIndex={-1} aria-hidden={!revealed} className={`room-journey-details${revealed ? ' is-revealed' : ''}`}>
         <div className="room-journey-details-clip">
@@ -158,6 +159,8 @@ function RoomChapter({ room, nextRoom, onChoose }: {
         </div>
         </div>
       </div>
+        </div>
+      </section>
     </article>
   );
 }

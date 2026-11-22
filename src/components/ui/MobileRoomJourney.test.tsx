@@ -67,6 +67,17 @@ describe('mobile room journey', () => {
     expect(html).toContain('<h3 id="room-story-red-equipment">');
   });
 
+  it('contains expandable details inside the card but outside its booking trigger', () => {
+    const html = render();
+    const cardStart = html.indexOf('class="room-card card room-journey-original"');
+    const detailsStart = html.indexOf('id="room-story-red"');
+    const cardEnd = html.indexOf('</section></article>');
+    expect(cardStart).toBeLessThan(detailsStart);
+    expect(detailsStart).toBeLessThan(cardEnd);
+    expect(html).toContain('<div class="room-journey-summary" role="button"');
+    expect(html).toMatch(/class="room-card-arrow"[^>]*>.*?<\/span><\/div><div id="room-story-red"/);
+  });
+
   it('preserves the original card classes and content order without redesigned covers', () => {
     const html = render();
     expect(html.match(/class="room-card card room-journey-original"/g)).toHaveLength(2);

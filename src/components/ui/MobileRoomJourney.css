@@ -8,7 +8,9 @@
 .room-journey { display: grid; gap: 32px; min-width: 0; }
 .room-journey-chapter { min-width: 0; position: relative; perspective: 1100px; }
 .room-journey-cover { scroll-margin-top: 16px; }
-.room-journey-original { width: 100%; }
+.room-journey-original { width: 100%; cursor: default; }
+.room-journey-summary { position: relative; cursor: pointer; }
+.room-journey-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .room-journey-original .room-card-description { padding-bottom: 20px; }
 .room-journey-cover-actions { display: flex; justify-content: center; padding: 4px 0 16px; }
 .room-journey-scroll { display: grid; justify-items: center; gap: 6px; color: #a6a6b5; background: transparent; border: 0; padding: 4px 16px; cursor: pointer; font-size: 0.68rem; }
@@ -19,22 +21,21 @@
   position: relative;
   margin: 0;
   visibility: hidden;
-  border-left: 1px solid var(--journey-accent);
   scroll-margin-top: 24px;
 }
-.room-journey-details.is-revealed { grid-template-rows: 1fr; margin: 12px 0 24px; visibility: visible; }
+.room-journey-details.is-revealed { grid-template-rows: 1fr; margin: 12px 0 8px; visibility: visible; }
 .room-journey-details-clip { min-height: 0; overflow: hidden; }
 .room-journey-details::before {
   content: '';
   position: absolute;
-  inset: 0 auto auto -1px;
+  inset: 0 auto auto 0;
   width: 1px;
   height: 80px;
   background: var(--journey-accent);
   box-shadow: 0 0 14px 2px var(--journey-accent);
   pointer-events: none;
 }
-.room-journey-details-inner { display: grid; gap: 22px; padding: 24px 20px; }
+.room-journey-details-inner { display: grid; gap: 22px; padding: 24px 4px 8px; }
 .room-journey-description { margin: 0; white-space: pre-line; color: var(--text-main); line-height: 1.65; }
 .room-journey-equipment h3 { margin: 0; font-size: 1rem; }
 .room-journey-equipment .gear-list { padding-left: 20px; margin-bottom: 0; }
