@@ -7,7 +7,7 @@ describe('mobile room journey motion and layout', () => {
   it('limits reveal and arrow animations to users who allow motion', () => {
     const motion = styles.slice(styles.indexOf('@media (prefers-reduced-motion: no-preference)'));
     expect(motion).toContain('animation: room-journey-nudge');
-    expect(motion).toContain('opacity: 0; transform: translateY(24px)');
+    expect(motion).toContain('transform: translateY(24px)');
     expect(motion).toContain('.room-journey-details:focus-within');
     expect(styles).toContain('@media (prefers-reduced-motion: reduce)');
   });
@@ -19,5 +19,7 @@ describe('mobile room journey motion and layout', () => {
     expect(component).toContain("root: details.closest('.page-shell')");
     expect(component).toContain('observer.disconnect()');
     expect(component).toContain('threshold: 0');
+    expect(component).toContain("scroller.addEventListener('scroll', schedule, { passive: true })");
+    expect(component).toContain('cancelAnimationFrame(frame)');
   });
 });

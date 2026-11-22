@@ -39,7 +39,7 @@ describe('mobile room journey', () => {
 
   it('preserves booking buttons and gracefully handles rooms without extra content', () => {
     const html = render();
-    expect(html.match(/class="room-journey-book"/g)).toHaveLength(2);
+    expect(html.match(/class="room-journey-book room-details-choose"/g)).toHaveLength(2);
     expect(html).toContain('Sob consulta');
     expect(html).toContain('class="room-journey-description">Eventos</p>');
   });
@@ -55,5 +55,14 @@ describe('mobile room journey', () => {
   it('handles an empty room list', () => {
     render();
     expect(renderToStaticMarkup(<I18nProvider><MobileRoomJourney rooms={[]} onChoose={() => {}} /></I18nProvider>)).not.toContain('room-journey-cover');
+  });
+
+  it('preserves the original card classes and content order without redesigned covers', () => {
+    const html = render();
+    expect(html.match(/class="room-card card room-journey-original"/g)).toHaveLength(2);
+    expect(html).toContain('class="room-card-header"');
+    expect(html.indexOf('room-card-header')).toBeLessThan(html.indexOf('room-card-description'));
+    expect(html).not.toContain('room-journey-counter');
+    expect(html).not.toContain('room-journey-quick-book');
   });
 });

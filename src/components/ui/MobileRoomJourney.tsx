@@ -1,5 +1,5 @@
 import { CSSProperties, MouseEvent, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowUpRight, ChevronDown } from 'lucide-react';
+import { ArrowDown, ChevronDown } from 'lucide-react';
 import { getRoomImageUrls } from '../../api';
 import { getScrollBehavior } from '../../helpers/motion';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -35,21 +35,47 @@ function advance(event: MouseEvent<HTMLAnchorElement>, targetId: string) {
   target.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
 }
 
-function RoomChapter({ room, index, count, nextRoom, onChoose }: {
+function RoomChapter({ room, nextRoom, onChoose }: {
   room: JourneyRoom;
-  index: number;
-  count: number;
   nextRoom?: JourneyRoom;
   onChoose: Props['onChoose'];
 }) {
   const { translations } = useI18n();
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const chapterRef = useRef<HTMLElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(false);
   const coverId = `room-cover-${room.id}`;
   const detailsId = `room-story-${room.id}`;
   const nextId = nextRoom ? `room-cover-${nextRoom.id}` : 'explore-studio';
   const nextLabel = nextRoom ? translations.rooms.nextRoom : translations.rooms.exploreStudio;
+
+  useEffect(() => {
+    const chapter = chapterRef.current;
+    const scroller = chapter?.closest('.page-shell');
+    if (!chapter || !scroller || reducedMotion) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const viewport = scroller.getBoundingClientRect();
+      const cover = chapter.querySelector('.room-journey-cover')!.getBoundingClientRect();
+      const progress = Math.min(1, Math.max(0, (viewport.top - cover.top) / Math.max(cover.height, 1)));
+      const entry = Math.min(1, Math.max(0, (cover.top - viewport.top - viewport.height * 0.35) / (viewport.height * 0.65)));
+      chapter.style.setProperty('--phase-exit', String(progress));
+      chapter.style.setProperty('--phase-entry', String(entry));
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+    update();
+    scroller.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      scroller.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      chapter.style.removeProperty('--phase-exit');
+      chapter.style.removeProperty('--phase-entry');
+    };
+  }, [reducedMotion]);
 
   useEffect(() => {
     const details = detailsRef.current;
@@ -75,27 +101,25 @@ function RoomChapter({ room, index, count, nextRoom, onChoose }: {
   }, [reducedMotion]);
 
   return (
-    <article className="room-journey-chapter" style={{ '--journey-accent': room.accent } as CSSProperties} aria-labelledby={`${coverId}-title`}>
+    <article ref={chapterRef} className="room-journey-chapter" style={{ '--journey-accent': room.accent } as CSSProperties} aria-labelledby={`${coverId}-title`}>
       <section id={coverId} className="room-journey-cover" tabIndex={-1} aria-labelledby={`${coverId}-title`}>
-        <div className="room-journey-topline">
-          <span className="room-journey-counter" aria-label={`${index + 1} / ${count}`}>
-            <span>{String(index + 1).padStart(2, '0')}</span>
-            <span className="room-journey-counter-line" aria-hidden="true" />
-            <span>{String(count).padStart(2, '0')}</span>
-          </span>
-          <a className="room-journey-skip" href={`#${nextId}`} onClick={(event) => advance(event, nextId)}>
-            {nextLabel}<ArrowDown size={14} aria-hidden="true" />
-          </a>
+        <div className="room-card card room-journey-original" role="button" tabIndex={0}
+          aria-label={`${room.name} — ${translations.rooms.choose}`} style={{ borderColor: room.accent }}
+          onClick={() => onChoose(room.id)}
+          onKeyDown={(event) => {
+            if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onChoose(room.id);
+            }
+          }}>
+          <RoomPhotoSlideshow images={getRoomImageUrls(room)} roomName={room.name} />
+          <div className="room-card-header"><div>
+            <h2 id={`${coverId}-title`}><RoomName name={room.name} accent={room.accent} /></h2>
+            <p className="room-card-meta">{room.capacity}{room.capacity ? ' • ' : ''}{room.priceLabel}</p>
+          </div></div>
+          <p className="room-card-description">{room.vibe}</p>
+          <span className="room-card-arrow" aria-hidden="true">&gt;</span>
         </div>
-
-        <RoomPhotoSlideshow images={getRoomImageUrls(room)} roomName={room.name} className="room-journey-photo" />
-
-        <div className="room-journey-intro">
-          <p className="room-journey-meta">{room.capacity}{room.capacity ? ' · ' : ''}{room.priceLabel}</p>
-          <h2 id={`${coverId}-title`}><RoomName name={room.name} accent={room.accent} /></h2>
-          <p className="room-journey-vibe">{room.vibe}</p>
-        </div>
-
         <div className="room-journey-cover-actions">
           <a className="room-journey-scroll" href={`#${detailsId}`} onClick={(event) => {
             setRevealed(true);
@@ -104,29 +128,22 @@ function RoomChapter({ room, index, count, nextRoom, onChoose }: {
             <span className="room-journey-scroll-icon"><ChevronDown size={23} aria-hidden="true" /></span>
             <span>{translations.rooms.scrollDetails}</span>
           </a>
-          <button type="button" className="room-journey-quick-book" onClick={() => onChoose(room.id)}>
-            {translations.rooms.chooseShort}<ArrowUpRight size={18} aria-hidden="true" />
-          </button>
         </div>
       </section>
 
       <div ref={detailsRef} id={detailsId} tabIndex={-1} className={`room-journey-details${revealed ? ' is-revealed' : ''}`} onFocusCapture={() => setRevealed(true)}>
         <div className="room-journey-details-inner">
-          <div className="room-journey-detail-heading">
-            <span className="room-journey-eyebrow">{translations.rooms.discoverRoom}</span>
-            <h3><RoomName name={room.name} accent={room.accent} /></h3>
-          </div>
+          <h3 className="room-details-title"><RoomName name={room.name} accent={room.accent} /></h3>
           <p className="room-journey-description">{room.longDescription || room.vibe}</p>
           {room.gear.length > 0 ? (
             <section className="room-journey-equipment" aria-labelledby={`${detailsId}-equipment`}>
               <h4 id={`${detailsId}-equipment`}>{translations.rooms.equipment}</h4>
-              <ul>{room.gear.map((item, itemIndex) => <li key={`${itemIndex}-${item}`}>{item}</li>)}</ul>
+              <ul className="gear-list">{room.gear.map((item, itemIndex) => <li key={`${itemIndex}-${item}`}>{item}</li>)}</ul>
             </section>
           ) : null}
-          <div className="room-journey-booking">
-            <p>{room.capacity}<strong>{room.priceLabel}</strong></p>
-            <button type="button" className="room-journey-book" onClick={() => onChoose(room.id)}>
-              {translations.rooms.choose}<ArrowUpRight size={20} aria-hidden="true" />
+          <div className="room-details-actions">
+            <button type="button" className="room-journey-book room-details-choose" onClick={() => onChoose(room.id)}>
+              {translations.rooms.choose}<span aria-hidden="true">&gt;</span>
             </button>
           </div>
           <a className="room-journey-next" href={`#${nextId}`} onClick={(event) => advance(event, nextId)}>
@@ -143,7 +160,7 @@ export default function MobileRoomJourney({ rooms, onChoose }: Props) {
   return (
     <section className="room-journey" aria-labelledby="booking-title">
       {rooms.map((room, index) => (
-        <RoomChapter key={room.id} room={room} index={index} count={rooms.length} nextRoom={rooms[index + 1]} onChoose={onChoose} />
+        <RoomChapter key={room.id} room={room} nextRoom={rooms[index + 1]} onChoose={onChoose} />
       ))}
     </section>
   );

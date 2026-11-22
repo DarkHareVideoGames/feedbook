@@ -1,90 +1,77 @@
-/* One room cover followed by its naturally scrolling details. */
-.mobile-room-explore .booking-heading { margin-inline: 0; width: 100%; padding-inline: 0; }
-.mobile-room-explore .public-topbar { margin-bottom: 4px; }
-.mobile-room-explore .public-topbar .brand-logo { width: 120px; }
-.room-journey { display: grid; gap: 28px; min-width: 0; }
-.room-journey-chapter { min-width: 0; --journey-line: color-mix(in srgb, var(--journey-accent), #fff 15%); }
-.room-journey-cover {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-height: calc(100svh - 90px);
-  padding: 20px;
-  border: 1px solid var(--journey-line);
-  border-radius: 24px;
-  background: linear-gradient(155deg, #151519 0%, #080809 65%);
-  scroll-margin-top: 12px;
+/* Original cards, enhanced only by the transition between scroll phases. */
+.mobile-room-explore .booking-heading {
+  margin-inline: 0;
+  width: 100%;
+  padding-inline: 0;
 }
-.room-journey-chapter:first-child .room-journey-cover { min-height: calc(100svh - 300px); }
-.room-journey-chapter:first-child .room-journey-photo { height: clamp(120px, 23svh, 240px); }
-.room-journey-topline, .room-journey-counter, .room-journey-skip, .room-journey-cover-actions,
-.room-journey-quick-book, .room-journey-book, .room-journey-next { display: flex; align-items: center; }
-.room-journey-topline, .room-journey-cover-actions, .room-journey-next { justify-content: space-between; gap: 12px; }
-.room-journey-counter { gap: 8px; font-size: 0.7rem; font-variant-numeric: tabular-nums; letter-spacing: 0.1em; color: #9b9ba8; }
-.room-journey-counter > span:first-child { color: #fff; }
-.room-journey-counter-line { width: 26px; height: 1px; background: var(--journey-line); }
-.room-journey-skip { gap: 6px; min-height: 44px; color: #c7c7d0; font-size: 0.72rem; text-decoration: none; }
-.room-journey-photo { width: 100%; height: clamp(160px, 30svh, 360px); border-radius: 14px; background: #141418; flex: 0 0 auto; }
-.room-journey-intro h2 { margin: 8px 0 12px; font-size: clamp(2rem, 8vw, 3.4rem); line-height: 1.08; }
-.room-journey-meta { margin: 0; color: #b8b8c5; font-size: 0.78rem; line-height: 1.5; }
-.room-journey-vibe { margin: 0; color: #d5d9e2; font-size: 0.92rem; line-height: 1.7; }
-.room-journey-cover-actions { margin-top: auto; padding-top: 14px; }
-.room-journey-scroll { display: grid; justify-items: center; gap: 8px; padding: 4px; text-decoration: none; color: #b8b8c5; font-size: 0.65rem; }
-.room-journey-scroll-icon, .room-journey-next-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--journey-line); color: #f2f3f5; }
-.room-journey-quick-book { justify-content: center; gap: 8px; min-height: 46px; padding: 10px 14px; border: 1px solid #55555e; border-radius: 999px; background: #18181d; color: #fff; font-size: 0.8rem; cursor: pointer; }
-.room-journey-details { padding: 40px 18px 12px; scroll-margin-top: 20px; }
-.room-journey-details-inner { display: grid; gap: 28px; }
-.room-journey-eyebrow { color: #a6a6b5; font-size: 0.67rem; letter-spacing: 0.16em; text-transform: uppercase; }
-.room-journey-detail-heading h3 { margin: 12px 0 0; font-size: 1.7rem; }
-.room-journey-description { margin: 0; white-space: pre-line; color: #d5d9e2; font-size: 0.95rem; line-height: 1.85; }
-.room-journey-equipment h4 { margin: 0 0 16px; font-size: 0.9rem; font-weight: 500; }
-.room-journey-equipment ul { list-style: none; margin: 0; padding: 0; }
-.room-journey-equipment li { position: relative; padding: 14px 0 14px 20px; border-top: 1px solid #25252e; color: #c7c7d0; font-size: 0.86rem; line-height: 1.5; }
-.room-journey-equipment li::before { content: ''; position: absolute; top: 21px; left: 0; width: 5px; height: 5px; border-radius: 50%; background: var(--journey-line); }
-.room-journey-booking { padding: 22px; border: 1px solid #303039; border-radius: 18px; background: #101013; }
-.room-journey-booking p { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin: 0 0 18px; color: #a6a6b5; font-size: 0.8rem; }
-.room-journey-booking strong { color: #fff; font-weight: 500; }
-.room-journey-book { justify-content: space-between; gap: 12px; width: 100%; min-height: 50px; padding: 12px 16px; border: 0; border-radius: 10px; background: #f2f3f5; color: #111115; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
-.room-journey-next { min-height: 90px; padding-block: 20px; border-top: 1px solid #25252e; text-decoration: none; color: #fff; }
-.room-journey-next > span:first-child { display: grid; gap: 8px; }
-.room-journey-next small { font-size: 0.7rem; color: #a6a6b5; }
-.room-journey-next strong { font-size: 1.05rem; font-weight: 500; }
-.room-journey :is(a, button):focus-visible { outline: 2px solid #fff; outline-offset: 5px; }
+
+.room-journey { display: grid; gap: 32px; min-width: 0; }
+.room-journey-chapter { min-width: 0; position: relative; perspective: 1100px; }
+.room-journey-cover { scroll-margin-top: 16px; }
+.room-journey-original { width: 100%; }
+.room-journey-original .room-card-description { padding-bottom: 20px; }
+.room-journey-cover-actions { display: flex; justify-content: center; padding: 20px 0 12px; }
+.room-journey-scroll { display: grid; justify-items: center; gap: 6px; color: #a6a6b5; text-decoration: none; font-size: 0.68rem; }
+.room-journey-scroll-icon { display: grid; place-items: center; width: 44px; height: 44px; color: var(--journey-accent); }
+.room-journey-details {
+  position: relative;
+  margin: 12px 0 24px;
+  padding: 24px 20px;
+  border-left: 1px solid var(--journey-accent);
+  scroll-margin-top: 24px;
+}
+.room-journey-details::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto -1px;
+  width: 1px;
+  height: 80px;
+  background: var(--journey-accent);
+  box-shadow: 0 0 14px 2px var(--journey-accent);
+  pointer-events: none;
+}
+.room-journey-details-inner { display: grid; gap: 22px; }
+.room-journey-description { margin: 0; white-space: pre-line; color: var(--text-main); line-height: 1.65; }
+.room-journey-equipment h4 { margin: 0; font-size: 1rem; }
+.room-journey-equipment .gear-list { padding-left: 20px; margin-bottom: 0; }
+.room-journey-next { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0 0; border-top: 1px solid var(--border); color: var(--text-main); text-decoration: none; }
+.room-journey-next > span:first-child { display: grid; gap: 6px; }
+.room-journey-next small { color: #a6a6b5; font-size: 0.7rem; }
+.room-journey-next strong { font-weight: 500; }
+.room-journey-next-icon { color: var(--journey-accent); }
+.room-journey :is(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 .room-journey :is(section, div)[tabindex='-1']:focus { outline: none; }
-.room-journey-book:active, .room-journey-quick-book:active { transform: scale(0.98); }
 
 @media (prefers-reduced-motion: no-preference) {
-  .room-journey-scroll-icon svg { animation: room-journey-nudge 2s cubic-bezier(0.45, 0, 0.2, 1) infinite; }
-  .room-journey-details-inner > * { opacity: 0; transform: translateY(24px); transition: opacity 650ms ease, transform 750ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .room-journey-scroll-icon svg { animation: room-journey-nudge 2s ease-in-out infinite; }
+  .room-journey-cover {
+    transform-origin: center top;
+    transform: translateY(calc(var(--phase-entry, 0) * 32px)) rotateX(calc(var(--phase-entry, 0) * -4deg)) scale(calc(1 - var(--phase-entry, 0) * 0.035 - var(--phase-exit, 0) * 0.025));
+    opacity: calc(1 - var(--phase-entry, 0) * 0.4 - var(--phase-exit, 0) * 0.25);
+  }
+  .room-journey .room-journey-original { box-shadow: 0 0 calc(var(--phase-exit, 0) * 22px) color-mix(in srgb, var(--journey-accent) 20%, transparent); }
+  .room-journey-details-inner > * {
+    opacity: 0;
+    transform: translateY(24px);
+    filter: blur(3px);
+    transition: opacity 650ms ease, transform 850ms cubic-bezier(0.22, 1, 0.36, 1), filter 650ms ease;
+  }
   .room-journey-details.is-revealed .room-journey-details-inner > *,
-  .room-journey-details:focus-within .room-journey-details-inner > * { opacity: 1; transform: translateY(0); }
-  .room-journey-details-inner > :nth-child(2) { transition-delay: 70ms; }
-  .room-journey-details-inner > :nth-child(3) { transition-delay: 140ms; }
-  .room-journey-details-inner > :nth-child(4) { transition-delay: 210ms; }
-  .room-journey-details-inner > :nth-child(5) { transition-delay: 280ms; }
-  .room-journey-book, .room-journey-quick-book { transition: transform 180ms ease, background 180ms ease; }
+  .room-journey-details:focus-within .room-journey-details-inner > * { opacity: 1; transform: translateY(0); filter: blur(0); }
+  .room-journey-details-inner > :nth-child(2) { transition-delay: 80ms; }
+  .room-journey-details-inner > :nth-child(3) { transition-delay: 160ms; }
+  .room-journey-details-inner > :nth-child(4) { transition-delay: 240ms; }
+  .room-journey-details-inner > :nth-child(5) { transition-delay: 320ms; }
+  .room-journey-details::before { transform: scaleY(0); transform-origin: top; transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .room-journey-details.is-revealed::before { transform: scaleY(1); }
 }
+
 @keyframes room-journey-nudge {
   0%, 100% { transform: translateY(-2px); }
-  50% { transform: translateY(4px); }
+  50% { transform: translateY(5px); }
 }
-@media (max-width: 360px) {
-  .room-journey-cover { padding: 16px; gap: 14px; }
-  .room-journey-cover-actions { gap: 8px; }
-  .room-journey-quick-book { padding-inline: 10px; font-size: 0.75rem; }
-  .room-journey-details { padding-inline: 8px; }
-}
-@media (max-height: 700px) {
-  .mobile-room-explore .public-topbar .brand-logo { width: 88px; }
-  .mobile-room-explore .booking-heading { padding-block: 4px; }
-  .room-journey-cover { gap: 12px; padding: 16px; }
-  .room-journey-chapter:first-child .room-journey-photo { height: 110px; }
-  .room-journey-intro h2 { margin-block: 4px 8px; font-size: 1.8rem; }
-  .room-journey-vibe { font-size: 0.84rem; line-height: 1.5; }
-  .room-journey-cover-actions { padding-top: 4px; }
-  .room-journey-scroll { display: flex; gap: 8px; max-width: 50%; text-align: left; }
-  .room-journey-scroll-icon { flex-shrink: 0; }
-}
+
 @media (prefers-reduced-motion: reduce) {
-  .room-journey-book:active, .room-journey-quick-book:active { transform: none; }
+  .room-journey-cover { transform: none; }
+  .room-journey-details::before { box-shadow: none; }
 }
