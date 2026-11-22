@@ -1,5 +1,5 @@
 import { CSSProperties, MouseEvent, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { getRoomImageUrls } from '../../api';
 import { getScrollBehavior } from '../../helpers/motion';
 import { roomJourneyPhase } from '../../helpers/roomJourneyPhase';
@@ -47,6 +47,10 @@ function RoomChapter({ room, nextRoom, onChoose }: {
   const detailsRef = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(false);
   const openFromArrow = useRef(false);
+  const lastScrollReveal = useRef(0);
+  const manualUntil = useRef(0);
+  const revealedRef = useRef(revealed);
+  revealedRef.current = revealed;
   const coverId = `room-cover-${room.id}`;
   const detailsId = `room-story-${room.id}`;
   const nextId = nextRoom ? `room-cover-${nextRoom.id}` : 'explore-studio';
@@ -66,7 +70,8 @@ function RoomChapter({ room, nextRoom, onChoose }: {
       const direction = scroller.scrollTop - previousScroll;
       previousScroll = scroller.scrollTop;
       const phase = roomJourneyPhase(direction, cover.top, cover.bottom, viewport.top, viewport.height, scroller.scrollTop);
-      if (phase !== undefined) {
+      if (phase !== undefined && performance.now() >= manualUntil.current) {
+        if (phase && !revealedRef.current) lastScrollReveal.current = performance.now();
         if (!phase && detailsRef.current?.contains(document.activeElement)) {
           chapter.querySelector<HTMLButtonElement>('.room-journey-scroll')?.focus({ preventScroll: true });
         }
@@ -104,20 +109,6 @@ function RoomChapter({ room, nextRoom, onChoose }: {
   return (
     <article ref={chapterRef} className="room-journey-chapter" style={{ '--journey-accent': room.accent } as CSSProperties} aria-labelledby={`${coverId}-title`}>
       <section id={coverId} className="room-journey-cover" tabIndex={-1} aria-labelledby={`${coverId}-title`}>
-        <div className="room-journey-cover-actions">
-          <button type="button" className="room-journey-scroll" aria-expanded={revealed} aria-controls={detailsId}
-            onClick={() => {
-              if (revealed) {
-                setRevealed(false);
-              } else {
-                openFromArrow.current = true;
-                setRevealed(true);
-              }
-            }} aria-label={`${translations.rooms.scrollDetails} — ${room.name}`}>
-            <span className="room-journey-scroll-icon"><ChevronDown size={23} aria-hidden="true" /></span>
-            <span>{translations.rooms.scrollDetails}</span>
-          </button>
-        </div>
         <div className="room-card card room-journey-original" style={{ borderColor: room.accent }}>
         <div className="room-journey-summary" role="button" tabIndex={0}
           aria-label={`${room.name} — ${translations.rooms.choose}`}
@@ -134,7 +125,6 @@ function RoomChapter({ room, nextRoom, onChoose }: {
             <p className="room-card-meta">{room.capacity}{room.capacity ? ' • ' : ''}{room.priceLabel}</p>
           </div></div>
           <p className="room-card-description">{room.vibe}</p>
-          <span className="room-card-arrow" aria-hidden="true">&gt;</span>
         </div>
 
       <div ref={detailsRef} id={detailsId} tabIndex={-1} aria-hidden={!revealed} className={`room-journey-details${revealed ? ' is-revealed' : ''}`}>
@@ -149,16 +139,32 @@ function RoomChapter({ room, nextRoom, onChoose }: {
           ) : null}
           <div className="room-details-actions">
             <button type="button" className="room-journey-book room-details-choose" onClick={() => onChoose(room.id)}>
-              {translations.rooms.choose}<span aria-hidden="true">&gt;</span>
+              {translations.rooms.choose}
             </button>
           </div>
           <a className="room-journey-next" href={`#${nextId}`} onClick={(event) => advance(event, nextId)}>
             <span><small>{nextLabel}</small><strong>{nextRoom?.name || translations.about.eyebrow}</strong></span>
-            <span className="room-journey-next-icon"><ArrowDown size={24} aria-hidden="true" /></span>
           </a>
         </div>
         </div>
       </div>
+        <div className="room-journey-cover-actions">
+          <button type="button" className="room-journey-scroll" aria-expanded={revealed} aria-controls={detailsId}
+            onClick={(event) => {
+              // Bringing the bottom control into view can already reveal details.
+              // Do not immediately undo that reveal with the same pointer action.
+              if (event.detail > 0 && revealed && performance.now() - lastScrollReveal.current < 350) return;
+              manualUntil.current = performance.now() + 1100;
+              if (revealed) {
+                setRevealed(false);
+              } else {
+                openFromArrow.current = true;
+                setRevealed(true);
+              }
+            }} aria-label={`${translations.rooms.scrollDetails} — ${room.name}`}>
+            <span className="room-journey-scroll-icon"><ChevronDown size={23} aria-hidden="true" /></span>
+          </button>
+        </div>
         </div>
       </section>
     </article>

@@ -33,7 +33,7 @@ describe('mobile room journey', () => {
     expect(html).toContain('aria-controls="room-story-red"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('aria-hidden="true" class="room-journey-details"');
-    expect(html.indexOf('room-journey-cover-actions')).toBeLessThan(html.indexOf('room-card card'));
+    expect(html.indexOf('room-journey-cover-actions')).toBeGreaterThan(html.indexOf('room-story-red-equipment'));
     expect(html).toContain('href="#room-cover-live"');
     expect(html).toContain('href="#explore-studio"');
     expect(html).toContain('id="room-story-red" tabindex="-1"');
@@ -75,7 +75,17 @@ describe('mobile room journey', () => {
     expect(cardStart).toBeLessThan(detailsStart);
     expect(detailsStart).toBeLessThan(cardEnd);
     expect(html).toContain('<div class="room-journey-summary" role="button"');
-    expect(html).toMatch(/class="room-card-arrow"[^>]*>.*?<\/span><\/div><div id="room-story-red"/);
+    expect(html).toContain('</p></div><div id="room-story-red"');
+  });
+
+  it('keeps only one arrow at the bottom of each card without visible scroll prompts', () => {
+    const html = render();
+    expect(html.match(/class="room-journey-scroll-icon"/g)).toHaveLength(rooms.length);
+    expect(html).not.toContain('room-card-arrow');
+    expect(html).not.toContain('room-journey-next-icon');
+    expect(html).not.toContain('&gt;');
+    expect(html).not.toMatch(/<span>[^<]*explor[^<]*<\/span>/i);
+    expect(html).toMatch(/room-journey-scroll-icon[^]*?<\/button><\/div><\/div><\/section><\/article>/);
   });
 
   it('preserves the original card classes and content order without redesigned covers', () => {

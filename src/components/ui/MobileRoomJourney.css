@@ -9,10 +9,11 @@
 .room-journey-chapter { min-width: 0; position: relative; perspective: 1100px; }
 .room-journey-cover { scroll-margin-top: 16px; }
 .room-journey-original { width: 100%; cursor: default; }
+.room-journey .room-journey-original:hover { transform: none; }
 .room-journey-summary { position: relative; cursor: pointer; }
 .room-journey-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .room-journey-original .room-card-description { padding-bottom: 20px; }
-.room-journey-cover-actions { display: flex; justify-content: center; padding: 4px 0 16px; }
+.room-journey-cover-actions { display: flex; justify-content: center; padding: 4px 0 0; }
 .room-journey-scroll { display: grid; justify-items: center; gap: 6px; color: #a6a6b5; background: transparent; border: 0; padding: 4px 16px; cursor: pointer; font-size: 0.68rem; }
 .room-journey-scroll-icon { display: grid; place-items: center; width: 44px; height: 44px; color: var(--journey-accent); }
 .room-journey-details {
@@ -43,7 +44,6 @@
 .room-journey-next > span:first-child { display: grid; gap: 6px; }
 .room-journey-next small { color: #a6a6b5; font-size: 0.7rem; }
 .room-journey-next strong { font-weight: 500; }
-.room-journey-next-icon { color: var(--journey-accent); }
 .room-journey :is(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 .room-journey :is(section, div)[tabindex='-1']:focus { outline: none; }
 
