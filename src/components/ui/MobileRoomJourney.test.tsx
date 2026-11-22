@@ -60,6 +60,13 @@ describe('mobile room journey', () => {
     expect(renderToStaticMarkup(<I18nProvider><MobileRoomJourney rooms={[]} onChoose={() => {}} /></I18nProvider>)).not.toContain('room-journey-cover');
   });
 
+  it('keeps one room title per card without repeating it in the details', () => {
+    const html = render();
+    expect(html.match(/<h2 /g)).toHaveLength(rooms.length);
+    expect(html).not.toContain('room-details-title');
+    expect(html).toContain('<h3 id="room-story-red-equipment">');
+  });
+
   it('preserves the original card classes and content order without redesigned covers', () => {
     const html = render();
     expect(html.match(/class="room-card card room-journey-original"/g)).toHaveLength(2);

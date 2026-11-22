@@ -36,7 +36,7 @@
 }
 .room-journey-details-inner { display: grid; gap: 22px; padding: 24px 20px; }
 .room-journey-description { margin: 0; white-space: pre-line; color: var(--text-main); line-height: 1.65; }
-.room-journey-equipment h4 { margin: 0; font-size: 1rem; }
+.room-journey-equipment h3 { margin: 0; font-size: 1rem; }
 .room-journey-equipment .gear-list { padding-left: 20px; margin-bottom: 0; }
 .room-journey-next { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0 0; border-top: 1px solid var(--border); color: var(--text-main); text-decoration: none; }
 .room-journey-next > span:first-child { display: grid; gap: 6px; }

@@ -64,7 +64,7 @@ function RoomChapter({ room, nextRoom, onChoose }: {
       const cover = chapter.querySelector('.room-journey-cover')!.getBoundingClientRect();
       const direction = scroller.scrollTop - previousScroll;
       previousScroll = scroller.scrollTop;
-      const phase = roomJourneyPhase(direction, cover.top, cover.bottom, viewport.top, viewport.height);
+      const phase = roomJourneyPhase(direction, cover.top, cover.bottom, viewport.top, viewport.height, scroller.scrollTop);
       if (phase !== undefined) {
         if (!phase && detailsRef.current?.contains(document.activeElement)) {
           chapter.querySelector<HTMLButtonElement>('.room-journey-scroll')?.focus({ preventScroll: true });
@@ -139,11 +139,10 @@ function RoomChapter({ room, nextRoom, onChoose }: {
       <div ref={detailsRef} id={detailsId} tabIndex={-1} aria-hidden={!revealed} className={`room-journey-details${revealed ? ' is-revealed' : ''}`}>
         <div className="room-journey-details-clip">
         <div className="room-journey-details-inner">
-          <h3 className="room-details-title"><RoomName name={room.name} accent={room.accent} /></h3>
           <p className="room-journey-description">{room.longDescription || room.vibe}</p>
           {room.gear.length > 0 ? (
             <section className="room-journey-equipment" aria-labelledby={`${detailsId}-equipment`}>
-              <h4 id={`${detailsId}-equipment`}>{translations.rooms.equipment}</h4>
+              <h3 id={`${detailsId}-equipment`}>{translations.rooms.equipment}</h3>
               <ul className="gear-list">{room.gear.map((item, itemIndex) => <li key={`${itemIndex}-${item}`}>{item}</li>)}</ul>
             </section>
           ) : null}
