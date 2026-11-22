@@ -15,6 +15,8 @@ import RoomName from './components/ui/RoomName';
 import { getRoomBaseName } from './helpers/roomName';
 import { useImagesReady } from './hooks/useImageReady';
 import { getScrollBehavior } from './helpers/motion';
+import { useMediaQuery } from './hooks/useMediaQuery';
+import MobileRoomJourney from './components/ui/MobileRoomJourney';
 
 type RoomDefinition = api.ApiRoom;
 
@@ -336,6 +338,7 @@ function formatPublicBookingReference(bookingId: string, roomName: string): stri
 
 function App() {
   const { locale, translations } = useI18n();
+  const mobileRoomJourney = useMediaQuery('(max-width: 720px)');
   const [logoVisible, setLogoVisible] = useState(true);
   const [rooms, setRooms] = useState<RoomDefinition[]>(fallbackRooms);
   const [serviceCatalog, setServiceCatalog] = useState<api.ApiService[]>([]);
@@ -764,7 +767,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
     <>
       <GlobalLoading visible={!isReady} />
       {isReady ? (
-        <div className="public-booking-frame">
+        <div className={`public-booking-frame${mobileRoomJourney && bookingStep === 'room' ? ' mobile-room-explore' : ''}`}>
         <div ref={pageScrollRef} className={`page-shell ${bookingStep === 'confirmation' ? 'confirmation-page' : ''}`}>
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
@@ -810,7 +813,22 @@ const [minDelayDone, setMinDelayDone] = useState(false);
           </div>
         ) : null}
 
-        {bookingStep === 'room' ? (
+        {bookingStep === 'room' && mobileRoomJourney ? (
+          <MobileRoomJourney
+            rooms={localizedRooms.map((room) => ({
+              ...room,
+              priceLabel: room.bookingMode === 'contact'
+                ? translations.rooms.contactOnly
+                : `${translations.rooms.priceFrom} ${currency.format(resolveRoomPricePerHour(room.pricePerMemberHour)).replace(/\s/g, '')}`,
+            }))}
+            onChoose={(roomId) => {
+              const room = localizedRooms.find((item) => item.id === roomId);
+              if (!room) return;
+              setSelectedRoomId(room.id);
+              setBookingStep(room.bookingMode === 'contact' ? 'details' : 'date');
+            }}
+          />
+        ) : bookingStep === 'room' ? (
           <section className="rooms-grid" aria-labelledby="booking-title">
             {localizedRooms.map((room) => {
               const isSelected = room.id === selectedRoom.id;

@@ -103,7 +103,7 @@ export default function AboutSection() {
   }, []);
 
   return (
-    <section id="explore-studio" ref={sectionRef} className="about-section" aria-labelledby="about-title">
+    <section id="explore-studio" ref={sectionRef} tabIndex={-1} className="about-section" aria-labelledby="about-title">
       <header className="about-header">
         <p className="eyebrow">{about.eyebrow}</p>
         <h2 id="about-title">{about.title}</h2>

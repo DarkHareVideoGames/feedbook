@@ -38,7 +38,11 @@
     "priceFrom": "desde",
     "contactOnly": "Sob consulta",
     "closeDetails": "Fechar detalhes da sala",
-    "equipment": "Equipamento incluído"
+    "equipment": "Equipamento incluído",
+    "scrollDetails": "Desliza para explorar",
+    "discoverRoom": "O espaço, ao detalhe",
+    "nextRoom": "Próxima sala",
+    "exploreStudio": "Conhece o estúdio"
   },
   "about": {
     "eyebrow": "Quem somos",
