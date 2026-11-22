@@ -30,7 +30,10 @@ describe('mobile room journey', () => {
 
   it('links covers to details, next room and the actual studio section', () => {
     const html = render();
-    expect(html).toContain('href="#room-story-red"');
+    expect(html).toContain('aria-controls="room-story-red"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-hidden="true" class="room-journey-details"');
+    expect(html.indexOf('room-journey-cover-actions')).toBeLessThan(html.indexOf('room-card card'));
     expect(html).toContain('href="#room-cover-live"');
     expect(html).toContain('href="#explore-studio"');
     expect(html).toContain('id="room-story-red" tabindex="-1"');

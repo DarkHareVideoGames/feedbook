@@ -16,9 +16,10 @@ describe('mobile room journey motion and layout', () => {
     const component = readFileSync(new URL('../components/ui/MobileRoomJourney.tsx', import.meta.url), 'utf8');
     expect(component).not.toContain('onWheel');
     expect(component).not.toContain('onTouchMove');
-    expect(component).toContain("root: details.closest('.page-shell')");
-    expect(component).toContain('observer.disconnect()');
-    expect(component).toContain('threshold: 0');
+    expect(component).toContain("details.toggleAttribute('inert', !revealed)");
+    expect(styles).toContain('grid-template-rows: 0fr');
+    expect(styles).toContain('grid-template-rows: 1fr');
+    expect(styles).toContain('room-journey-scan');
     expect(component).toContain("scroller.addEventListener('scroll', schedule, { passive: true })");
     expect(component).toContain('cancelAnimationFrame(frame)');
   });

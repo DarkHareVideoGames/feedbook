@@ -45,6 +45,7 @@ function RoomChapter({ room, nextRoom, onChoose }: {
   const chapterRef = useRef<HTMLElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(false);
+  const openFromArrow = useRef(false);
   const coverId = `room-cover-${room.id}`;
   const detailsId = `room-story-${room.id}`;
   const nextId = nextRoom ? `room-cover-${nextRoom.id}` : 'explore-studio';
@@ -53,12 +54,19 @@ function RoomChapter({ room, nextRoom, onChoose }: {
   useEffect(() => {
     const chapter = chapterRef.current;
     const scroller = chapter?.closest('.page-shell');
-    if (!chapter || !scroller || reducedMotion) return;
+    if (!chapter || !scroller) return;
     let frame = 0;
+    let previousScroll = scroller.scrollTop;
     const update = () => {
       frame = 0;
       const viewport = scroller.getBoundingClientRect();
       const cover = chapter.querySelector('.room-journey-cover')!.getBoundingClientRect();
+      const movingDown = scroller.scrollTop > previousScroll;
+      previousScroll = scroller.scrollTop;
+      if (movingDown && cover.top < viewport.top + viewport.height * 0.35 && cover.bottom < viewport.bottom - 36) {
+        setRevealed(true);
+      }
+      if (reducedMotion) return;
       const progress = Math.min(1, Math.max(0, (viewport.top - cover.top) / Math.max(cover.height, 1)));
       const entry = Math.min(1, Math.max(0, (cover.top - viewport.top - viewport.height * 0.35) / (viewport.height * 0.65)));
       chapter.style.setProperty('--phase-exit', String(progress));
@@ -80,29 +88,31 @@ function RoomChapter({ room, nextRoom, onChoose }: {
   useEffect(() => {
     const details = detailsRef.current;
     if (!details) return;
-    if (reducedMotion || typeof IntersectionObserver === 'undefined') {
-      setRevealed(true);
-      return;
+    details.toggleAttribute('inert', !revealed);
+    if (revealed && openFromArrow.current) {
+      openFromArrow.current = false;
+      details.focus({ preventScroll: true });
     }
-
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        setRevealed(true);
-        observer.disconnect();
-      }
-    }, {
-      root: details.closest('.page-shell'),
-      rootMargin: '0px 0px -48px 0px',
-      // Long equipment lists must reveal even when taller than the viewport.
-      threshold: 0,
-    });
-    observer.observe(details);
-    return () => observer.disconnect();
-  }, [reducedMotion]);
+  }, [revealed]);
 
   return (
     <article ref={chapterRef} className="room-journey-chapter" style={{ '--journey-accent': room.accent } as CSSProperties} aria-labelledby={`${coverId}-title`}>
       <section id={coverId} className="room-journey-cover" tabIndex={-1} aria-labelledby={`${coverId}-title`}>
+        <div className="room-journey-cover-actions">
+          <button type="button" className="room-journey-scroll" aria-expanded={revealed} aria-controls={detailsId}
+            onClick={() => {
+              if (revealed) {
+                detailsRef.current?.focus({ preventScroll: true });
+                detailsRef.current?.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
+              } else {
+                openFromArrow.current = true;
+                setRevealed(true);
+              }
+            }} aria-label={`${translations.rooms.scrollDetails} — ${room.name}`}>
+            <span className="room-journey-scroll-icon"><ChevronDown size={23} aria-hidden="true" /></span>
+            <span>{translations.rooms.scrollDetails}</span>
+          </button>
+        </div>
         <div className="room-card card room-journey-original" role="button" tabIndex={0}
           aria-label={`${room.name} — ${translations.rooms.choose}`} style={{ borderColor: room.accent }}
           onClick={() => onChoose(room.id)}
@@ -120,18 +130,10 @@ function RoomChapter({ room, nextRoom, onChoose }: {
           <p className="room-card-description">{room.vibe}</p>
           <span className="room-card-arrow" aria-hidden="true">&gt;</span>
         </div>
-        <div className="room-journey-cover-actions">
-          <a className="room-journey-scroll" href={`#${detailsId}`} onClick={(event) => {
-            setRevealed(true);
-            advance(event, detailsId);
-          }} aria-label={`${translations.rooms.scrollDetails} — ${room.name}`}>
-            <span className="room-journey-scroll-icon"><ChevronDown size={23} aria-hidden="true" /></span>
-            <span>{translations.rooms.scrollDetails}</span>
-          </a>
-        </div>
       </section>
 
-      <div ref={detailsRef} id={detailsId} tabIndex={-1} className={`room-journey-details${revealed ? ' is-revealed' : ''}`} onFocusCapture={() => setRevealed(true)}>
+      <div ref={detailsRef} id={detailsId} tabIndex={-1} aria-hidden={!revealed} className={`room-journey-details${revealed ? ' is-revealed' : ''}`}>
+        <div className="room-journey-details-clip">
         <div className="room-journey-details-inner">
           <h3 className="room-details-title"><RoomName name={room.name} accent={room.accent} /></h3>
           <p className="room-journey-description">{room.longDescription || room.vibe}</p>
@@ -150,6 +152,7 @@ function RoomChapter({ room, nextRoom, onChoose }: {
             <span><small>{nextLabel}</small><strong>{nextRoom?.name || translations.about.eyebrow}</strong></span>
             <span className="room-journey-next-icon"><ArrowDown size={24} aria-hidden="true" /></span>
           </a>
+        </div>
         </div>
       </div>
     </article>
