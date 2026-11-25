@@ -72,6 +72,12 @@ describe('mobile room journey', () => {
     expect(html).not.toContain('aria-hidden="true" class="room-journey-details"');
   });
 
+  it('starts on the first room, keeping the others off screen and hidden from assistive tech', () => {
+    const html = render();
+    expect(html).toContain('class="room-journey-chapter is-active" style="--journey-accent:#d11323" aria-hidden="false"');
+    expect(html).toContain('class="room-journey-chapter" style="--journey-accent:#540099" aria-hidden="true"');
+  });
+
   it('adds one bottom "more below" arrow for the whole journey', () => {
     const html = render();
     expect(html.match(/class="room-journey-cue"/g)).toHaveLength(1);

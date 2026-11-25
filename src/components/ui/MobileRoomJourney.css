@@ -1,26 +1,32 @@
-/* Mobile rooms: one whole card at a time, each sliding over the previous one. */
-
-/* Just over the arrow space (STACK_CUE_SPACE): while a card rests in place the
-   strip around the arrow stays clear, and the next card comes in as soon as
-   the page scrolls. */
-.room-journey { overflow-anchor: none; display: grid; gap: 40px; min-width: 0; padding-bottom: 24px; }
-/* Each chapter sticks (top set from JS) and the next one slides over it. */
-.room-journey-chapter { min-width: 0; position: sticky; top: 12px; }
-.room-journey-cover {
-  scroll-margin-top: 96px;
-  transform-origin: center top;
-  filter: brightness(calc(1 - var(--stack-progress, 0) * 0.55));
+/* Mobile rooms: a fixed stage showing one room at a time. Swipes, wheel and the
+   arrow swap the room in place with a short transition (no page scrolling). */
+.room-journey {
+  position: relative;
+  height: var(--stage-height, 70vh);
+  min-width: 0;
+  overflow: clip;
+  overflow-clip-margin: 8px;
+  overscroll-behavior-y: contain;
 }
+.room-journey-chapter {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.room-journey-chapter.is-active { z-index: 2; visibility: visible; opacity: 1; pointer-events: auto; }
+.room-journey-chapter.is-leaving { z-index: 1; visibility: visible; }
+.room-journey-cover { height: 100%; }
+.room-journey-live { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .room-journey .room-journey-original {
   width: 100%;
-  /* Fixed to the space on screen (set from JS): the whole outline is always visible. */
-  height: var(--stack-height, auto);
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   cursor: default;
-  /* No outline: cards are separated by the shadow and the dimming of the covered card. */
   border: 0;
-  box-shadow: 0 -14px 32px -8px rgba(0, 0, 0, 0.85);
 }
 .room-journey .room-journey-original:hover { transform: none; }
 /* The photo takes the spare space and shrinks first; then long text scrolls inside the card. */
@@ -98,13 +104,30 @@
 @media (prefers-reduced-motion: no-preference) {
   /* Nudges evenly around its centre so both gaps stay equal on average. */
   .room-journey-cue svg { animation: room-journey-cue-nudge 1.8s ease-in-out infinite; }
-  /* Incoming cards rise into place (no scaling: photos must not zoom). */
-  .room-journey-cover {
-    transform: translateY(calc(var(--phase-entry, 0) * 28px));
-    opacity: calc(1 - var(--phase-entry, 0) * 0.35);
-    will-change: transform, filter;
-  }
+  /* The new room rises a little into place and comes into focus; the previous
+     one drifts the other way and fades. No scaling, so photos never zoom. */
+  /* Sequenced so the two rooms' texts barely overlap: out fast, then in. */
+  .room-journey.has-moved .room-journey-chapter.is-active { animation: room-journey-enter 480ms cubic-bezier(0.22, 1, 0.36, 1) 150ms both; }
+  .room-journey.has-moved .room-journey-chapter.is-leaving { animation: room-journey-leave 200ms cubic-bezier(0.4, 0, 1, 1) both; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .room-journey.has-moved .room-journey-chapter.is-active { animation: room-journey-fade-in 200ms ease both; }
+  .room-journey.has-moved .room-journey-chapter.is-leaving { animation: room-journey-fade-out 200ms ease both; }
+}
+
+@keyframes room-journey-enter {
+  from { opacity: 0; transform: translateY(calc(var(--room-direction, 1) * 36px)); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+@keyframes room-journey-leave {
+  from { opacity: 1; transform: none; filter: none; }
+  to { opacity: 0; transform: translateY(calc(var(--room-direction, 1) * -24px)); filter: blur(4px); }
+}
+
+@keyframes room-journey-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes room-journey-fade-out { from { opacity: 1; } to { opacity: 0; } }
 
 @keyframes room-journey-cue-nudge {
   0%, 100% { transform: translateY(-3px); }

@@ -1,40 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { roomStackAvailable, roomStackCueCentre, roomStackHeight, roomStackProgress, roomStackTop } from './roomStack';
+import { roomStackCueCentre, roomStageHeight, roomStageTarget } from './roomStack';
 
-describe('room stack geometry', () => {
-  it('gives each card the whole area between the heading and the bottom of the screen', () => {
-    expect(roomStackAvailable(60, 800)).toBe(800 - 60 - 12 - 38);
-    expect(roomStackAvailable(900, 800)).toBe(0);
+describe('room stage geometry', () => {
+  it('fits the stage between its place at page load and the arrow space', () => {
+    expect(roomStageHeight(235, 794, 600)).toBe(794 - 38 - 235);
   });
 
-  it('sticks a card that fits right below the sticky heading', () => {
-    expect(roomStackTop(60, 800, 690)).toBe(72);
-    expect(roomStackTop(60, 800, 500)).toBe(72);
+  it('falls back to the space under the heading on very small screens', () => {
+    expect(roomStageHeight(400, 590, 500)).toBe(500 - 12 - 38);
+    expect(roomStageHeight(400, 590, 200)).toBe(260);
   });
 
-  it('sticks tall cards by their bottom edge so all content stays reachable', () => {
-    expect(roomStackTop(60, 800, 1300)).toBe(800 - 1300 - 38);
+  it('centres the arrow between the card and the footer', () => {
+    // Card ends at 762, footer content starts at 806 → centre 784 (22px each side).
+    expect(roomStackCueCentre(762, 806)).toBe(784);
+  });
+});
+
+describe('room stage gestures', () => {
+  it('moves one room forward or back while the stage is in view', () => {
+    expect(roomStageTarget(0, 4, 1, true)).toBe(1);
+    expect(roomStageTarget(2, 4, -1, true)).toBe(1);
   });
 
-  it('fixes every card to the available height, fitting the first one under the logo', () => {
-    expect(roomStackHeight(680)).toBe(680);
-    expect(roomStackHeight(680, 560)).toBe(522);
-    expect(roomStackHeight(680, 900)).toBe(680);
-    expect(roomStackHeight(680, 300)).toBe(680);
-    expect(roomStackHeight(470, 339)).toBe(301);
-  });
-
-  it('centres the arrow between the cards and the footer', () => {
-    // Cards end at 800 - 38 = 762; footer content starts at 806 → centre 784 (22px each side).
-    expect(roomStackCueCentre(800, 806)).toBe(784);
-  });
-
-  it('reports how much of the visible card the next card covers', () => {
-    expect(roomStackProgress(72, 572, undefined, 0, 800)).toBe(0);
-    expect(roomStackProgress(1130, 1550, 1552, 0, 800)).toBe(0);
-    expect(roomStackProgress(72, 572, 900, 0, 800)).toBe(0);
-    expect(roomStackProgress(72, 572, 322, 0, 800)).toBe(0.5);
-    expect(roomStackProgress(72, 572, 82, 0, 800)).toBeCloseTo(0.98);
-    expect(roomStackProgress(-500, 788, 400, 0, 800)).toBeCloseTo(388 / 788);
+  it('leaves the gesture to the page past the ends or when the stage is not in view', () => {
+    expect(roomStageTarget(3, 4, 1, true)).toBeUndefined();
+    expect(roomStageTarget(0, 4, -1, true)).toBeUndefined();
+    expect(roomStageTarget(1, 4, 1, false)).toBeUndefined();
+    expect(roomStageTarget(1, 4, 0, true)).toBeUndefined();
   });
 });

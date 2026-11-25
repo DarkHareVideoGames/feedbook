@@ -4,28 +4,26 @@ import { readFileSync } from 'node:fs';
 const styles = readFileSync(new URL('../components/ui/MobileRoomJourney.css', import.meta.url), 'utf8');
 const component = readFileSync(new URL('../components/ui/MobileRoomJourney.tsx', import.meta.url), 'utf8');
 
-describe('mobile room journey motion and layout', () => {
-  it('limits entry animations to users who allow motion and never zooms cards', () => {
-    const motion = styles.slice(styles.indexOf('@media (prefers-reduced-motion: no-preference)'));
-    expect(motion).toContain('var(--phase-entry, 0) * 28px');
+describe('mobile room stage motion and layout', () => {
+  it('animates room changes only for users who allow motion, without zooming photos', () => {
+    const motion = styles.slice(styles.indexOf('@media (prefers-reduced-motion: no-preference)'), styles.indexOf('@media (prefers-reduced-motion: reduce)'));
+    expect(motion).toContain('animation: room-journey-enter');
+    expect(motion).toContain('animation: room-journey-leave');
+    expect(styles).toContain('@media (prefers-reduced-motion: reduce)');
     expect(styles).not.toMatch(/scale\(/);
-    expect(styles.slice(0, styles.indexOf('@media'))).not.toContain('transform: translateY');
   });
 
-  it('keeps native scrolling rather than trapping wheel or touch gestures', () => {
-    expect(component).not.toContain('onWheel');
-    expect(component).not.toContain('onTouchMove');
-    expect(component).toContain("scroller.addEventListener('scroll', schedule, { passive: true })");
-    expect(component).toContain('cancelAnimationFrame(frame)');
+  it('shows one room at a time in a fixed stage', () => {
+    expect(styles).toMatch(/\.room-journey \{[^}]*height: var\(--stage-height/);
+    expect(styles).toMatch(/\.room-journey-chapter \{[^}]*position: absolute/);
+    expect(styles).not.toContain('position: sticky');
+    expect(component).toContain("toggleAttribute('inert', !active)");
   });
 
-  it('stacks whole cards, one per screen, dimming the covered one', () => {
-    expect(styles).toMatch(/\.room-journey-chapter \{[^}]*position: sticky/);
-    expect(styles).toContain('brightness(calc(1 - var(--stack-progress, 0)');
-    expect(styles).toContain('height: var(--stack-height, auto)');
-    expect(styles).toMatch(/\.room-journey-details \{[^}]*overflow-y: auto/);
-    expect(component).toContain("details.classList.toggle('is-scrollable', scrollable)");
-    expect(component).toContain('new ResizeObserver(schedule)');
-    expect(styles).not.toContain('grid-template-rows: 0fr');
+  it('changes rooms on swipe and wheel only while the stage is in view, leaving the page scroll otherwise', () => {
+    expect(component).toContain("addEventListener('wheel', onWheel, { passive: false })");
+    expect(component).toContain("addEventListener('touchmove', onTouchMove, { passive: false })");
+    expect(component).toContain('roomStageTarget(');
+    expect(component).toContain('detailsCanScroll(');
   });
 });
