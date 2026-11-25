@@ -56,9 +56,9 @@
 .room-journey section[tabindex='-1']:focus { outline: none; }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Incoming cards rise into place; covered cards shrink back behind the next one. */
+  /* Incoming cards rise into place (no scaling: photos must not zoom). */
   .room-journey-cover {
-    transform: translateY(calc(var(--phase-entry, 0) * 28px)) scale(calc(1 - var(--phase-entry, 0) * 0.03 - var(--stack-progress, 0) * 0.08));
+    transform: translateY(calc(var(--phase-entry, 0) * 28px));
     opacity: calc(1 - var(--phase-entry, 0) * 0.35);
     will-change: transform, filter;
   }

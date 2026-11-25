@@ -19,8 +19,8 @@ export function roomStackTop(headingOffset: number, viewportHeight: number, card
 }
 
 // Card height. Every card fills the space under the heading; the first one is
-// capped by the space currently left below it (`firstSpace`), so it is whole
-// under the logo at page load and grows as the page scrolls.
+// capped by the space left below the logo at page load (`firstSpace`), so it
+// is whole there too. Constant while scrolling, so photos never resize.
 export function roomStackHeight(available: number, firstSpace?: number): number {
   if (firstSpace === undefined) return Math.round(available);
   const fit = firstSpace - STACK_GAP;

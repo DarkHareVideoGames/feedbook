@@ -5,10 +5,10 @@ const styles = readFileSync(new URL('../components/ui/MobileRoomJourney.css', im
 const component = readFileSync(new URL('../components/ui/MobileRoomJourney.tsx', import.meta.url), 'utf8');
 
 describe('mobile room journey motion and layout', () => {
-  it('limits scale and entry animations to users who allow motion', () => {
+  it('limits entry animations to users who allow motion and never zooms cards', () => {
     const motion = styles.slice(styles.indexOf('@media (prefers-reduced-motion: no-preference)'));
-    expect(motion).toContain('var(--stack-progress, 0) * 0.08');
     expect(motion).toContain('var(--phase-entry, 0) * 28px');
+    expect(styles).not.toMatch(/scale\(/);
     expect(styles.slice(0, styles.indexOf('@media'))).not.toContain('transform: translateY');
   });
 

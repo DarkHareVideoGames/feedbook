@@ -54,10 +54,10 @@ function RoomChapter({ room, onChoose }: {
       // Sticky offsets start below the scroller's top padding.
       const padding = parseFloat(getComputedStyle(scroller).paddingTop) || 0;
       const available = roomStackAvailable(padding + headingOffset, viewport.height);
-      // The first card starts below the logo: it fits the space left there and
-      // grows with the scroll until it reaches the full height.
+      // The first card starts below the logo: it keeps the height that fits there
+      // at page load, so its photo never resizes (zooms) while scrolling.
       const firstSpace = chapter.previousElementSibling ? undefined
-        : viewport.bottom - chapter.parentElement!.getBoundingClientRect().top;
+        : viewport.bottom - (chapter.parentElement!.getBoundingClientRect().top + scroller.scrollTop);
       const height = `${roomStackHeight(available, firstSpace)}px`;
       if (chapter.style.getPropertyValue('--stack-height') !== height) chapter.style.setProperty('--stack-height', height);
       chapter.style.top = `${roomStackTop(headingOffset, viewport.height - padding, chapter.offsetHeight)}px`;
