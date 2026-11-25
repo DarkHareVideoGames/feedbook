@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import './AboutSection.css';
 
 // Icones alinhados com a ordem dos blocos nos ficheiros de locale.
 // A ordem das tradutoras define a ordem visual dos cartoes.
@@ -99,6 +100,42 @@ export default function AboutSection() {
       window.removeEventListener('resize', scheduleUpdate);
       document.documentElement.style.removeProperty('--explore-progress');
       document.documentElement.style.removeProperty('--about-header-height');
+    };
+  }, []);
+
+  // Mobile: the section's elements appear as they come into view. In each item
+  // the icon slides in from the left and meets its text rising from below.
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === 'undefined') return;
+    if (!window.matchMedia('(max-width: 720px)').matches) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const targets = [...section.querySelectorAll<HTMLElement>(
+      '.about-header > :not(.about-scroll-cue), .about-block-title, .about-infra-item, .about-amenity, .about-activity',
+    )];
+    // Elements that enter together follow one another in their list.
+    for (const target of targets) {
+      const siblings = [...(target.parentElement?.children ?? [])].filter((child) => targets.includes(child as HTMLElement));
+      target.style.setProperty('--reveal-index', String(Math.min(siblings.indexOf(target), 5)));
+    }
+    section.classList.add('about-reveal');
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.classList.add('is-revealed');
+        observer.unobserve(entry.target);
+      }
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.2 });
+    targets.forEach((target) => observer.observe(target));
+
+    return () => {
+      observer.disconnect();
+      section.classList.remove('about-reveal');
+      for (const target of targets) {
+        target.classList.remove('is-revealed');
+        target.style.removeProperty('--reveal-index');
+      }
     };
   }, []);
 

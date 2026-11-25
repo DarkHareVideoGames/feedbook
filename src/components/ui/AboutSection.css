@@ -1,0 +1,52 @@
+/* «Quem somos» on mobile: elements appear as they scroll into view. The class
+   `about-reveal` is only added by JS on phones with motion allowed, so without
+   it everything is simply visible. */
+.about-reveal {
+  --reveal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --reveal-delay: calc(var(--reveal-index, 0) * 90ms);
+}
+
+/* Header and block titles rise into place. */
+.about-reveal .about-header > *,
+.about-reveal .about-block-title {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 600ms ease var(--reveal-delay), transform 750ms var(--reveal-ease) var(--reveal-delay);
+}
+
+/* The red line under each block title draws itself after the title appears. */
+.about-reveal .about-block-title::after {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 700ms var(--reveal-ease) calc(var(--reveal-delay) + 250ms);
+}
+
+/* Items: the icon slides in from the left, the text rises from below, and they
+   meet in place. */
+.about-reveal :is(.about-infra-item, .about-amenity, .about-activity) .about-icon {
+  opacity: 0;
+  transform: translateX(-48px) rotate(-12deg);
+  transition: opacity 500ms ease var(--reveal-delay), transform 800ms var(--reveal-ease) var(--reveal-delay);
+}
+.about-reveal :is(.about-infra-item, .about-amenity, .about-activity) .about-item-body {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 600ms ease calc(var(--reveal-delay) + 80ms), transform 800ms var(--reveal-ease) calc(var(--reveal-delay) + 80ms);
+}
+
+.about-reveal .is-revealed,
+.about-reveal .is-revealed .about-icon,
+.about-reveal .is-revealed .about-item-body,
+.about-reveal .about-block-title.is-revealed::after {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-reveal *,
+  .about-reveal *::after {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
