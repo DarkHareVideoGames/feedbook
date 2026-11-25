@@ -4260,6 +4260,12 @@ textarea:focus {
   line-height: 1.4;
 }
 
+.room-editor-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
 .room-editor-mode-fieldset {
   margin: 0;
   padding: 0;

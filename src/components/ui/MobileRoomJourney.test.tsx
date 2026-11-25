@@ -96,4 +96,13 @@ describe('mobile room journey', () => {
     expect(html).not.toContain('room-journey-counter');
     expect(html).not.toContain('room-journey-quick-book');
   });
+
+  it('omits empty room descriptions instead of rendering blank paragraphs', () => {
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: false }), localStorage: { getItem: () => 'pt-PT' } });
+    const bare = { ...rooms[1], vibe: '', longDescription: '' };
+    const html = renderToStaticMarkup(<I18nProvider><MobileRoomJourney rooms={[bare]} onChoose={() => {}} /></I18nProvider>);
+    expect(html).not.toContain('room-card-description');
+    expect(html).not.toContain('room-journey-description');
+    expect(html).toContain('room-journey-original');
+  });
 });

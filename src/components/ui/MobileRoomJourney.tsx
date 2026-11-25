@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { getRoomImageUrls } from '../../api';
 import { getScrollBehavior } from '../../helpers/motion';
 import { roomJourneyPhase } from '../../helpers/roomJourneyPhase';
-import { roomStackProgress, roomStackTop } from '../../helpers/roomStack';
+import { roomStackAvailable, roomStackPhotoHeight, roomStackProgress, roomStackTop } from '../../helpers/roomStack';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useI18n } from '../../i18n';
 import RoomName from './RoomName';
@@ -37,9 +37,8 @@ function advance(event: MouseEvent<HTMLAnchorElement>, targetId: string) {
   target.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
 }
 
-function RoomChapter({ room, index, nextRoom, onChoose }: {
+function RoomChapter({ room, nextRoom, onChoose }: {
   room: JourneyRoom;
-  index: number;
   nextRoom?: JourneyRoom;
   onChoose: Props['onChoose'];
 }) {
@@ -72,10 +71,22 @@ function RoomChapter({ room, index, nextRoom, onChoose }: {
       const direction = scroller.scrollTop - previousScroll;
       previousScroll = scroller.scrollTop;
 
-      // Stack the cards: each one sticks below the heading and the next slides over it.
+      // One card at a time: each fills the screen below the heading, sticks there
+      // and the next card slides over it.
       const heading = scroller.querySelector<HTMLElement>('.booking-heading');
       const headingOffset = heading && getComputedStyle(heading).position === 'sticky' ? heading.offsetHeight : 0;
-      chapter.style.top = `${roomStackTop(index, headingOffset, viewport.height, chapter.offsetHeight)}px`;
+      const available = roomStackAvailable(headingOffset, viewport.height);
+      const photo = chapter.querySelector<HTMLElement>('.room-card-image');
+      const cardBox = chapter.querySelector<HTMLElement>('.room-journey-original');
+      if (photo && cardBox && detailsRef.current) {
+        // Everything except photo and details stays the same size, so locking the
+        // photo height keeps it steady while the details open below it.
+        const rest = cardBox.offsetHeight - photo.offsetHeight - detailsRef.current.offsetHeight;
+        const photoHeight = `${roomStackPhotoHeight(available, rest)}px`;
+        if (chapter.style.getPropertyValue('--stack-photo') !== photoHeight) chapter.style.setProperty('--stack-photo', photoHeight);
+      }
+      chapter.style.setProperty('--stack-available', `${available}px`);
+      chapter.style.top = `${roomStackTop(headingOffset, viewport.height, chapter.offsetHeight)}px`;
       const card = chapter.getBoundingClientRect();
       const next = chapter.nextElementSibling?.getBoundingClientRect();
       const covered = roomStackProgress(card.top, card.bottom, next?.top, viewport.top, viewport.bottom);
@@ -106,11 +117,13 @@ function RoomChapter({ room, index, nextRoom, onChoose }: {
       resize?.disconnect();
       chapter.style.removeProperty('top');
       chapter.style.removeProperty('--stack-progress');
+      chapter.style.removeProperty('--stack-available');
+      chapter.style.removeProperty('--stack-photo');
       scroller.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
       chapter.style.removeProperty('--phase-entry');
     };
-  }, [index, reducedMotion]);
+  }, [reducedMotion]);
 
   useEffect(() => {
     const details = detailsRef.current;
@@ -140,13 +153,13 @@ function RoomChapter({ room, index, nextRoom, onChoose }: {
             <h2 id={`${coverId}-title`}><RoomName name={room.name} accent={room.accent} /></h2>
             <p className="room-card-meta">{room.capacity}{room.capacity ? ' • ' : ''}{room.priceLabel}</p>
           </div></div>
-          <p className="room-card-description">{room.vibe}</p>
+          {room.vibe ? <p className="room-card-description">{room.vibe}</p> : null}
         </div>
 
       <div ref={detailsRef} id={detailsId} tabIndex={-1} aria-hidden={!revealed} className={`room-journey-details${revealed ? ' is-revealed' : ''}`}>
         <div className="room-journey-details-clip">
         <div className="room-journey-details-inner">
-          <p className="room-journey-description">{room.longDescription || room.vibe}</p>
+          {room.longDescription || room.vibe ? <p className="room-journey-description">{room.longDescription || room.vibe}</p> : null}
           {room.gear.length > 0 ? (
             <section className="room-journey-equipment" aria-labelledby={`${detailsId}-equipment`}>
               <h3 id={`${detailsId}-equipment`}>{translations.rooms.equipment}</h3>
@@ -191,7 +204,7 @@ export default function MobileRoomJourney({ rooms, onChoose }: Props) {
   return (
     <section className="room-journey" aria-labelledby="booking-title">
       {rooms.map((room, index) => (
-        <RoomChapter key={room.id} room={room} index={index} nextRoom={rooms[index + 1]} onChoose={onChoose} />
+        <RoomChapter key={room.id} room={room} nextRoom={rooms[index + 1]} onChoose={onChoose} />
       ))}
     </section>
   );

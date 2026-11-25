@@ -1,15 +1,25 @@
-// Geometry for the mobile "deck" of room cards: each card sticks below the
-// heading and the next one slides over it.
+// Geometry for the mobile deck of room cards: one card at a time fills the
+// screen below the heading, and the next card slides over it.
 
-export const STACK_PEEK = 10;
 export const STACK_GAP = 12;
+export const STACK_MIN_PHOTO = 180;
 
-// Where a card sticks. Short cards stick near the top, stepped by `index` so
-// earlier cards peek out behind. Cards taller than the viewport stick by their
-// bottom edge instead, so their whole content scrolls into view first.
-export function roomStackTop(index: number, headingOffset: number, viewportHeight: number, cardHeight: number): number {
-  const deckTop = headingOffset + STACK_GAP + index * STACK_PEEK;
-  return Math.min(deckTop, viewportHeight - cardHeight - STACK_GAP);
+// Height left for a card between the sticky heading and the bottom of the screen.
+export function roomStackAvailable(headingOffset: number, viewportHeight: number): number {
+  return Math.max(0, viewportHeight - headingOffset - STACK_GAP * 2);
+}
+
+// Where a card sticks. A card that fits sticks right below the heading. A card
+// taller than the screen (details open) sticks by its bottom edge instead, so
+// all of its content scrolls into view before the next card covers it.
+export function roomStackTop(headingOffset: number, viewportHeight: number, cardHeight: number): number {
+  return Math.min(headingOffset + STACK_GAP, viewportHeight - cardHeight - STACK_GAP);
+}
+
+// Photo height that makes the collapsed card fill the available area. `rest`
+// is everything in the card except the photo and the details.
+export function roomStackPhotoHeight(available: number, rest: number): number {
+  return Math.max(STACK_MIN_PHOTO, Math.round(available - rest));
 }
 
 // How much of the card's visible area the next card already covers (0..1).

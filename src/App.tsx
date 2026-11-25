@@ -392,10 +392,13 @@ const [minDelayDone, setMinDelayDone] = useState(false);
   const localizedRooms = rooms.map((room) => {
     const legacy = (translations.rooms as Record<string, { name?: string; vibe?: string; capacity?: string; gear?: string[] }>)[room.id];
     const isPt = locale.startsWith('pt');
+    // Built-in texts only fill the offline placeholders; an empty description
+    // saved in the admin means the room shows no description.
+    const legacyVibe = fallbackRooms.includes(room) ? legacy?.vibe : undefined;
     return {
       ...room,
       name: getRoomBaseName(room.name || legacy?.name || room.id),
-      vibe: (isPt ? room.description : room.descriptionEn) || room.description || legacy?.vibe || '',
+      vibe: ((isPt ? room.description : room.descriptionEn) || room.description || legacyVibe || '').trim(),
       capacity:
         room.maxMembers > 0
           ? isPt
@@ -870,7 +873,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                       </p>
                     </div>
                   </div>
-                  <p className="room-card-description">{room.vibe}</p>
+                  {room.vibe ? <p className="room-card-description">{room.vibe}</p> : null}
                   <button
                       type="button"
                       className="room-card-summary"

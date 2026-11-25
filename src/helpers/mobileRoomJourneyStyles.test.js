@@ -32,5 +32,7 @@ describe('mobile room journey motion and layout', () => {
     expect(motion).toContain('var(--stack-progress, 0) * 0.08');
     expect(component).toContain('new ResizeObserver(schedule)');
     expect(component).toContain('covered === 0');
+    expect(styles).toContain('min-height: var(--stack-available, auto)');
+    expect(styles).toContain('height: var(--stack-photo, 180px)');
   });
 });
