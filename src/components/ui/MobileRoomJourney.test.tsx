@@ -41,7 +41,7 @@ describe('mobile room journey', () => {
     const html = render();
     expect(html.match(/class="room-journey-book room-details-choose"/g)).toHaveLength(2);
     expect(html).toContain('Sob consulta');
-    expect(html).toContain('class="room-journey-description">Eventos</p>');
+    expect(html).toContain('class="room-journey-description is-summary">Eventos</p>');
   });
 
   it('translates the call to action into English', () => {

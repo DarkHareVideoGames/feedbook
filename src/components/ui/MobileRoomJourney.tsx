@@ -121,7 +121,7 @@ function RoomChapter({ room, onChoose }: {
           </div>
 
           <div ref={detailsRef} id={detailsId} className="room-journey-details" role="group" aria-label={translations.rooms.discoverRoom}>
-            {description ? <p className="room-journey-description">{description}</p> : null}
+            {description ? <p className={`room-journey-description${room.longDescription ? '' : ' is-summary'}`}>{description}</p> : null}
             {room.gear.length > 0 ? (
               <section className="room-journey-equipment" aria-labelledby={`${detailsId}-equipment`}>
                 <h3 id={`${detailsId}-equipment`}>{translations.rooms.equipment}</h3>
