@@ -33,8 +33,9 @@
   z-index: 1;
   pointer-events: none;
   background:
-    linear-gradient(to bottom, transparent 62%, rgba(0, 0, 0, 0.75)),
-    radial-gradient(ellipse 85% 90% at 50% 45%, transparent 58%, rgba(0, 0, 0, 0.55));
+    linear-gradient(to bottom, transparent 45%, rgba(0, 0, 0, 0.55) 78%, #000),
+    linear-gradient(to right, rgba(0, 0, 0, 0.6), transparent 22%, transparent 78%, rgba(0, 0, 0, 0.6)),
+    radial-gradient(ellipse 75% 80% at 50% 40%, transparent 40%, rgba(0, 0, 0, 0.75));
 }
 .room-journey-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .room-journey-original .room-card-description { margin: 6px 0 0; }
