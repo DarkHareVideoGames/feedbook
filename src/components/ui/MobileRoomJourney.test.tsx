@@ -30,7 +30,10 @@ describe('mobile room journey', () => {
 
   it('links each card to its always-visible details', () => {
     const html = render();
-    expect(html).toContain('id="room-story-red" class="room-journey-details"');
+    expect(html).toContain('id="room-story-red" class="room-journey-details" role="group"');
+    // The booking button stays outside the scrollable text, always visible.
+    expect(html.indexOf('room-details-actions')).toBeGreaterThan(html.indexOf('room-story-red-equipment'));
+    expect(html).toMatch(/<\/ul><\/section><\/div><div class="room-details-actions">/);
     expect(html).toContain('aria-labelledby="room-story-red-equipment"');
   });
 

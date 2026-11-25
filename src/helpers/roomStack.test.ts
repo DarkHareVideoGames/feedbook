@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { roomStackAvailable, roomStackPhotoHeight, roomStackProgress, roomStackTop } from './roomStack';
+import { roomStackAvailable, roomStackHeight, roomStackProgress, roomStackTop } from './roomStack';
 
 describe('room stack geometry', () => {
   it('gives each card the whole area between the heading and the bottom of the screen', () => {
@@ -16,9 +16,12 @@ describe('room stack geometry', () => {
     expect(roomStackTop(60, 800, 1300)).toBe(800 - 1300 - 12);
   });
 
-  it('grows the photo to fill the card, keeping a usable minimum', () => {
-    expect(roomStackPhotoHeight(716, 260)).toBe(456);
-    expect(roomStackPhotoHeight(300, 260)).toBe(100);
+  it('fixes every card to the available height, fitting the first one under the logo', () => {
+    expect(roomStackHeight(680)).toBe(680);
+    expect(roomStackHeight(680, 560)).toBe(548);
+    expect(roomStackHeight(680, 900)).toBe(680);
+    expect(roomStackHeight(680, 300)).toBe(680);
+    expect(roomStackHeight(470, 339)).toBe(327);
   });
 
   it('reports how much of the visible card the next card covers', () => {

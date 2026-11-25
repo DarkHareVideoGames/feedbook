@@ -22,8 +22,9 @@ describe('mobile room journey motion and layout', () => {
   it('stacks whole cards, one per screen, dimming the covered one', () => {
     expect(styles).toMatch(/\.room-journey-chapter \{[^}]*position: sticky/);
     expect(styles).toContain('brightness(calc(1 - var(--stack-progress, 0)');
-    expect(styles).toContain('min-height: var(--stack-available, auto)');
-    expect(styles).toContain('height: var(--stack-photo, 180px)');
+    expect(styles).toContain('height: var(--stack-height, auto)');
+    expect(styles).toMatch(/\.room-journey-details \{[^}]*overflow-y: auto/);
+    expect(component).toContain("details.classList.toggle('is-scrollable', scrollable)");
     expect(component).toContain('new ResizeObserver(schedule)');
     expect(styles).not.toContain('grid-template-rows: 0fr');
   });

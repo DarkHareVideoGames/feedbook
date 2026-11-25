@@ -2,7 +2,9 @@
 // screen below the heading, and the next card slides over it.
 
 export const STACK_GAP = 12;
-export const STACK_MIN_PHOTO = 100;
+// Below this, a first card squeezed under the logo would be unusable; it then
+// takes the full height straight away.
+export const STACK_MIN_FIRST = 300;
 
 // Height left for a card between the sticky heading and the bottom of the screen.
 export function roomStackAvailable(headingOffset: number, viewportHeight: number): number {
@@ -16,10 +18,13 @@ export function roomStackTop(headingOffset: number, viewportHeight: number, card
   return Math.min(headingOffset + STACK_GAP, viewportHeight - cardHeight - STACK_GAP);
 }
 
-// Photo height that makes the collapsed card fill the available area. `rest`
-// is everything in the card except the photo and the details.
-export function roomStackPhotoHeight(available: number, rest: number): number {
-  return Math.max(STACK_MIN_PHOTO, Math.round(available - rest));
+// Card height. Every card fills the space under the heading; the first one is
+// capped by the space currently left below it (`firstSpace`), so it is whole
+// under the logo at page load and grows as the page scrolls.
+export function roomStackHeight(available: number, firstSpace?: number): number {
+  if (firstSpace === undefined) return Math.round(available);
+  const fit = firstSpace - STACK_GAP;
+  return Math.round(fit >= STACK_MIN_FIRST ? Math.min(available, fit) : available);
 }
 
 // How much of the card's visible area the next card already covers (0..1).

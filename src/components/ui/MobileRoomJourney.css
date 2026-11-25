@@ -6,7 +6,7 @@
 }
 
 /* The gap is scroll distance during which the stuck card stays fully visible. */
-.room-journey { display: grid; gap: min(35vh, 280px); min-width: 0; padding-bottom: 24px; }
+.room-journey { overflow-anchor: none; display: grid; gap: min(35vh, 280px); min-width: 0; padding-bottom: 24px; }
 /* Each chapter sticks (top set from JS) and the next one slides over it. */
 .room-journey-chapter { min-width: 0; position: sticky; top: 12px; }
 .room-journey-cover {
@@ -16,26 +16,41 @@
 }
 .room-journey .room-journey-original {
   width: 100%;
-  min-height: var(--stack-available, auto);
+  /* Fixed to the space on screen (set from JS): the whole outline is always visible. */
+  height: var(--stack-height, auto);
+  min-height: 0;
+  overflow: hidden;
   cursor: default;
   box-shadow: 0 -14px 32px -8px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 .room-journey .room-journey-original:hover { transform: none; }
-/* The photo absorbs the spare or missing space, so the whole card fits (height set from JS). */
-.room-journey .room-journey-original .room-card-image { height: var(--stack-photo, 180px); margin-bottom: 14px; }
+/* The photo takes the spare space and shrinks first; then long text scrolls inside the card. */
+.room-journey-summary { position: relative; cursor: pointer; display: flex; flex-direction: column; flex: 1 1 0; }
+.room-journey .room-journey-original .room-card-image { flex: 1 1 0; height: auto; min-height: clamp(72px, 14vh, 120px); margin-bottom: 14px; }
 .room-journey .room-card-header h2 { margin-bottom: 2px; }
-.room-journey-summary { position: relative; cursor: pointer; }
 .room-journey-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .room-journey-original .room-card-description { margin: 6px 0 0; }
 
 .room-journey-details {
   position: relative;
   display: grid;
+  align-content: start;
   gap: 12px;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
   margin-top: 12px;
   padding: 12px 2px 2px;
   border-top: 1px solid color-mix(in srgb, var(--journey-accent) 45%, transparent);
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--journey-accent) 60%, transparent) transparent;
 }
+/* Fade the last line while there is more text to scroll to. */
+.room-journey-details.is-scrollable:not(.is-scrolled-end) {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
+}
+.room-journey-details:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .room-journey-description { margin: 0; white-space: pre-line; color: var(--text-main); line-height: 1.45; font-size: 0.84rem; }
 .room-journey-equipment h3 { margin: 0 0 6px; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: #a6a6b5; }
 /* Equipment as compact chips, so long lists still fit on one screen. */
@@ -48,7 +63,7 @@
   line-height: 1.3;
   color: var(--text-main);
 }
-.room-journey .room-details-actions { margin: 0; }
+.room-journey .room-details-actions { flex: none; margin: 0; padding-top: 10px; }
 .room-journey :is(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 .room-journey section[tabindex='-1']:focus { outline: none; }
 
