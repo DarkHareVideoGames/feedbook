@@ -134,7 +134,7 @@ function RoomChapter({ room, state, onChoose }: {
             {description ? <p className={`room-journey-description${room.longDescription ? '' : ' is-summary'}`}>{description}</p> : null}
             {room.gear.length > 0 ? (
               <section className="room-journey-equipment" aria-labelledby={`${detailsId}-equipment`}>
-                <h3 id={`${detailsId}-equipment`}>{translations.rooms.equipment}</h3>
+                <h3 id={`${detailsId}-equipment`}>{translations.rooms.equipment.replace(/:\s*$/, '')}</h3>
                 <ul className="gear-list">{room.gear.map((item, itemIndex) => <li key={`${itemIndex}-${item}`}>{item}</li>)}</ul>
               </section>
             ) : null}

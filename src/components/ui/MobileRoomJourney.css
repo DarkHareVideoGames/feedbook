@@ -67,16 +67,41 @@
   mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
 }
 .room-journey-details:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* Text colours and sizes match the published room card and details modal. */
-/* The «Equipamento incluído» heading uses the same colour as the room description. */
-.room-journey-details { --journey-text: var(--text-main); }
-.room-journey-details:has(.is-summary) { --journey-text: var(--room-card-description-color); }
-.room-journey .room-journey-description { margin: 0; white-space: pre-line; color: var(--journey-text); line-height: 1.5; font-size: 1rem; font-weight: 500; }
-.room-journey .room-journey-description.is-summary { line-height: 1.6; }
-.room-journey-equipment h3 { margin: 0 0 8px; font-size: 1rem; font-weight: 400; color: var(--journey-text); }
-.room-journey-equipment .gear-list { padding-left: 18px; margin: 0; }
-/* Halfway between the heading colour and the published muted list colour. */
-.room-journey-equipment .gear-list li { color: color-mix(in srgb, var(--journey-text) 50%, var(--text-muted)); font-size: 1rem; }
+/* Editorial details: a calm description paragraph, then a small spaced label in
+   the room colour (tying it to the room name) over a compact list with thin
+   room-colour dashes instead of bullets (one column: equipment names are long). */
+.room-journey-details { --journey-text: var(--room-card-description-color); gap: 18px; }
+.room-journey .room-journey-description { margin: 0; white-space: pre-line; color: var(--journey-text); font-size: 0.94rem; font-weight: 400; line-height: 1.6; }
+.room-journey-equipment h3 {
+  margin: 0 0 10px;
+  /* Room colour, slightly lifted so dark accents (e.g. LIVE purple) stay legible at this size. */
+  color: color-mix(in srgb, var(--journey-accent) 78%, #fff);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.room-journey-equipment .gear-list {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.room-journey-equipment .gear-list li {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  column-gap: 8px;
+  color: color-mix(in srgb, var(--journey-text) 70%, var(--text-muted));
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+.room-journey-equipment .gear-list li::before {
+  content: '';
+  height: 1px;
+  margin-top: 0.7em;
+  background: var(--journey-accent);
+}
 .room-journey .room-details-actions { flex: none; margin: 0; padding-top: 10px; }
 .room-journey :is(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 .room-journey section[tabindex='-1']:focus { outline: none; }
