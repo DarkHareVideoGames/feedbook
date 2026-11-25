@@ -2,7 +2,7 @@ import { CSSProperties, RefObject, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import { getRoomImageUrls } from '../../api';
-import { roomStackAvailable, roomStackHeight, roomStackProgress, roomStackTop } from '../../helpers/roomStack';
+import { roomStackAvailable, roomStackCueCentre, roomStackHeight, roomStackProgress, roomStackTop } from '../../helpers/roomStack';
 import { getScrollBehavior } from '../../helpers/motion';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useI18n } from '../../i18n';
@@ -164,7 +164,9 @@ function ScrollCue({ journeyRef }: { journeyRef: RefObject<HTMLElement> }) {
     const update = () => {
       frame = 0;
       const viewport = scroller.getBoundingClientRect();
-      cue.style.bottom = `${Math.max(0, window.innerHeight - viewport.bottom + 6)}px`;
+      // Same distance to the card above and to the footer links below.
+      const footerTop = document.querySelector('.site-footer-links')?.getBoundingClientRect().top ?? viewport.bottom;
+      cue.style.top = `${Math.round(roomStackCueCentre(viewport.bottom, footerTop) - cue.offsetHeight / 2)}px`;
       setHidden(scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 48);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
@@ -204,7 +206,7 @@ function ScrollCue({ journeyRef }: { journeyRef: RefObject<HTMLElement> }) {
   const cue = (
     <button ref={cueRef} type="button" className="room-journey-cue" hidden={hidden}
       aria-label={translations.rooms.scrollMore} onClick={advance}>
-      <ChevronDown size={30} aria-hidden="true" />
+      <ChevronDown size={38} aria-hidden="true" />
     </button>
   );
   // Rendered into <body>: inside the scroll area it would be clipped at the footer.

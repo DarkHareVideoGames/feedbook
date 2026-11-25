@@ -1,7 +1,9 @@
 /* Mobile rooms: one whole card at a time, each sliding over the previous one. */
 
-/* Small gap: the next card starts coming in as soon as the page scrolls. */
-.room-journey { overflow-anchor: none; display: grid; gap: 12px; min-width: 0; padding-bottom: 24px; }
+/* Just over the arrow space (STACK_CUE_SPACE): while a card rests in place the
+   strip around the arrow stays clear, and the next card comes in as soon as
+   the page scrolls. */
+.room-journey { overflow-anchor: none; display: grid; gap: 40px; min-width: 0; padding-bottom: 24px; }
 /* Each chapter sticks (top set from JS) and the next one slides over it. */
 .room-journey-chapter { min-width: 0; position: sticky; top: 12px; }
 .room-journey-cover {
@@ -77,13 +79,13 @@
 .room-journey-cue {
   position: fixed;
   left: 50%;
-  bottom: 0;
+  top: auto;
   z-index: 31;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 52px;
-  height: 40px;
+  width: 56px;
+  height: 48px;
   padding: 0;
   transform: translateX(-50%);
   color: #dc2626;
@@ -94,11 +96,17 @@
 .room-journey-cue:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .room-journey-cue svg { animation: about-scroll-nudge 1.8s ease-in-out infinite; }
+  /* Nudges evenly around its centre so both gaps stay equal on average. */
+  .room-journey-cue svg { animation: room-journey-cue-nudge 1.8s ease-in-out infinite; }
   /* Incoming cards rise into place (no scaling: photos must not zoom). */
   .room-journey-cover {
     transform: translateY(calc(var(--phase-entry, 0) * 28px));
     opacity: calc(1 - var(--phase-entry, 0) * 0.35);
     will-change: transform, filter;
   }
+}
+
+@keyframes room-journey-cue-nudge {
+  0%, 100% { transform: translateY(-3px); }
+  50% { transform: translateY(3px); }
 }
