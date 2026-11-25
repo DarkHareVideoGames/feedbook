@@ -539,7 +539,7 @@ export async function createBooking(draft: CreateBookingDraft): Promise<{ bookin
   });
   const payload = (await response.json().catch(() => ({}))) as { booking?: Record<string, unknown>; message?: string };
   if (!response.ok || !payload.booking) {
-    throw new ApiError(payload.message || 'Nao foi possivel concluir a marcacao.', response.status || 500);
+    throw new ApiError(payload.message || 'Não foi possível concluir a marcação.', response.status || 500);
   }
   const booking = mapBookingRow(payload.booking);
   notifyBooking(booking, 'pending');

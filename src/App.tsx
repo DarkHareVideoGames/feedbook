@@ -737,13 +737,13 @@ const [minDelayDone, setMinDelayDone] = useState(false);
     } catch (error) {
       if (error instanceof TypeError) {
         setBackendOffline(true);
-        setErrorMessage('Servico temporariamente indisponivel.');
+        setErrorMessage('Serviço temporariamente indisponível.');
       } else if (error instanceof Error) {
         setBackendOffline(false);
         setErrorMessage(error.message);
       } else {
         setBackendOffline(false);
-        setErrorMessage('Nao foi possivel concluir a marcacao.');
+        setErrorMessage('Não foi possível concluir a marcação.');
       }
     } finally {
       setIsSubmitting(false);
@@ -1252,7 +1252,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
 
               {backendOffline ? (
                 <div className="offline-banner" role="alert">
-                  <span>⚠ Servico temporariamente indisponivel.</span>
+                  <span>⚠ Serviço temporariamente indisponível.</span>
                   <button
                     type="button"
                     className="secondary-button"
