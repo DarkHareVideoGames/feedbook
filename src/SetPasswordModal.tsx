@@ -78,7 +78,7 @@ export default function SetPasswordModal() {
       return;
     }
     if (password !== confirm) {
-      setError('As passwords nao coincidem.');
+      setError('As passwords não coincidem.');
       return;
     }
 
@@ -88,7 +88,7 @@ export default function SetPasswordModal() {
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) {
       setState('form');
-      setError(updateError.message || 'Nao foi possivel definir a password. O link pode ter expirado — pede um novo convite.');
+      setError(updateError.message || 'Não foi possível definir a password. O link pode ter expirado — pede um novo convite.');
       return;
     }
 
@@ -125,7 +125,7 @@ export default function SetPasswordModal() {
           <>
             <h2 id="set-password-title">Password definida ✅</h2>
             <p className="admin-helper-note">
-              A tua password foi guardada com sucesso. Ja podes entrar na plataforma com o teu email e a nova password.
+              A tua password foi guardada com sucesso. Já podes entrar na plataforma com o teu email e a nova password.
             </p>
             <button type="button" className="primary-button" onClick={close}>
               Fechar
@@ -169,7 +169,7 @@ export default function SetPasswordModal() {
                 {state === 'saving' ? 'A guardar...' : 'Guardar password'}
               </button>
               <button type="button" className="secondary-button" onClick={close}>
-                Agora nao
+                Agora não
               </button>
             </div>
           </form>

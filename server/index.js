@@ -377,7 +377,7 @@ app.post('/api/contact-request-reply', async (req, res) => {
   try {
     const body = req.body || {};
     if (!supabaseAuth || !supabaseService) {
-      return res.status(503).json({ message: 'Resposta indisponivel: Supabase nao configurado no servidor.' });
+      return res.status(503).json({ message: 'Resposta indisponível: Supabase não configurado no servidor.' });
     }
 
     const authHeader = String(req.headers.authorization || '');
@@ -399,7 +399,7 @@ app.post('/api/contact-request-reply', async (req, res) => {
       .maybeSingle();
     if (actorProfileError) {
       console.error('Erro ao consultar perfil do utilizador:', actorProfileError);
-      return res.status(500).json({ message: 'Erro ao validar permissoes.' });
+      return res.status(500).json({ message: 'Erro ao validar permissões.' });
     }
     const actorRole = String(actorProfile?.role || '');
     if (!['admin', 'superuser'].includes(actorRole)) {
@@ -429,14 +429,14 @@ app.post('/api/contact-request-reply', async (req, res) => {
       .eq('id', contactRequestId)
       .maybeSingle();
     if (fetchError || !contactRequest) {
-      return res.status(404).json({ message: 'Pedido de contacto nao encontrado.' });
+      return res.status(404).json({ message: 'Pedido de contacto não encontrado.' });
     }
     if (contactRequest.status !== 'pending') {
       return res.status(409).json({ message: 'Apenas pedidos a aguardar resposta podem receber uma resposta.' });
     }
     const replyTo = String(contactRequest.email || '').trim().toLowerCase();
     if (channel === 'whatsapp' && !contactRequest.contactPhone) {
-      return res.status(400).json({ message: 'Este pedido nao possui telemovel registado.' });
+      return res.status(400).json({ message: 'Este pedido não possui telemóvel registado.' });
     }
     const subject = '📩 Resposta ao teu pedido de contacto — Feedback Studios';
     let bodyHTML = '<h1 style="font-size: 24px;">Feedback - Ensaios — Resposta ao pedido de contacto</h1>';
@@ -488,7 +488,7 @@ app.post('/api/contact-request', async (req, res) => {
   try {
     const body = req.body || {};
     if (!supabaseService) {
-      return res.status(503).json({ message: 'Supabase nao configurado no servidor.' });
+      return res.status(503).json({ message: 'Supabase não configurado no servidor.' });
     }
     const roomId = String(body.roomId || '').trim();
     const contactName = String(body.contactName || '').trim();
@@ -527,14 +527,14 @@ app.post('/api/contact-request', async (req, res) => {
 
     const { error } = await supabaseService.from('contact_requests').insert(contactRequest);
     if (error) {
-      return res.status(500).json({ message: 'Nao foi possivel enviar o pedido de contacto.' });
+      return res.status(500).json({ message: 'Não foi possível enviar o pedido de contacto.' });
     }
 
     void sendContactRequestNotification(contactRequest);
     return res.status(201).json({ contactRequest });
   } catch (e) {
     console.error('Erro ao criar pedido de contacto:', e);
-    return res.status(500).json({ message: 'Nao foi possivel enviar o pedido de contacto.' });
+    return res.status(500).json({ message: 'Não foi possível enviar o pedido de contacto.' });
   }
 });
 
@@ -563,7 +563,7 @@ app.post('/api/notify', (req, res) => {
 app.post('/api/user-invite', async (req, res) => {
   try {
     if (!supabaseAuth || !supabaseService) {
-      return res.status(503).json({ message: 'Convite indisponivel: falta SUPABASE_SERVICE_ROLE_KEY (ou SUPABASE_URL/anon key).' });
+      return res.status(503).json({ message: 'Convite indisponível: falta SUPABASE_SERVICE_ROLE_KEY (ou SUPABASE_URL/anon key).' });
     }
 
     const authHeader = String(req.headers.authorization || '');

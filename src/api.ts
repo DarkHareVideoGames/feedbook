@@ -215,7 +215,7 @@ const fallbackRooms: ApiRoom[] = [
   {
     id: 'sala-grey',
     name: 'SALA GREY',
-    description: 'Sala equilibrada para composicao, vozes e trabalho de detalhe com mais controlo dinamico.',
+    description: 'Sala equilibrada para composição, vozes e trabalho de detalhe com mais controlo dinâmico.',
     descriptionEn: 'Balanced room for songwriting, vocals, and detail-focused arrangement work.',
     maxMembers: 5,
     pricePerMemberHour: null,
@@ -231,9 +231,9 @@ const fallbackRooms: ApiRoom[] = [
 ];
 
 const fallbackServices: ApiService[] = [
-  { id: 'engineer', name: 'Tecnico de sessao', nameEn: 'Session engineer', description: 'Tecnico de sessao durante o ensaio.', descriptionEn: 'Session engineer during the rehearsal.', price: 24, active: true, sortOrder: 0 },
-  { id: 'recording', name: 'Captacao stereo do ensaio', nameEn: 'Stereo rehearsal capture', description: 'Gravacao stereo da sessao.', descriptionEn: 'Stereo recording of the session.', price: 18, active: true, sortOrder: 1 },
-  { id: 'backline', name: 'Preparacao extra de backline', nameEn: 'Extra backline setup', description: 'Preparacao extra de backline.', descriptionEn: 'Extra backline setup.', price: 12, active: true, sortOrder: 2 },
+  { id: 'engineer', name: 'Técnico de sessão', nameEn: 'Session engineer', description: 'Técnico de sessão durante o ensaio.', descriptionEn: 'Session engineer during the rehearsal.', price: 24, active: true, sortOrder: 0 },
+  { id: 'recording', name: 'Captação stereo do ensaio', nameEn: 'Stereo rehearsal capture', description: 'Gravação stereo da sessão.', descriptionEn: 'Stereo recording of the session.', price: 18, active: true, sortOrder: 1 },
+  { id: 'backline', name: 'Preparação extra de backline', nameEn: 'Extra backline setup', description: 'Preparação extra de backline.', descriptionEn: 'Extra backline setup.', price: 12, active: true, sortOrder: 2 },
 ];
 
 const defaultPricing: PricingConfig = {
@@ -539,7 +539,7 @@ export async function createBooking(draft: CreateBookingDraft): Promise<{ bookin
   });
   const payload = (await response.json().catch(() => ({}))) as { booking?: Record<string, unknown>; message?: string };
   if (!response.ok || !payload.booking) {
-    throw new ApiError(payload.message || 'Nao foi possivel concluir a marcacao.', response.status || 500);
+    throw new ApiError(payload.message || 'Não foi possível concluir a marcação.', response.status || 500);
   }
   const booking = mapBookingRow(payload.booking);
   notifyBooking(booking, 'pending');
@@ -605,7 +605,7 @@ export async function createContactRequest(draft: CreateContactRequestDraft): Pr
   });
   const payload = (await response.json().catch(() => ({}))) as { contactRequest?: ApiContactRequest; message?: string };
   if (!response.ok || !payload.contactRequest) {
-    throw new ApiError(payload.message || 'Nao foi possivel enviar o pedido de contacto.', response.status || 500);
+    throw new ApiError(payload.message || 'Não foi possível enviar o pedido de contacto.', response.status || 500);
   }
   return { contactRequest: mapContactRequestRow(payload.contactRequest as Record<string, unknown>) };
 }
@@ -638,7 +638,7 @@ export async function adminContactRequestReply(
   });
   const payload = (await response.json().catch(() => ({}))) as { message?: string };
   if (!response.ok) {
-    throw new ApiError(payload.message || 'Nao foi possivel enviar a resposta.', response.status || 500);
+    throw new ApiError(payload.message || 'Não foi possível enviar a resposta.', response.status || 500);
   }
   return { message: payload.message || 'Resposta enviada.' };
 }
@@ -650,17 +650,17 @@ export async function deleteContactRequest(token: string, contactRequestId: stri
     .select('*')
     .eq('id', contactRequestId)
     .maybeSingle();
-  if (existingError) throw toError(existingError.message, 'Nao foi possivel consultar o pedido de contacto.');
-  if (!existing) throw new ApiError('Pedido de contacto nao encontrado ou sem permissao para o consultar.', 404);
+  if (existingError) throw toError(existingError.message, 'Não foi possível consultar o pedido de contacto.');
+  if (!existing) throw new ApiError('Pedido de contacto não encontrado ou sem permissão para o consultar.', 404);
 
   const { data: deletedRows, error } = await supabase
     .from('contact_requests')
     .delete()
     .eq('id', contactRequestId)
     .select('id');
-  if (error) throw toError(error.message, 'Nao foi possivel apagar o pedido de contacto.');
+  if (error) throw toError(error.message, 'Não foi possível apagar o pedido de contacto.');
   if (!deletedRows || deletedRows.length !== 1) {
-    throw new ApiError('O pedido de contacto nao foi apagado. Confirme se a politica DELETE para superuser foi aplicada no Supabase.', 403);
+    throw new ApiError('O pedido de contacto não foi apagado. Confirme se a política DELETE para superuser foi aplicada no Supabase.', 403);
   }
 
   const contactRequest = mapContactRequestRow(existing as Record<string, unknown>);
@@ -797,7 +797,7 @@ export async function bookingAction(
         .eq('id', assigneeId)
         .maybeSingle();
       if (!assigneeProfile) {
-        throw new ApiError('Responsavel atribuido nao encontrado.', 400);
+        throw new ApiError('Responsável atribuído não encontrado.', 400);
       }
       assigneeName = String(assigneeProfile.name || '');
     }
@@ -920,7 +920,7 @@ export async function bookingAction(
         .eq('id', receiverId)
         .maybeSingle();
       if (!receiverProfile) {
-        throw new ApiError('Quem recebeu o pagamento nao encontrado.', 400);
+        throw new ApiError('Quem recebeu o pagamento não encontrado.', 400);
       }
       receiverName = String(receiverProfile.name || '');
     }
@@ -1445,7 +1445,7 @@ export async function deleteService(token: string, serviceId: string): Promise<{
     // Nao bloqueia o apagar se a limpeza do legado falhar.
   }
   await recordAudit({ action: 'service-deleted', actor: { id: actor.id, name: actor.name, role: actor.role }, target: serviceId, details: { name: String((existing as Record<string, unknown>).name ?? serviceId) } });
-  return { message: 'Servico apagado definitivamente.' };
+  return { message: 'Serviço apagado definitivamente.' };
 }
 
 export async function pricing(): Promise<{ pricing: PricingConfig }> {
@@ -1681,7 +1681,7 @@ export async function createUser(
   const password = String(draft?.password || '').trim() || generateProvisionalPassword();
 
   if (!draft?.name || !email || !phone || !allowedRoles.includes(draft.role)) {
-    throw new ApiError('Invalid user data provided. Nome, email e telemovel sao obrigatorios.', 400);
+    throw new ApiError('Invalid user data provided. Nome, email e telemóvel são obrigatórios.', 400);
   }
 
   const { data: existing } = await supabase.from('profiles').select('id').eq('email', email).limit(1);
@@ -1726,7 +1726,7 @@ export async function updateUser(
   const phone = String(draft?.phone || '').trim();
 
   if (!draft?.name || !email || !phone) {
-    throw new ApiError('Invalid user data provided. Nome, email e telemovel sao obrigatorios.', 400);
+    throw new ApiError('Invalid user data provided. Nome, email e telemóvel são obrigatórios.', 400);
   }
 
   const { data: target } = await supabase
@@ -1915,9 +1915,9 @@ export async function resendPasswordReset(token: string, email: string, name: st
 
   const payload = (await response.json().catch(() => ({}))) as { message?: string };
   if (!response.ok) {
-    throw new ApiError(payload.message || 'Nao foi possivel reenviar o link de redefinicao.', response.status);
+    throw new ApiError(payload.message || 'Não foi possível reenviar o link de redefinição.', response.status);
   }
-  return { message: payload.message || 'Link de redefinicao reenviado.' };
+  return { message: payload.message || 'Link de redefinição reenviado.' };
 }
 
 function notifyBooking(booking: ApiBooking, status: 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'rescheduled'): void {

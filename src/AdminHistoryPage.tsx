@@ -171,9 +171,9 @@ const HISTORY_FILTER_OPTIONS: Array<{ value: HistoryFilter; label: string }> = [
 
 // Escopos de arquivo: limitam registos passados; futuro/hoje fica sempre visivel.
 const PERIOD_SCOPE_OPTIONS: Array<{ value: PeriodScope; label: string }> = [
-  { value: 'month', label: 'Mes corrente' },
-  { value: '3m', label: 'Ultimos 3 meses' },
-  { value: '6m', label: 'Ultimos 6 meses' },
+  { value: 'month', label: 'Mês corrente' },
+  { value: '3m', label: 'Últimos 3 meses' },
+  { value: '6m', label: 'Últimos 6 meses' },
   { value: 'year', label: 'Este ano' },
   { value: 'all', label: 'Tudo' },
 ];
@@ -536,8 +536,8 @@ function formatExtraLabel(extraKey: string): string {
   if (!normalized) return 'Sem extra';
 
   const knownLabels: Record<string, string> = {
-    engineer: 'Tecnico de sessao',
-    recording: 'Captacao stereo',
+    engineer: 'Técnico de sessão',
+    recording: 'Captação stereo',
     backline: 'Backline',
   };
 
@@ -933,7 +933,7 @@ function AdminHistoryPage() {
     } catch (err) {
       // Reverte em caso de falha para não divergir do servidor.
       setBetaEnabled(!nextEnabled);
-      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel atualizar o modo Beta.');
+      setError(err instanceof Error && err.message ? err.message : 'Não foi possível atualizar o modo Beta.');
     }
   };
   // Dropdown "Perfil": apenas Administradores e Colaboradores.
@@ -1321,7 +1321,7 @@ function AdminHistoryPage() {
       setCatalogNotice('Ordem das salas atualizada.');
     } catch (err) {
       setRooms(previousRooms);
-      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel atualizar a ordem das salas.');
+      setError(err instanceof Error && err.message ? err.message : 'Não foi possível atualizar a ordem das salas.');
     } finally {
       setRoomOrderSaving(false);
     }
@@ -1603,7 +1603,7 @@ function AdminHistoryPage() {
     } catch (err) {
       if (err instanceof api.ApiError && err.status === 403) {
         // Sessao valida mas sem permissoes — nao e uma sessao expirada.
-        setError('Sem permissoes para aceder aos ensaios. Contacta o administrador.');
+        setError('Sem permissões para aceder aos ensaios. Contacta o administrador.');
         return;
       }
       if (err instanceof api.ApiError && err.status === 401) {
@@ -1611,7 +1611,7 @@ function AdminHistoryPage() {
         setToken('');
         setCurrentUser(null);
         setBookings([]);
-        setAuthError('Sessao expirada. Inicia sessao novamente.');
+        setAuthError('Sessão expirada. Inicia sessão novamente.');
         return;
       }
       throw err;
@@ -1642,7 +1642,7 @@ function AdminHistoryPage() {
         setContactRequests([]);
         return;
       }
-      setError('Nao foi possivel carregar os pedidos de contacto.');
+      setError('Não foi possível carregar os pedidos de contacto.');
     }
   };
 
@@ -1681,7 +1681,7 @@ function AdminHistoryPage() {
       setRooms(roomsPayload.rooms);
       setServices(servicesPayload.services);
     } catch {
-      setError('Nao foi possivel carregar salas e servicos. Confirma que correste o supabase_rooms_services.sql.');
+      setError('Não foi possível carregar salas e serviços. Confirma que correste o supabase_rooms_services.sql.');
     } finally {
       setCatalogLoading(false);
     }
@@ -1698,7 +1698,7 @@ function AdminHistoryPage() {
         setUsers([]);
         return;
       }
-      setError('Nao foi possivel carregar utilizadores.');
+      setError('Não foi possível carregar utilizadores.');
     } finally {
       setUsersLoading(false);
     }
@@ -1765,7 +1765,7 @@ function AdminHistoryPage() {
       }
       setLoginPassword('');
       if (authErr instanceof TypeError && authErr.message === 'Failed to fetch') {
-        setError('Sem ligacao ao servidor. Verifica a tua ligacao e tenta novamente.');
+        setError('Sem ligação ao servidor. Verifica a tua ligação e tenta novamente.');
       }
     } finally {
       setLoginLoading(false);
@@ -1810,7 +1810,7 @@ function AdminHistoryPage() {
     const password = newUserDraft.password;
 
     if (!name || !email || !phone) {
-      setError('Preenche nome, email e telemovel para criar o utilizador.');
+      setError('Preenche nome, email e telemóvel para criar o utilizador.');
       return;
     }
     if (password && password.length < 6) {
@@ -1840,7 +1840,7 @@ function AdminHistoryPage() {
       resetUserModal();
       setCatalogNotice('Utilizador criado. Enviamos um convite por email para o utilizador definir a password.');
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel criar utilizador.');
+      setError(err instanceof Error && err.message ? err.message : 'Não foi possível criar utilizador.');
     } finally {
       setUserActionLoading(false);
     }
@@ -1860,7 +1860,7 @@ function AdminHistoryPage() {
     const phone = editUserDraft.phone.trim();
 
     if (!name || !email || !phone) {
-      setError('Nome, email e telemovel nao podem ficar vazios.');
+      setError('Nome, email e telemóvel não podem ficar vazios.');
       return;
     }
     if (editUserDraft.password && editUserDraft.password.length < 6) {
@@ -1903,7 +1903,7 @@ function AdminHistoryPage() {
       resetUserModal();
       setCatalogNotice('Utilizador atualizado com sucesso.');
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel atualizar utilizador.');
+      setError(err instanceof Error && err.message ? err.message : 'Não foi possível atualizar utilizador.');
     } finally {
       setUserActionLoading(false);
     }
@@ -1919,13 +1919,13 @@ function AdminHistoryPage() {
     setResetUserId(user.id);
     try {
       const payload = await api.resendPasswordReset(sessionToken, user.email, user.name);
-      setCatalogNotice(`Link de redefinicao de password reenviado para ${user.email}.`);
+      setCatalogNotice(`Link de redefinição de password reenviado para ${user.email}.`);
       // payload.message pode variar (ex.: email desativado no servidor).
       if (payload.message && /disabled/i.test(payload.message)) {
         setCatalogNotice('Link gerado, mas o envio de email esta desativado no servidor.');
       }
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel reenviar o link de redefinicao.');
+      setError(err instanceof Error && err.message ? err.message : 'Não foi possível reenviar o link de redefinição.');
     } finally {
       setResetUserId(null);
     }
@@ -1948,7 +1948,7 @@ function AdminHistoryPage() {
       resetUserModal();
       setCatalogNotice(payload.message || 'Utilizador apagado com sucesso.');
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel apagar utilizador.');
+      setError(err instanceof Error && err.message ? err.message : 'Não foi possível apagar utilizador.');
     } finally {
       setUserActionLoading(false);
     }
@@ -1971,7 +1971,7 @@ function AdminHistoryPage() {
       setClearBookingsModalOpen(false);
       setClearBookingsConfirmation('');
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel limpar os ensaios.');
+      setError(err instanceof Error && err.message ? err.message : 'Não foi possível limpar os ensaios.');
     } finally {
       setClearBookingsLoading(false);
     }
@@ -1995,19 +1995,19 @@ function AdminHistoryPage() {
       return;
     }
     if (!Number.isFinite(maxMembers) || maxMembers <= 0) {
-      setError('Capacidade invalida.');
+      setError('Capacidade inválida.');
       return;
     }
     const trimmedPrice = roomForm.pricePerMemberHour.trim();
     const pricePerMemberHour = Number(trimmedPrice);
     // Sem noção de "preco global" (Issue #26): o preco da sala e obrigatorio.
     if (trimmedPrice === '' || !Number.isFinite(pricePerMemberHour) || pricePerMemberHour < 0) {
-      setError('Preco da sala invalido. Indica um valor (>= 0).');
+      setError('Preço da sala inválido. Indica um valor (>= 0).');
       return;
     }
     const accent = roomAccentToHex(roomForm.accent);
     if (!accent) {
-      setError('Cor da sala invalida. Usa um hexadecimal como #d11323.');
+      setError('Cor da sala inválida. Usa um hexadecimal como #d11323.');
       return;
     }
     setCatalogNotice('');
@@ -2060,7 +2060,7 @@ function AdminHistoryPage() {
       cancelEditRoom();
       await loadCatalogs();
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel guardar a sala.');
+      setError(err instanceof Error && err.message ? err.message : 'Não foi possível guardar a sala.');
     } finally {
       setRoomSaveLoading(false);
       setRoomImageUploading(false);
@@ -2099,11 +2099,11 @@ function AdminHistoryPage() {
     const trimmedName = serviceForm.name.trim();
     const price = Number(serviceForm.price);
     if (!trimmedName) {
-      setError('O servico precisa de um nome.');
+      setError('O serviço precisa de um nome.');
       return;
     }
     if (!Number.isFinite(price) || price < 0) {
-      setError('Preco do servico invalido.');
+      setError('Preço do serviço inválido.');
       return;
     }
     setCatalogNotice('');
@@ -2121,15 +2121,15 @@ function AdminHistoryPage() {
       };
       if (editingServiceId) {
         await api.updateService(sessionToken, editingServiceId, draft);
-        setCatalogNotice('Servico atualizado com sucesso.');
+        setCatalogNotice('Serviço atualizado com sucesso.');
       } else {
         await api.createService(sessionToken, draft);
-        setCatalogNotice('Servico criado com sucesso.');
+        setCatalogNotice('Serviço criado com sucesso.');
       }
       resetServiceModal();
       await loadCatalogs();
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel guardar o servico.');
+      setError(err instanceof Error && err.message ? err.message : 'Não foi possível guardar o serviço.');
     } finally {
       setServiceSaveLoading(false);
     }
@@ -2147,11 +2147,11 @@ function AdminHistoryPage() {
         const payload = await api.deleteService(sessionToken, serviceId);
         if (editingServiceId === serviceId) resetServiceModal();
         await loadCatalogs();
-        setCatalogNotice(payload.message || 'Servico removido.');
+        setCatalogNotice(payload.message || 'Serviço removido.');
         setServiceToDelete(null);
       });
     } catch {
-      setError('Nao foi possivel apagar o servico.');
+      setError('Não foi possível apagar o serviço.');
     }
   };
 
@@ -2230,7 +2230,7 @@ function AdminHistoryPage() {
 
     const received = Number(paymentDraft.received);
     if (!Number.isFinite(received) || received < 0) {
-      setError('Indica um valor recebido valido.');
+      setError('Indica um valor recebido válido.');
       return;
     }
 
@@ -2273,9 +2273,9 @@ function AdminHistoryPage() {
     } catch (err) {
       console.error('History action failed:', err);
       if (err instanceof TypeError) {
-        setError('Nao foi possivel comunicar com o servico. Verifique a ligacao e tente novamente.');
+        setError('Não foi possível comunicar com o serviço. Verifique a ligação e tente novamente.');
       } else {
-        setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel concluir a acao.');
+        setError(err instanceof Error && err.message ? err.message : 'Não foi possível concluir a ação.');
       }
     } finally {
       setActionLoading((prev) => ({ ...prev, [bookingId]: false }));
@@ -2308,18 +2308,18 @@ function AdminHistoryPage() {
 
     const booking = bookings.find((item) => item.id === rescheduleDraft.bookingId);
     if (!booking) {
-      setError('Marcacao nao encontrada para reagendar.');
+      setError('Marcação não encontrada para reagendar.');
       return;
     }
 
     const nextDuration = Number(rescheduleDraft.duration);
     if (!Number.isFinite(nextDuration) || nextDuration <= 0) {
-      setError('Duracao invalida para reagendamento.');
+      setError('Duração inválida para reagendamento.');
       return;
     }
 
     if (!rescheduleDraft.date || !rescheduleDraft.time) {
-      setError('Data e hora sao obrigatorias para reagendar.');
+      setError('Data e hora são obrigatórias para reagendar.');
       return;
     }
 
@@ -2331,7 +2331,7 @@ function AdminHistoryPage() {
 
     const booking = bookings.find((item) => item.id === rescheduleDraft.bookingId);
     if (!booking) {
-      setError('Marcacao nao encontrada para reagendar.');
+      setError('Marcação não encontrada para reagendar.');
       return;
     }
 
@@ -2409,7 +2409,7 @@ function AdminHistoryPage() {
 
   const handlePrintFinance = async () => {
     if (financeDataToShow.length === 0) {
-      setError('Seleciona pelo menos um mes para gerar o PDF.');
+      setError('Seleciona pelo menos um mês para gerar o PDF.');
       return;
     }
 
@@ -2581,7 +2581,7 @@ function AdminHistoryPage() {
     doc.setTextColor(...pdfTheme.text);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.text(`PERIODO  ${periodLabel}`, margin + 4, cursorY + 5.8);
+    doc.text(`PERÍODO  ${periodLabel}`, margin + 4, cursorY + 5.8);
     cursorY += 13;
 
     autoTable(doc, {
@@ -2765,7 +2765,7 @@ function AdminHistoryPage() {
       if (extrasServiceSummaries.length > 0) {
         for (const serviceSummary of extrasServiceSummaries) {
           const row = [[serviceSummary.label, String(serviceSummary.count), formatCurrency(serviceSummary.total)]];
-          printSummaryTable(`Resumo do servico: ${serviceSummary.label}`, row);
+          printSummaryTable(`Resumo do serviço: ${serviceSummary.label}`, row);
         }
       }
     }
@@ -2846,7 +2846,7 @@ function AdminHistoryPage() {
         setContactRequestToDelete(null);
       });
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Nao foi possivel apagar o pedido de contacto.');
+      setError(err instanceof Error && err.message ? err.message : 'Não foi possível apagar o pedido de contacto.');
     }
   };
 
@@ -2939,7 +2939,7 @@ function AdminHistoryPage() {
               />
             ) : null}
 
-            <p className="summary-copy">Acesso ao painel de administracao</p>
+            <p className="summary-copy">Acesso ao painel de administração</p>
 
             <form className="admin-login-form" onSubmit={handleLogin}>
               <label>
@@ -3084,7 +3084,7 @@ function AdminHistoryPage() {
               X
             </button>
           </div>
-          <nav id="admin-sidebar-navigation" className="admin-sidebar-nav" aria-label="Seccoes de administracao" data-onboarding="mobile-menu-navigation">
+          <nav id="admin-sidebar-navigation" className="admin-sidebar-nav" aria-label="Secções de administração" data-onboarding="mobile-menu-navigation">
             <button
               type="button"
               className={`admin-sidebar-item ${activePanel === "unified" ? "admin-sidebar-item-active" : ""}`}
@@ -3145,7 +3145,7 @@ function AdminHistoryPage() {
                     setSidebarOpen(false);
                   }}
                 >
-                  Servicos
+                  Serviços
                 </button>
               </>
             ) : null}
@@ -3178,7 +3178,7 @@ function AdminHistoryPage() {
 
             <div className="admin-sidebar-footer">
               <a href="https://www.ensaiosfeedback.pt/" className="admin-sidebar-item admin-sidebar-link" onClick={() => setSidebarOpen(false)}>
-                Site publico
+                Site público
               </a>
               <button type="button" className="admin-sidebar-item" onClick={handleLogout}>
                 Sair
@@ -3399,7 +3399,7 @@ function AdminHistoryPage() {
                 </label>
 
                 <label>
-                  Telemovel *
+                  Telemóvel *
                   <input
                     type="tel"
                     required
@@ -3687,7 +3687,7 @@ function AdminHistoryPage() {
                   />
                 </label>
                 <label>
-                  Preco por hora da sala (EUR) *
+                  Preço por hora da sala (EUR) *
                   <input
                     type="number"
                     min={0}
@@ -3738,7 +3738,7 @@ function AdminHistoryPage() {
               <p className="room-editor-hint">Deixa as descrições vazias para as omitir na página pública.</p>
               <div className="room-editor-language-grid">
               <label>
-                Descricao (PT)
+                Descrição (PT)
                 <textarea
                   rows={2}
                   value={roomForm.description}
@@ -3746,7 +3746,7 @@ function AdminHistoryPage() {
                 />
               </label>
               <label>
-                Descricao (EN)
+                Descrição (EN)
                 <textarea
                   rows={2}
                   value={roomForm.descriptionEn}
@@ -3756,7 +3756,7 @@ function AdminHistoryPage() {
               </div>
               <div className="room-editor-language-grid">
               <label>
-                Descricao longa (PT)
+                Descrição longa (PT)
                 <textarea
                   rows={3}
                   value={roomForm.longDescription}
@@ -3764,7 +3764,7 @@ function AdminHistoryPage() {
                 />
               </label>
               <label>
-                Descricao longa (EN)
+                Descrição longa (EN)
                 <textarea
                   rows={3}
                   value={roomForm.longDescriptionEn}
@@ -3922,8 +3922,8 @@ function AdminHistoryPage() {
           <section className="card admin-section catalog-management-section" data-onboarding="services">
             <div className="section-heading section-heading-row catalog-heading">
               <div>
-                <p className="eyebrow">Servicos</p>
-                <h2>Gerir servicos / extras</h2>
+                <p className="eyebrow">Serviços</p>
+                <h2>Gerir serviços / extras</h2>
               </div>
               <span className="catalog-count">{services.length} registados</span>
             </div>
@@ -3938,7 +3938,7 @@ function AdminHistoryPage() {
               }}
             >
               <Plus size={16} aria-hidden="true" />
-              Criar servico
+              Criar serviço
             </button>
             {showNewServiceForm || editingServiceId ? (
               <div
@@ -4062,7 +4062,7 @@ function AdminHistoryPage() {
               </div>
             ) : null}
 
-            {catalogLoading ? <p className="summary-copy">A carregar servicos...</p> : null}
+            {catalogLoading ? <p className="summary-copy">A carregar serviços...</p> : null}
             <ul className="admin-user-list catalog-list service-management-list">
               {services.map((service) => (
                 <li key={service.id} className="service-management-card">
@@ -4282,7 +4282,7 @@ function AdminHistoryPage() {
                 ) : null}
 
                 {financeData.length === 0 ? (
-                  <p className="summary-copy">Ainda nao ha pagamentos confirmados.</p>
+                  <p className="summary-copy">Ainda não há pagamentos confirmados.</p>
                 ) : (
                   <div className="finance-month-grid">
                     {financeData.map((month) => {
@@ -4336,13 +4336,13 @@ function AdminHistoryPage() {
                 <div className="finance-print-layout" aria-label="Resumo de contas para PDF">
                   <div className="finance-print-header">
                     <div className="finance-print-header-copy">
-                      <p>{financeDataToShow.length > 0 ? `${financeDataToShow.length} mês(es) selecionado(s)` : 'Nenhum mes selecionado'}</p>
+                      <p>{financeDataToShow.length > 0 ? `${financeDataToShow.length} mês(es) selecionado(s)` : 'Nenhum mês selecionado'}</p>
                     </div>
                     <img className="finance-print-logo" src="/feedbook-logoPDF.png" alt="Feedback - Ensaios" />
                   </div>
 
                   {financeDataToShow.length === 0 ? (
-                    <p className="finance-print-empty">Seleciona pelo menos um mes para exportar.</p>
+                    <p className="finance-print-empty">Seleciona pelo menos um mês para exportar.</p>
                   ) : (
                     <>
                       <div className="finance-print-summary">
@@ -4449,8 +4449,8 @@ function AdminHistoryPage() {
                 </select>
               </label>
 
-              <label className="history-select" title="Limitar registos antigos (o futuro fica sempre visivel)">
-                <span>Periodo</span>
+              <label className="history-select" title="Limitar registos antigos (o futuro fica sempre visível)">
+                <span>Período</span>
                 <select
                   value={periodScope}
                   onChange={(event) => setPeriodScope(event.target.value as PeriodScope)}
@@ -4474,7 +4474,7 @@ function AdminHistoryPage() {
                       <th>Hora</th>
                       <th>Sala</th>
                       <th>Banda</th>
-                      <th>Duracao</th>
+                      <th>Duração</th>
                       <th>Pagamento</th>
                       <th>Estado</th>
                       <th>Detalhes</th>
@@ -5217,9 +5217,9 @@ function AdminHistoryPage() {
       ) : null}
 
       {rescheduleDraft && customerNotificationDecision?.action !== 'reschedule' ? (
-        <div className="admin-modal-backdrop" role="dialog" aria-modal="true" aria-label="Reagendar marcacao">
+        <div className="admin-modal-backdrop" role="dialog" aria-modal="true" aria-label="Reagendar marcação">
           <section className="card admin-modal-card">
-            <h3>Reagendar marcacao</h3>
+            <h3>Reagendar marcação</h3>
 
             <form className="admin-modal-form" onSubmit={handleSubmitReschedule}>
               <label>
@@ -5263,7 +5263,7 @@ function AdminHistoryPage() {
               </label>
 
               <label>
-                Duracao (h)
+                Duração (h)
                 <input
                   type="number"
                   min={1}
