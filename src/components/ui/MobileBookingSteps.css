@@ -1,6 +1,9 @@
 /* Booking steps after the room (date, details, confirmation) on phones: the same
    minimal look as the room stage — content straight on black, no boxes or
    outlines, thin dividers, small logo-red section labels. Desktop unchanged. */
+/* Wrapper around notices, extras and «Continuar»: layout-neutral on desktop. */
+.booking-date-after { display: contents; }
+
 /* Past days keep their number in the markup; only phones show it (dimmed). */
 .calendar-day-past > span { visibility: hidden; }
 
@@ -181,6 +184,13 @@
     color: #626975;
   }
 
+  /* Hours, extras and «Continuar» appear once a day is chosen; the page scrolls
+     to them, clear of the sticky heading. */
+  .public-booking-frame .booking-date-reveal { scroll-margin-top: 96px; }
+  .public-booking-frame .booking-chosen-day { margin: 0; color: var(--text-main); font-size: 1.05rem; font-weight: 600; }
+  .public-booking-frame .booking-chosen-day::first-letter { text-transform: uppercase; }
+  .public-booking-frame .booking-date-after { display: grid; gap: 18px; }
+
   /* Confirmation: same plain style, sections divided by thin lines. */
   .public-booking-frame .confirmation-banner {
     padding: 0 0 16px;
@@ -204,4 +214,14 @@
     text-decoration: underline;
     text-underline-offset: 4px;
   }
+}
+
+@media (max-width: 720px) and (prefers-reduced-motion: no-preference) {
+  .public-booking-frame .booking-date-reveal { animation: booking-date-reveal 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .public-booking-frame .booking-date-after { animation-delay: 90ms; }
+}
+
+@keyframes booking-date-reveal {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
 }

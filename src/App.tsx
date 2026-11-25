@@ -346,6 +346,11 @@ function App() {
   const [selectedRoomId, setSelectedRoomId] = useState(fallbackRooms[0].id);
   const [selectedSlot, setSelectedSlot] = useState('18:00');
   const [selectedDate, setSelectedDate] = useState(getToday());
+  // Mobile: the calendar starts with no day chosen; hours and extras appear
+  // only after the visitor picks a day.
+  const [dayChosen, setDayChosen] = useState(false);
+  const scheduleRef = useRef<HTMLDivElement>(null);
+  const stepByStepDate = mobileRoomJourney && !dayChosen;
   const [visibleMonth, setVisibleMonth] = useState(startOfMonth(new Date()));
   const [duration, setDuration] = useState(3);
   const [pricing, setPricing] = useState<PricingConfig>(defaultPricing);
@@ -472,6 +477,15 @@ const [minDelayDone, setMinDelayDone] = useState(false);
   );
   const calendarDays = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth]);
   const displayDate = formatDateForDisplay(locale, selectedDate);
+  // Mobile: the chosen day spelled out above the hours ("quinta-feira, 26 de novembro").
+  const chosenDayLabel = (() => {
+    const date = new Date(`${selectedDate}T12:00:00`);
+    if (!locale.startsWith('pt')) {
+      return new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
+    }
+    const part = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(locale, options).format(date);
+    return `${part({ weekday: 'long' })}, ${part({ day: 'numeric' })} de ${part({ month: 'long' })}`;
+  })();
   const todayIso = getToday();
   const selectedRoomContactOnly = selectedRoom.bookingMode === 'contact';
 
@@ -502,6 +516,20 @@ const [minDelayDone, setMinDelayDone] = useState(false);
       .finally(() => setDataReady(true));
     return () => clearTimeout(timer);
   }, []);
+
+  // Choosing another room starts the day choice again.
+  useEffect(() => {
+    if (bookingStep === 'room') setDayChosen(false);
+  }, [bookingStep]);
+
+  // Once a day is picked on mobile, bring the hours into view below the calendar.
+  useEffect(() => {
+    if (!dayChosen || !mobileRoomJourney) return;
+    const frame = requestAnimationFrame(() => {
+      scheduleRef.current?.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [dayChosen, mobileRoomJourney]);
 
   useEffect(() => {
     if (selectedDate < todayIso || fullyBookedDatesForSelectedRoom.has(selectedDate)) {
@@ -921,7 +949,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                       const isoDate = toIsoDate(date);
                       const isPast = isoDate < todayIso;
                       const isOccupied = fullyBookedDatesForSelectedRoom.has(isoDate);
-                      const isSelected = isoDate === selectedDate;
+                      const isSelected = isoDate === selectedDate && !stepByStepDate;
                       const isDisabled = isOccupied;
 
                       if (!inCurrentMonth || isPast) {
@@ -947,6 +975,7 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                           disabled={isDisabled}
                           onClick={() => {
                             setSelectedDate(isoDate);
+                            setDayChosen(true);
                           }}
                         >
                           <span>{date.getDate()}</span>
@@ -978,7 +1007,9 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                 </div>
               </div>
 
-              <div className="booking-schedule-column">
+              {stepByStepDate ? null : (
+              <div ref={scheduleRef} className="booking-schedule-column booking-date-reveal">
+                {mobileRoomJourney ? <p className="booking-chosen-day" aria-live="polite">{chosenDayLabel}</p> : null}
                 <div className="starttime-field">
                   <label>
                     {translations.booking.startTimeLabel}
@@ -1029,8 +1060,11 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                   </label>
                 </div>
               </div>
+              )}
               </div>
 
+              {stepByStepDate ? null : (
+              <div className="booking-date-reveal booking-date-after">
               {!selectedSlotAvailable ? (
                 <div className="offline-banner" role="alert">
                   <span>⚠ {translations.booking.slotUnavailableError}</span>
@@ -1066,6 +1100,8 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                   {translations.booking.next}
                 </button>
               </div>
+              </div>
+              )}
               </div>
             ) : null}
 
