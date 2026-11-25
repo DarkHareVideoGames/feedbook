@@ -103,8 +103,8 @@ export default function AboutSection() {
     };
   }, []);
 
-  // Mobile: the section's elements appear as they come into view. In each item
-  // the icon slides in from the left and meets its text rising from below.
+  // Mobile: the section's elements appear each time they come into view. In each
+  // item the icon slides in from the left and meets its text.
   useEffect(() => {
     const section = sectionRef.current;
     if (!section || typeof IntersectionObserver === 'undefined') return;
@@ -120,13 +120,21 @@ export default function AboutSection() {
       target.style.setProperty('--reveal-index', String(Math.min(siblings.indexOf(target), 5)));
     }
     section.classList.add('about-reveal');
+    // Plays every time an element comes back into view, scrolling down or up.
+    // An element that left above the screen comes back from the top, so its
+    // text drops in from above instead of rising from below.
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        entry.target.classList.add('is-revealed');
-        observer.unobserve(entry.target);
+        const target = entry.target as HTMLElement;
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.2) {
+          target.classList.add('is-revealed');
+        } else if (!entry.isIntersecting) {
+          target.classList.remove('is-revealed');
+          const aboveScreen = entry.boundingClientRect.top < (entry.rootBounds?.top ?? 0);
+          target.style.setProperty('--reveal-from', aboveScreen ? '-1' : '1');
+        }
       }
-    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.2 });
+    }, { threshold: [0, 0.2] });
     targets.forEach((target) => observer.observe(target));
 
     return () => {
@@ -135,6 +143,7 @@ export default function AboutSection() {
       for (const target of targets) {
         target.classList.remove('is-revealed');
         target.style.removeProperty('--reveal-index');
+        target.style.removeProperty('--reveal-from');
       }
     };
   }, []);
