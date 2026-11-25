@@ -2,7 +2,7 @@
 // screen below the heading, and the next card slides over it.
 
 export const STACK_GAP = 12;
-export const STACK_MIN_PHOTO = 180;
+export const STACK_MIN_PHOTO = 100;
 
 // Height left for a card between the sticky heading and the bottom of the screen.
 export function roomStackAvailable(headingOffset: number, viewportHeight: number): number {

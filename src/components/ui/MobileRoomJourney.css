@@ -1,12 +1,13 @@
-/* Original cards, enhanced only by the transition between scroll phases. */
+/* Mobile rooms: one whole card at a time, each sliding over the previous one. */
 .mobile-room-explore .booking-heading {
   margin-inline: 0;
   width: 100%;
   padding-inline: 0;
 }
 
-.room-journey { display: grid; gap: 32px; min-width: 0; padding-bottom: 24px; }
-/* Deck of cards: each chapter sticks (top set from JS) and the next slides over it. */
+/* The gap is scroll distance during which the stuck card stays fully visible. */
+.room-journey { display: grid; gap: min(35vh, 280px); min-width: 0; padding-bottom: 24px; }
+/* Each chapter sticks (top set from JS) and the next one slides over it. */
 .room-journey-chapter { min-width: 0; position: sticky; top: 12px; }
 .room-journey-cover {
   scroll-margin-top: 96px;
@@ -14,60 +15,45 @@
   filter: brightness(calc(1 - var(--stack-progress, 0) * 0.55));
 }
 .room-journey .room-journey-original {
+  width: 100%;
   min-height: var(--stack-available, auto);
+  cursor: default;
   box-shadow: 0 -14px 32px -8px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
-/* The photo grows so a collapsed card fills the screen (height set from JS). */
-.room-journey .room-journey-original .room-card-image { height: var(--stack-photo, 180px); }
-.room-journey-cover-actions { margin-top: auto; }
-.room-journey-original { width: 100%; cursor: default; }
 .room-journey .room-journey-original:hover { transform: none; }
+/* The photo absorbs the spare or missing space, so the whole card fits (height set from JS). */
+.room-journey .room-journey-original .room-card-image { height: var(--stack-photo, 180px); margin-bottom: 14px; }
+.room-journey .room-card-header h2 { margin-bottom: 2px; }
 .room-journey-summary { position: relative; cursor: pointer; }
 .room-journey-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.room-journey-original .room-card-description { padding-bottom: 20px; }
-.room-journey-cover-actions { display: flex; justify-content: center; padding: 4px 0 0; }
-.room-journey-scroll { display: grid; justify-items: center; gap: 6px; color: #a6a6b5; background: transparent; border: 0; padding: 4px 16px; cursor: pointer; font-size: 0.68rem; }
-.room-journey-scroll-icon { display: grid; place-items: center; width: 44px; height: 44px; color: var(--journey-accent); }
+.room-journey-original .room-card-description { margin: 6px 0 0; }
+
 .room-journey-details {
-  display: grid;
-  grid-template-rows: 0fr;
   position: relative;
-  margin: 0;
-  visibility: hidden;
-  scroll-margin-top: 24px;
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 2px 2px;
+  border-top: 1px solid color-mix(in srgb, var(--journey-accent) 45%, transparent);
 }
-.room-journey-details.is-revealed { grid-template-rows: 1fr; visibility: visible; }
-.room-journey-details-clip { min-height: 0; overflow: hidden; }
-.room-journey-details::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto auto 0;
-  width: 1px;
-  height: 80px;
-  background: var(--journey-accent);
-  box-shadow: 0 0 14px 2px var(--journey-accent);
-  pointer-events: none;
+.room-journey-description { margin: 0; white-space: pre-line; color: var(--text-main); line-height: 1.45; font-size: 0.84rem; }
+.room-journey-equipment h3 { margin: 0 0 6px; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: #a6a6b5; }
+/* Equipment as compact chips, so long lists still fit on one screen. */
+.room-journey-equipment .gear-list { display: flex; flex-wrap: wrap; gap: 5px; padding: 0; margin: 0; list-style: none; }
+.room-journey-equipment .gear-list li {
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--journey-accent) 40%, transparent);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--text-main);
 }
-.room-journey-details-inner { display: grid; gap: 22px; padding: 36px 4px 16px; }
-.room-journey-description { margin: 0; white-space: pre-line; color: var(--text-main); line-height: 1.65; }
-.room-journey-equipment h3 { margin: 0; font-size: 1rem; }
-.room-journey-equipment .gear-list { padding-left: 20px; margin-bottom: 0; }
-.room-journey-next { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0 0; border-top: 1px solid var(--border); color: var(--text-main); text-decoration: none; }
-.room-journey-next > span:first-child { display: grid; gap: 6px; }
-.room-journey-next small { color: #a6a6b5; font-size: 0.7rem; }
-.room-journey-next strong { font-weight: 500; }
+.room-journey .room-details-actions { margin: 0; }
 .room-journey :is(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
-.room-journey :is(section, div)[tabindex='-1']:focus { outline: none; }
+.room-journey section[tabindex='-1']:focus { outline: none; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .room-journey-details { transition: grid-template-rows 950ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s 950ms; }
-  .room-journey-details.is-revealed { transition-delay: 0s; }
-  .room-journey-scroll-icon { transition: transform 650ms cubic-bezier(0.22, 1, 0.36, 1); }
-  .room-journey-scroll[aria-expanded='true'] .room-journey-scroll-icon { transform: rotate(180deg); }
-  .room-journey-scroll-icon { border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--journey-accent) 14%, transparent), transparent 70%); }
-  .room-journey-details.is-revealed::after { content: ''; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, var(--journey-accent), transparent); transform-origin: left; animation: room-journey-scan 950ms cubic-bezier(0.22, 1, 0.36, 1) both; pointer-events: none; }
-  .room-journey-scroll-icon svg { animation: room-journey-nudge 2s ease-in-out infinite; }
-  /* Incoming cards rise into the deck; covered cards shrink back into it. */
+  /* Incoming cards rise into place; covered cards shrink back behind the next one. */
   .room-journey-cover {
     transform: translateY(calc(var(--phase-entry, 0) * 28px)) scale(calc(1 - var(--phase-entry, 0) * 0.03 - var(--stack-progress, 0) * 0.08));
     opacity: calc(1 - var(--phase-entry, 0) * 0.35);
@@ -78,34 +64,4 @@
       0 -14px 32px -8px rgba(0, 0, 0, 0.85),
       0 0 calc(var(--phase-entry, 0) * 26px) color-mix(in srgb, var(--journey-accent) 28%, transparent);
   }
-  .room-journey-details-inner > * {
-    opacity: 0;
-    transform: translateY(24px);
-    filter: blur(3px);
-    transition: opacity 650ms ease, transform 850ms cubic-bezier(0.22, 1, 0.36, 1), filter 650ms ease;
-  }
-  .room-journey-details.is-revealed .room-journey-details-inner > *,
-  .room-journey-details:focus-within .room-journey-details-inner > * { opacity: 1; transform: translateY(0); filter: blur(0); }
-  .room-journey-details-inner > :nth-child(2) { transition-delay: 80ms; }
-  .room-journey-details-inner > :nth-child(3) { transition-delay: 160ms; }
-  .room-journey-details-inner > :nth-child(4) { transition-delay: 240ms; }
-  .room-journey-details-inner > :nth-child(5) { transition-delay: 320ms; }
-  .room-journey-details::before { transform: scaleY(0); transform-origin: top; transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1); }
-  .room-journey-details.is-revealed::before { transform: scaleY(1); }
-}
-
-@keyframes room-journey-scan {
-  from { transform: scaleX(0); opacity: 0; }
-  45% { opacity: 1; }
-  to { transform: scaleX(1); opacity: 0.35; }
-}
-
-@keyframes room-journey-nudge {
-  0%, 100% { transform: translateY(-2px); }
-  50% { transform: translateY(5px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .room-journey-cover { transform: none; }
-  .room-journey-details::before { box-shadow: none; }
 }

@@ -1,8 +1,5 @@
-import { CSSProperties, MouseEvent, useEffect, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { CSSProperties, useEffect, useRef } from 'react';
 import { getRoomImageUrls } from '../../api';
-import { getScrollBehavior } from '../../helpers/motion';
-import { roomJourneyPhase } from '../../helpers/roomJourneyPhase';
 import { roomStackAvailable, roomStackPhotoHeight, roomStackProgress, roomStackTop } from '../../helpers/roomStack';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useI18n } from '../../i18n';
@@ -28,86 +25,51 @@ type Props = {
   onChoose: (roomId: string) => void;
 };
 
-function advance(event: MouseEvent<HTMLAnchorElement>, targetId: string) {
-  const target = document.getElementById(targetId);
-  if (!target) return;
-  event.preventDefault();
-  // Move focus as well as the viewport, so keyboard users continue at the destination.
-  target.focus({ preventScroll: true });
-  target.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
-}
-
-function RoomChapter({ room, nextRoom, onChoose }: {
+function RoomChapter({ room, onChoose }: {
   room: JourneyRoom;
-  nextRoom?: JourneyRoom;
   onChoose: Props['onChoose'];
 }) {
   const { translations } = useI18n();
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const chapterRef = useRef<HTMLElement>(null);
-  const detailsRef = useRef<HTMLDivElement>(null);
-  const [revealed, setRevealed] = useState(false);
-  const openFromArrow = useRef(false);
-  const lastScrollReveal = useRef(0);
-  const manualUntil = useRef(0);
-  const revealedRef = useRef(revealed);
-  revealedRef.current = revealed;
   const coverId = `room-cover-${room.id}`;
   const detailsId = `room-story-${room.id}`;
-  const nextId = nextRoom ? `room-cover-${nextRoom.id}` : 'explore-studio';
-  const nextLabel = nextRoom ? translations.rooms.nextRoom : translations.rooms.exploreStudio;
+  const description = room.longDescription || room.vibe;
 
   useEffect(() => {
     const chapter = chapterRef.current;
     const scroller = chapter?.closest('.page-shell');
     if (!chapter || !scroller) return;
     let frame = 0;
-    let previousScroll = scroller.scrollTop;
     const update = () => {
       frame = 0;
       const viewport = scroller.getBoundingClientRect();
-      // Measure the fixed summary, not the card that grows with its details.
-      const cover = chapter.querySelector('.room-journey-summary')!.getBoundingClientRect();
-      const direction = scroller.scrollTop - previousScroll;
-      previousScroll = scroller.scrollTop;
 
-      // One card at a time: each fills the screen below the heading, sticks there
-      // and the next card slides over it.
+      // One whole card at a time: it fits between the sticky heading and the
+      // bottom of the screen, sticks there, and the next card slides over it.
       const heading = scroller.querySelector<HTMLElement>('.booking-heading');
       const headingOffset = heading && getComputedStyle(heading).position === 'sticky' ? heading.offsetHeight : 0;
       const available = roomStackAvailable(headingOffset, viewport.height);
       const photo = chapter.querySelector<HTMLElement>('.room-card-image');
       const cardBox = chapter.querySelector<HTMLElement>('.room-journey-original');
-      if (photo && cardBox && detailsRef.current) {
-        // Everything except photo and details stays the same size, so locking the
-        // photo height keeps it steady while the details open below it.
-        const rest = cardBox.offsetHeight - photo.offsetHeight - detailsRef.current.offsetHeight;
-        const photoHeight = `${roomStackPhotoHeight(available, rest)}px`;
+      if (photo && cardBox) {
+        // The photo absorbs the difference, so the whole card fits on screen.
+        const photoHeight = `${roomStackPhotoHeight(available, cardBox.offsetHeight - photo.offsetHeight)}px`;
         if (chapter.style.getPropertyValue('--stack-photo') !== photoHeight) chapter.style.setProperty('--stack-photo', photoHeight);
       }
       chapter.style.setProperty('--stack-available', `${available}px`);
       chapter.style.top = `${roomStackTop(headingOffset, viewport.height, chapter.offsetHeight)}px`;
       const card = chapter.getBoundingClientRect();
       const next = chapter.nextElementSibling?.getBoundingClientRect();
-      const covered = roomStackProgress(card.top, card.bottom, next?.top, viewport.top, viewport.bottom);
-      chapter.style.setProperty('--stack-progress', covered.toFixed(3));
+      chapter.style.setProperty('--stack-progress', roomStackProgress(card.top, card.bottom, next?.top, viewport.top, viewport.bottom).toFixed(3));
 
-      const phase = roomJourneyPhase(direction, cover.top, cover.bottom, viewport.top, viewport.height, scroller.scrollTop);
-      // Never resize a card while the next one covers it: it would shift the whole deck.
-      if (phase !== undefined && covered === 0 && performance.now() >= manualUntil.current) {
-        if (phase && !revealedRef.current) lastScrollReveal.current = performance.now();
-        if (!phase && detailsRef.current?.contains(document.activeElement)) {
-          chapter.querySelector<HTMLButtonElement>('.room-journey-scroll')?.focus({ preventScroll: true });
-        }
-        setRevealed(phase);
-      }
       if (reducedMotion) return;
-      const entry = Math.min(1, Math.max(0, (cover.top - viewport.top - viewport.height * 0.35) / (viewport.height * 0.65)));
+      const entry = Math.min(1, Math.max(0, (card.top - viewport.top - viewport.height * 0.35) / (viewport.height * 0.65)));
       chapter.style.setProperty('--phase-entry', String(entry));
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     update();
-    // Details animate their height without scrolling; keep the sticky offset in sync.
+    // Photos and fonts load after mount; keep the sizes in sync.
     const resize = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(schedule);
     resize?.observe(chapter);
     scroller.addEventListener('scroll', schedule, { passive: true });
@@ -115,85 +77,49 @@ function RoomChapter({ room, nextRoom, onChoose }: {
     return () => {
       cancelAnimationFrame(frame);
       resize?.disconnect();
-      chapter.style.removeProperty('top');
-      chapter.style.removeProperty('--stack-progress');
-      chapter.style.removeProperty('--stack-available');
-      chapter.style.removeProperty('--stack-photo');
       scroller.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
-      chapter.style.removeProperty('--phase-entry');
+      for (const property of ['top', '--stack-progress', '--stack-available', '--stack-photo', '--phase-entry']) {
+        chapter.style.removeProperty(property);
+      }
     };
   }, [reducedMotion]);
-
-  useEffect(() => {
-    const details = detailsRef.current;
-    if (!details) return;
-    details.toggleAttribute('inert', !revealed);
-    if (revealed && openFromArrow.current) {
-      openFromArrow.current = false;
-      details.focus({ preventScroll: true });
-    }
-  }, [revealed]);
 
   return (
     <article ref={chapterRef} className="room-journey-chapter" style={{ '--journey-accent': room.accent } as CSSProperties} aria-labelledby={`${coverId}-title`}>
       <section id={coverId} className="room-journey-cover" tabIndex={-1} aria-labelledby={`${coverId}-title`}>
         <div className="room-card card room-journey-original" style={{ borderColor: room.accent }}>
-        <div className="room-journey-summary" role="button" tabIndex={0}
-          aria-label={`${room.name} — ${translations.rooms.choose}`}
-          onClick={() => onChoose(room.id)}
-          onKeyDown={(event) => {
-            if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
-              event.preventDefault();
-              onChoose(room.id);
-            }
-          }}>
-          <RoomPhotoSlideshow images={getRoomImageUrls(room)} roomName={room.name} />
-          <div className="room-card-header"><div>
-            <h2 id={`${coverId}-title`}><RoomName name={room.name} accent={room.accent} /></h2>
-            <p className="room-card-meta">{room.capacity}{room.capacity ? ' • ' : ''}{room.priceLabel}</p>
-          </div></div>
-          {room.vibe ? <p className="room-card-description">{room.vibe}</p> : null}
-        </div>
-
-      <div ref={detailsRef} id={detailsId} tabIndex={-1} aria-hidden={!revealed} className={`room-journey-details${revealed ? ' is-revealed' : ''}`}>
-        <div className="room-journey-details-clip">
-        <div className="room-journey-details-inner">
-          {room.longDescription || room.vibe ? <p className="room-journey-description">{room.longDescription || room.vibe}</p> : null}
-          {room.gear.length > 0 ? (
-            <section className="room-journey-equipment" aria-labelledby={`${detailsId}-equipment`}>
-              <h3 id={`${detailsId}-equipment`}>{translations.rooms.equipment}</h3>
-              <ul className="gear-list">{room.gear.map((item, itemIndex) => <li key={`${itemIndex}-${item}`}>{item}</li>)}</ul>
-            </section>
-          ) : null}
-          <div className="room-details-actions">
-            <button type="button" className="room-journey-book room-details-choose" onClick={() => onChoose(room.id)}>
-              {translations.rooms.choose}
-            </button>
-          </div>
-          <a className="room-journey-next" href={`#${nextId}`} onClick={(event) => advance(event, nextId)}>
-            <span><small>{nextLabel}</small><strong>{nextRoom?.name || translations.about.eyebrow}</strong></span>
-          </a>
-        </div>
-        </div>
-      </div>
-        <div className="room-journey-cover-actions">
-          <button type="button" className="room-journey-scroll" aria-expanded={revealed} aria-controls={detailsId}
-            onClick={(event) => {
-              // Bringing the bottom control into view can already reveal details.
-              // Do not immediately undo that reveal with the same pointer action.
-              if (event.detail > 0 && revealed && performance.now() - lastScrollReveal.current < 350) return;
-              manualUntil.current = performance.now() + 1100;
-              if (revealed) {
-                setRevealed(false);
-              } else {
-                openFromArrow.current = true;
-                setRevealed(true);
+          <div className="room-journey-summary" role="button" tabIndex={0}
+            aria-label={`${room.name} — ${translations.rooms.choose}`}
+            onClick={() => onChoose(room.id)}
+            onKeyDown={(event) => {
+              if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                onChoose(room.id);
               }
-            }} aria-label={`${translations.rooms.scrollDetails} — ${room.name}`}>
-            <span className="room-journey-scroll-icon"><ChevronDown size={23} aria-hidden="true" /></span>
-          </button>
-        </div>
+            }}>
+            <RoomPhotoSlideshow images={getRoomImageUrls(room)} roomName={room.name} />
+            <div className="room-card-header"><div>
+              <h2 id={`${coverId}-title`}><RoomName name={room.name} accent={room.accent} /></h2>
+              <p className="room-card-meta">{room.capacity}{room.capacity ? ' • ' : ''}{room.priceLabel}</p>
+            </div></div>
+            {room.vibe && room.longDescription ? <p className="room-card-description">{room.vibe}</p> : null}
+          </div>
+
+          <div id={detailsId} className="room-journey-details">
+            {description ? <p className="room-journey-description">{description}</p> : null}
+            {room.gear.length > 0 ? (
+              <section className="room-journey-equipment" aria-labelledby={`${detailsId}-equipment`}>
+                <h3 id={`${detailsId}-equipment`}>{translations.rooms.equipment}</h3>
+                <ul className="gear-list">{room.gear.map((item, itemIndex) => <li key={`${itemIndex}-${item}`}>{item}</li>)}</ul>
+              </section>
+            ) : null}
+            <div className="room-details-actions">
+              <button type="button" className="room-journey-book room-details-choose" onClick={() => onChoose(room.id)}>
+                {translations.rooms.choose}
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </article>
@@ -203,8 +129,8 @@ function RoomChapter({ room, nextRoom, onChoose }: {
 export default function MobileRoomJourney({ rooms, onChoose }: Props) {
   return (
     <section className="room-journey" aria-labelledby="booking-title">
-      {rooms.map((room, index) => (
-        <RoomChapter key={room.id} room={room} nextRoom={rooms[index + 1]} onChoose={onChoose} />
+      {rooms.map((room) => (
+        <RoomChapter key={room.id} room={room} onChoose={onChoose} />
       ))}
     </section>
   );

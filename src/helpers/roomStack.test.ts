@@ -18,7 +18,7 @@ describe('room stack geometry', () => {
 
   it('grows the photo to fill the card, keeping a usable minimum', () => {
     expect(roomStackPhotoHeight(716, 260)).toBe(456);
-    expect(roomStackPhotoHeight(300, 260)).toBe(180);
+    expect(roomStackPhotoHeight(300, 260)).toBe(100);
   });
 
   it('reports how much of the visible card the next card covers', () => {
