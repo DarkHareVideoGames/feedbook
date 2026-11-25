@@ -131,6 +131,9 @@
   cursor: pointer;
 }
 .room-journey-cue:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* End of the site: the arrow turns to point back up. */
+.room-journey-cue > svg { transition: rotate 450ms cubic-bezier(0.22, 1, 0.36, 1); }
+.room-journey-cue.is-at-end > svg { rotate: 180deg; }
 
 @media (prefers-reduced-motion: no-preference) {
   /* Nudges evenly around its centre so both gaps stay equal on average. */

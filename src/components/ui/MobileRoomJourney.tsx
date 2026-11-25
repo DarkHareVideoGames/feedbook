@@ -156,11 +156,12 @@ function RoomChapter({ room, state, onChoose }: {
 }
 
 // The desktop "more below" arrow, pinned to the bottom of the phone screen,
-// halfway between the card and the footer. It hides once there is nothing below.
-function ScrollCue({ stageRef, onNext }: { stageRef: RefObject<HTMLElement>; onNext: () => void }) {
+// halfway between the card and the footer. At the end of the site it turns to
+// point up and takes the visitor back to the top and the first room.
+function ScrollCue({ stageRef, onNext, onTop }: { stageRef: RefObject<HTMLElement>; onNext: () => void; onTop: () => void }) {
   const { translations } = useI18n();
   const cueRef = useRef<HTMLButtonElement>(null);
-  const [hidden, setHidden] = useState(false);
+  const [atEnd, setAtEnd] = useState(false);
 
   useEffect(() => {
     const scroller = stageRef.current?.closest<HTMLElement>('.page-shell');
@@ -175,7 +176,7 @@ function ScrollCue({ stageRef, onNext }: { stageRef: RefObject<HTMLElement>; onN
       const cardBottom = inView ? stage.bottom : viewport.bottom - STACK_CUE_SPACE;
       const footerTop = document.querySelector('.site-footer-links')?.getBoundingClientRect().top ?? viewport.bottom;
       cue.style.top = `${Math.round(roomStackCueCentre(cardBottom, footerTop) - cue.offsetHeight / 2)}px`;
-      setHidden(scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 48);
+      setAtEnd(scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 48);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     update();
@@ -192,8 +193,8 @@ function ScrollCue({ stageRef, onNext }: { stageRef: RefObject<HTMLElement>; onN
   }, [stageRef]);
 
   const cue = (
-    <button ref={cueRef} type="button" className="room-journey-cue" hidden={hidden}
-      aria-label={translations.rooms.scrollMore} onClick={onNext}>
+    <button ref={cueRef} type="button" className={`room-journey-cue${atEnd ? ' is-at-end' : ''}`}
+      aria-label={atEnd ? translations.rooms.backToTop : translations.rooms.scrollMore} onClick={atEnd ? onTop : onNext}>
       <ChevronDown size={38} aria-hidden="true" />
     </button>
   );
@@ -335,6 +336,13 @@ export default function MobileRoomJourney({ rooms, onChoose }: Props) {
     }
   }, [count, go]);
 
+  // End of the site: back to the top, showing the first room again.
+  const backToTop = useCallback(() => {
+    const scroller = stageRef.current?.closest<HTMLElement>('.page-shell');
+    scroller?.scrollTo({ top: 0, behavior: getScrollBehavior() });
+    go(0);
+  }, [go]);
+
   return (
     <>
       <section ref={stageRef} className={`room-journey${moved ? ' has-moved' : ''}`}
@@ -345,7 +353,7 @@ export default function MobileRoomJourney({ rooms, onChoose }: Props) {
         ))}
         <p className="room-journey-live" aria-live="polite">{moved ? rooms[current]?.name : ''}</p>
       </section>
-      {count > 0 ? <ScrollCue stageRef={stageRef} onNext={next} /> : null}
+      {count > 0 ? <ScrollCue stageRef={stageRef} onNext={next} onTop={backToTop} /> : null}
     </>
   );
 }
