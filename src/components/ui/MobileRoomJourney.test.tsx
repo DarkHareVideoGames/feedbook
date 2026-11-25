@@ -25,7 +25,7 @@ describe('mobile room journey', () => {
     expect(html).toContain('Descrição completa RED');
     expect(html).toContain('Bateria');
     expect(html).not.toContain('aria-haspopup="dialog"');
-    expect(html).not.toContain('Ver mais');
+    expect(html).not.toContain('>Ver mais<');
   });
 
   it('links each card to its always-visible details', () => {
@@ -72,6 +72,13 @@ describe('mobile room journey', () => {
     expect(html).toContain('</p></div><div id="room-story-red"');
     expect(html).not.toContain('inert');
     expect(html).not.toContain('aria-hidden="true" class="room-journey-details"');
+  });
+
+  it('adds one bottom "more below" arrow for the whole journey', () => {
+    const html = render();
+    expect(html.match(/class="room-journey-cue"/g)).toHaveLength(1);
+    expect(html).toContain('aria-label="Ver mais abaixo"');
+    expect(render('en')).toContain('aria-label="See more below"');
   });
 
   it('shows every card fully open without expand arrows', () => {

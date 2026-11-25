@@ -1,6 +1,9 @@
-import { CSSProperties, useEffect, useRef } from 'react';
+import { CSSProperties, RefObject, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ChevronDown } from 'lucide-react';
 import { getRoomImageUrls } from '../../api';
 import { roomStackAvailable, roomStackHeight, roomStackProgress, roomStackTop } from '../../helpers/roomStack';
+import { getScrollBehavior } from '../../helpers/motion';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useI18n } from '../../i18n';
 import RoomName from './RoomName';
@@ -140,12 +143,78 @@ function RoomChapter({ room, onChoose }: {
   );
 }
 
+// The desktop "more below" arrow, pinned to the very bottom of the phone screen
+// (overlapping the footer a little). It hides once there is nothing below.
+function ScrollCue({ journeyRef }: { journeyRef: RefObject<HTMLElement> }) {
+  const { translations } = useI18n();
+  const cueRef = useRef<HTMLButtonElement>(null);
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    const scroller = journeyRef.current?.closest<HTMLElement>('.page-shell');
+    const cue = cueRef.current;
+    if (!scroller || !cue) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const viewport = scroller.getBoundingClientRect();
+      cue.style.bottom = `${Math.max(0, window.innerHeight - viewport.bottom - 14)}px`;
+      setHidden(scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 48);
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+    update();
+    scroller.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      scroller.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+    };
+  }, [journeyRef]);
+
+  // Bring the next card that is not yet in place to the top; after the last one,
+  // the studio section; past that, one screen further down.
+  const advance = () => {
+    const journey = journeyRef.current;
+    const scroller = journey?.closest<HTMLElement>('.page-shell');
+    if (!journey || !scroller) return;
+    const scrollerTop = scroller.getBoundingClientRect().top + (parseFloat(getComputedStyle(scroller).paddingTop) || 0);
+    const next = [...journey.querySelectorAll<HTMLElement>('.room-journey-chapter')]
+      .find((chapter) => chapter.getBoundingClientRect().top > scrollerTop + (parseFloat(chapter.style.top) || 0) + 2);
+    const behavior = getScrollBehavior();
+    if (next) {
+      const distance = next.getBoundingClientRect().top - scrollerTop - (parseFloat(next.style.top) || 0);
+      scroller.scrollBy({ top: distance, behavior });
+      return;
+    }
+    const studio = document.getElementById('explore-studio');
+    if (studio && studio.getBoundingClientRect().top > scrollerTop + 8) {
+      studio.scrollIntoView({ behavior, block: 'start' });
+    } else {
+      scroller.scrollBy({ top: scroller.clientHeight * 0.85, behavior });
+    }
+  };
+
+  const cue = (
+    <button ref={cueRef} type="button" className="room-journey-cue" hidden={hidden}
+      aria-label={translations.rooms.scrollMore} onClick={advance}>
+      <ChevronDown size={18} aria-hidden="true" />
+    </button>
+  );
+  // Rendered into <body>: inside the scroll area it would be clipped at the footer.
+  return typeof document === 'undefined' ? cue : createPortal(cue, document.body);
+}
+
 export default function MobileRoomJourney({ rooms, onChoose }: Props) {
+  const journeyRef = useRef<HTMLElement>(null);
   return (
-    <section className="room-journey" aria-labelledby="booking-title">
-      {rooms.map((room) => (
-        <RoomChapter key={room.id} room={room} onChoose={onChoose} />
-      ))}
-    </section>
+    <>
+      <section ref={journeyRef} className="room-journey" aria-labelledby="booking-title">
+        {rooms.map((room) => (
+          <RoomChapter key={room.id} room={room} onChoose={onChoose} />
+        ))}
+      </section>
+      {rooms.length > 0 ? <ScrollCue journeyRef={journeyRef} /> : null}
+    </>
   );
 }

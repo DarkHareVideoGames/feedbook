@@ -73,7 +73,28 @@
 .room-journey :is(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 .room-journey section[tabindex='-1']:focus { outline: none; }
 
+/* Same red arrow as the desktop "more below" cue, pinned to the bottom of the screen. */
+.room-journey-cue {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 31;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 44px;
+  height: 32px;
+  padding: 0;
+  transform: translateX(-50%);
+  color: #dc2626;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.room-journey-cue:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
 @media (prefers-reduced-motion: no-preference) {
+  .room-journey-cue svg { animation: about-scroll-nudge 1.8s ease-in-out infinite; }
   /* Incoming cards rise into place (no scaling: photos must not zoom). */
   .room-journey-cover {
     transform: translateY(calc(var(--phase-entry, 0) * 28px));
