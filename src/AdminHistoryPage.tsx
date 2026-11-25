@@ -3735,6 +3735,7 @@ function AdminHistoryPage() {
                 onImagesChange={(imageUrls) => setRoomForm((current) => ({ ...current, imageUrls }))}
                 onFilesChange={setRoomImageFiles}
               />
+              <p className="room-editor-hint">Deixa as descrições vazias para as omitir na página pública.</p>
               <div className="room-editor-language-grid">
               <label>
                 Descricao (PT)

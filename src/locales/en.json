@@ -38,7 +38,10 @@
     "priceFrom": "from",
     "contactOnly": "On request",
     "closeDetails": "Close room details",
-    "equipment": "Included equipment"
+    "equipment": "Included equipment:",
+    "discoverRoom": "A closer look",
+    "scrollMore": "See more below",
+    "backToTop": "Back to top"
   },
   "about": {
     "eyebrow": "About us",

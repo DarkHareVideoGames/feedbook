@@ -71,7 +71,7 @@ function RoomDetailsModal({ room, priceLabel, onClose, onChoose }: RoomDetailsMo
       ref={dialogRef}
       className="room-details-modal"
       aria-labelledby="room-modal-title"
-      aria-describedby="room-modal-summary"
+      aria-describedby={room.vibe ? 'room-modal-summary' : undefined}
       onCancel={(event) => {
         event.preventDefault();
         onClose();
@@ -100,7 +100,7 @@ function RoomDetailsModal({ room, priceLabel, onClose, onChoose }: RoomDetailsMo
             <RoomName name={room.name} accent={room.accent} />
           </h2>
           <p className="room-details-meta">{room.capacity} • {priceLabel}</p>
-          <p id="room-modal-summary" className="room-details-summary">{room.vibe}</p>
+          {room.vibe ? <p id="room-modal-summary" className="room-details-summary">{room.vibe}</p> : null}
           {room.longDescription ? <p className="room-details-description">{room.longDescription}</p> : null}
           {room.gear.length > 0 ? (
             <section aria-labelledby="room-modal-equipment">

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import './AboutSection.css';
 
 // Icones alinhados com a ordem dos blocos nos ficheiros de locale.
 // A ordem das tradutoras define a ordem visual dos cartoes.
@@ -102,8 +103,53 @@ export default function AboutSection() {
     };
   }, []);
 
+  // Mobile: the section's elements appear each time they come into view. In each
+  // item the icon slides in from the left and meets its text.
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === 'undefined') return;
+    if (!window.matchMedia('(max-width: 720px)').matches) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const targets = [...section.querySelectorAll<HTMLElement>(
+      '.about-header > :not(.about-scroll-cue), .about-block-title, .about-infra-item, .about-amenity, .about-activity',
+    )];
+    // Elements that enter together follow one another in their list.
+    for (const target of targets) {
+      const siblings = [...(target.parentElement?.children ?? [])].filter((child) => targets.includes(child as HTMLElement));
+      target.style.setProperty('--reveal-index', String(Math.min(siblings.indexOf(target), 5)));
+    }
+    section.classList.add('about-reveal');
+    // Plays every time an element comes back into view, scrolling down or up.
+    // An element that left above the screen comes back from the top, so its
+    // text drops in from above instead of rising from below.
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const target = entry.target as HTMLElement;
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.2) {
+          target.classList.add('is-revealed');
+        } else if (!entry.isIntersecting) {
+          target.classList.remove('is-revealed');
+          const aboveScreen = entry.boundingClientRect.top < (entry.rootBounds?.top ?? 0);
+          target.style.setProperty('--reveal-from', aboveScreen ? '-1' : '1');
+        }
+      }
+    }, { threshold: [0, 0.2] });
+    targets.forEach((target) => observer.observe(target));
+
+    return () => {
+      observer.disconnect();
+      section.classList.remove('about-reveal');
+      for (const target of targets) {
+        target.classList.remove('is-revealed');
+        target.style.removeProperty('--reveal-index');
+        target.style.removeProperty('--reveal-from');
+      }
+    };
+  }, []);
+
   return (
-    <section id="explore-studio" ref={sectionRef} className="about-section" aria-labelledby="about-title">
+    <section id="explore-studio" ref={sectionRef} tabIndex={-1} className="about-section" aria-labelledby="about-title">
       <header className="about-header">
         <p className="eyebrow">{about.eyebrow}</p>
         <h2 id="about-title">{about.title}</h2>

@@ -1,0 +1,169 @@
+/* Mobile rooms: a fixed stage showing one room at a time. Swipes, wheel and the
+   arrow swap the room in place with a short transition (no page scrolling). */
+.room-journey {
+  position: relative;
+  height: var(--stage-height, 70vh);
+  min-width: 0;
+  overflow: clip;
+  overflow-clip-margin: 8px;
+  overscroll-behavior-y: contain;
+}
+.room-journey-chapter {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.room-journey-chapter.is-active { z-index: 2; visibility: visible; opacity: 1; pointer-events: auto; }
+.room-journey-chapter.is-leaving { z-index: 1; visibility: visible; }
+.room-journey-cover { height: 100%; }
+.room-journey-live { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.room-journey .room-journey-original {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  cursor: default;
+  border: 0;
+}
+.room-journey .room-journey-original:hover { transform: none; }
+/* The photo takes the spare space and shrinks first; then long text scrolls inside the card. */
+.room-journey-summary { position: relative; cursor: pointer; display: flex; flex-direction: column; flex: 1 1 0; }
+.room-journey .room-journey-original .room-card-image { flex: 1 1 0; height: auto; min-height: clamp(72px, 14vh, 120px); margin-bottom: 14px; }
+.room-journey .room-card-header h2 { margin-bottom: 2px; }
+/* Vignette on the edges only, so the photo blends into the black card while its centre stays clear. */
+.room-journey .room-photo-slideshow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, transparent 65%, rgba(0, 0, 0, 0.6) 86%, #000),
+    linear-gradient(to right, rgba(0, 0, 0, 0.6), transparent 16%, transparent 84%, rgba(0, 0, 0, 0.6)),
+    radial-gradient(ellipse 90% 95% at 50% 45%, transparent 62%, rgba(0, 0, 0, 0.7));
+}
+.room-journey-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.room-journey-original .room-card-description { margin: 6px 0 0; }
+
+.room-journey-details {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  margin-top: 12px;
+  padding: 0 2px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--journey-accent) 60%, transparent) transparent;
+}
+/* Fade the last line while there is more text to scroll to. */
+.room-journey-details.is-scrollable:not(.is-scrolled-end) {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
+}
+.room-journey-details:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Editorial details: a calm description paragraph, then a small spaced label in
+   the logo red over the equipment as running text, each item led by a
+   logo-red dot, so it fills the card's width. */
+/* Same red as the Feedback logo (#fe0000). */
+.room-journey { --logo-red: #fe0000; }
+.room-journey-details { --journey-text: var(--room-card-description-color); gap: 18px; }
+.room-journey .room-journey-description { margin: 0; white-space: pre-line; color: var(--journey-text); font-size: 0.94rem; font-weight: 400; line-height: 1.6; }
+.room-journey-equipment h3 {
+  margin: 0 0 10px;
+  /* Logo red in every room. */
+  color: var(--logo-red);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.room-journey-equipment .gear-list {
+  display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+.room-journey-equipment .gear-list li {
+  display: inline;
+  color: color-mix(in srgb, var(--journey-text) 70%, var(--text-muted));
+}
+/* A logo-red dot leads each item, glued to it (non-breaking space). Items run
+   on as text that wraps between items, so every line reaches the card's edge. */
+.room-journey-equipment .gear-list li::before {
+  content: '•\00a0';
+  color: var(--logo-red);
+  font-size: 0.85em;
+}
+/* The space after each item is where lines break, never between dot and item. */
+.room-journey-equipment .gear-list li:not(:last-child)::after {
+  content: ' ';
+  margin-right: 0.6em;
+  white-space: pre-wrap;
+}
+.room-journey .room-details-actions { flex: none; margin: 0; padding-top: 10px; }
+.room-journey :is(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+.room-journey section[tabindex='-1']:focus { outline: none; }
+
+/* Same red arrow as the desktop "more below" cue, pinned to the bottom of the screen. */
+.room-journey-cue {
+  position: fixed;
+  left: 50%;
+  top: auto;
+  z-index: 31;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 56px;
+  height: 48px;
+  padding: 0;
+  transform: translateX(-50%);
+  color: #dc2626;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.room-journey-cue:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* End of the site: the arrow turns to point back up. */
+.room-journey-cue > svg { transition: rotate 450ms cubic-bezier(0.22, 1, 0.36, 1); }
+.room-journey-cue.is-at-end > svg { rotate: 180deg; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Nudges evenly around its centre so both gaps stay equal on average. */
+  .room-journey-cue svg { animation: room-journey-cue-nudge 1.8s ease-in-out infinite; }
+  /* The new room rises a little into place and comes into focus; the previous
+     one drifts the other way and fades. No scaling, so photos never zoom. */
+  /* Sequenced so the two rooms' texts barely overlap: out fast, then in. */
+  .room-journey.has-moved .room-journey-chapter.is-active { animation: room-journey-enter 480ms cubic-bezier(0.22, 1, 0.36, 1) 150ms both; }
+  .room-journey.has-moved .room-journey-chapter.is-leaving { animation: room-journey-leave 200ms cubic-bezier(0.4, 0, 1, 1) both; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-journey.has-moved .room-journey-chapter.is-active { animation: room-journey-fade-in 200ms ease both; }
+  .room-journey.has-moved .room-journey-chapter.is-leaving { animation: room-journey-fade-out 200ms ease both; }
+}
+
+@keyframes room-journey-enter {
+  from { opacity: 0; transform: translateY(calc(var(--room-direction, 1) * 36px)); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+@keyframes room-journey-leave {
+  from { opacity: 1; transform: none; filter: none; }
+  to { opacity: 0; transform: translateY(calc(var(--room-direction, 1) * -24px)); filter: blur(4px); }
+}
+
+@keyframes room-journey-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes room-journey-fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes room-journey-cue-nudge {
+  0%, 100% { transform: translateY(-3px); }
+  50% { transform: translateY(3px); }
+}
