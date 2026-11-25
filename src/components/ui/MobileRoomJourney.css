@@ -1,9 +1,4 @@
 /* Mobile rooms: one whole card at a time, each sliding over the previous one. */
-.mobile-room-explore .booking-heading {
-  margin-inline: 0;
-  width: 100%;
-  padding-inline: 0;
-}
 
 /* The gap is scroll distance during which the stuck card stays fully visible. */
 .room-journey { overflow-anchor: none; display: grid; gap: min(35vh, 280px); min-width: 0; padding-bottom: 24px; }
