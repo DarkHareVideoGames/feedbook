@@ -135,7 +135,10 @@ function RoomChapter({ room, state, onChoose }: {
             {room.gear.length > 0 ? (
               <section className="room-journey-equipment" aria-labelledby={`${detailsId}-equipment`}>
                 <h3 id={`${detailsId}-equipment`}>{translations.rooms.equipment.replace(/:\s*$/, '')}</h3>
-                <ul className="gear-list">{room.gear.map((item, itemIndex) => <li key={`${itemIndex}-${item}`}>{item}</li>)}</ul>
+                <ul className="gear-list">{room.gear.map((item, itemIndex) => (
+                  // Keep the quantity on the same line as what it counts ("1 Bateria").
+                  <li key={`${itemIndex}-${item}`}>{item.replace(/^(\d+)\s+/, '$1\u00a0')}</li>
+                ))}</ul>
               </section>
             ) : null}
           </div>
