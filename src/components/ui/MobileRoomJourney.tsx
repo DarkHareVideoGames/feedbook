@@ -23,6 +23,10 @@ export type JourneyRoom = {
   priceLabel: string;
 };
 
+// «Escolher esta sala» is hidden for now; the card itself (photo, name, price)
+// still opens the booking. Set to true to bring the button back.
+const SHOW_CHOOSE_BUTTON = false;
+
 type Props = {
   rooms: JourneyRoom[];
   onChoose: (roomId: string) => void;
@@ -132,11 +136,13 @@ function RoomChapter({ room, onChoose }: {
               </section>
             ) : null}
           </div>
-          <div className="room-details-actions">
-            <button type="button" className="room-journey-book room-details-choose" onClick={() => onChoose(room.id)}>
-              {translations.rooms.choose}
-            </button>
-          </div>
+          {SHOW_CHOOSE_BUTTON ? (
+            <div className="room-details-actions">
+              <button type="button" className="room-journey-book room-details-choose" onClick={() => onChoose(room.id)}>
+                {translations.rooms.choose}
+              </button>
+            </div>
+          ) : null}
         </div>
       </section>
     </article>
@@ -158,7 +164,7 @@ function ScrollCue({ journeyRef }: { journeyRef: RefObject<HTMLElement> }) {
     const update = () => {
       frame = 0;
       const viewport = scroller.getBoundingClientRect();
-      cue.style.bottom = `${Math.max(0, window.innerHeight - viewport.bottom - 14)}px`;
+      cue.style.bottom = `${Math.max(0, window.innerHeight - viewport.bottom + 6)}px`;
       setHidden(scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 48);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
@@ -198,7 +204,7 @@ function ScrollCue({ journeyRef }: { journeyRef: RefObject<HTMLElement> }) {
   const cue = (
     <button ref={cueRef} type="button" className="room-journey-cue" hidden={hidden}
       aria-label={translations.rooms.scrollMore} onClick={advance}>
-      <ChevronDown size={18} aria-hidden="true" />
+      <ChevronDown size={30} aria-hidden="true" />
     </button>
   );
   // Rendered into <body>: inside the scroll area it would be clipped at the footer.
