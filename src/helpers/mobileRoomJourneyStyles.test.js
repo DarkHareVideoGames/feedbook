@@ -23,4 +23,14 @@ describe('mobile room journey motion and layout', () => {
     expect(component).toContain("scroller.addEventListener('scroll', schedule, { passive: true })");
     expect(component).toContain('cancelAnimationFrame(frame)');
   });
+
+  it('stacks the room cards as a sticky deck that dims covered cards', () => {
+    const component = readFileSync(new URL('../components/ui/MobileRoomJourney.tsx', import.meta.url), 'utf8');
+    expect(styles).toMatch(/\.room-journey-chapter \{[^}]*position: sticky/);
+    expect(styles).toContain('brightness(calc(1 - var(--stack-progress, 0)');
+    const motion = styles.slice(styles.indexOf('@media (prefers-reduced-motion: no-preference)'));
+    expect(motion).toContain('var(--stack-progress, 0) * 0.08');
+    expect(component).toContain('new ResizeObserver(schedule)');
+    expect(component).toContain('covered === 0');
+  });
 });

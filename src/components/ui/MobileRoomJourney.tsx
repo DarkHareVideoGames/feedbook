@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { getRoomImageUrls } from '../../api';
 import { getScrollBehavior } from '../../helpers/motion';
 import { roomJourneyPhase } from '../../helpers/roomJourneyPhase';
+import { roomStackProgress, roomStackTop } from '../../helpers/roomStack';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useI18n } from '../../i18n';
 import RoomName from './RoomName';
@@ -36,8 +37,9 @@ function advance(event: MouseEvent<HTMLAnchorElement>, targetId: string) {
   target.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
 }
 
-function RoomChapter({ room, nextRoom, onChoose }: {
+function RoomChapter({ room, index, nextRoom, onChoose }: {
   room: JourneyRoom;
+  index: number;
   nextRoom?: JourneyRoom;
   onChoose: Props['onChoose'];
 }) {
@@ -69,8 +71,19 @@ function RoomChapter({ room, nextRoom, onChoose }: {
       const cover = chapter.querySelector('.room-journey-summary')!.getBoundingClientRect();
       const direction = scroller.scrollTop - previousScroll;
       previousScroll = scroller.scrollTop;
+
+      // Stack the cards: each one sticks below the heading and the next slides over it.
+      const heading = scroller.querySelector<HTMLElement>('.booking-heading');
+      const headingOffset = heading && getComputedStyle(heading).position === 'sticky' ? heading.offsetHeight : 0;
+      chapter.style.top = `${roomStackTop(index, headingOffset, viewport.height, chapter.offsetHeight)}px`;
+      const card = chapter.getBoundingClientRect();
+      const next = chapter.nextElementSibling?.getBoundingClientRect();
+      const covered = roomStackProgress(card.top, card.bottom, next?.top, viewport.top, viewport.bottom);
+      chapter.style.setProperty('--stack-progress', covered.toFixed(3));
+
       const phase = roomJourneyPhase(direction, cover.top, cover.bottom, viewport.top, viewport.height, scroller.scrollTop);
-      if (phase !== undefined && performance.now() >= manualUntil.current) {
+      // Never resize a card while the next one covers it: it would shift the whole deck.
+      if (phase !== undefined && covered === 0 && performance.now() >= manualUntil.current) {
         if (phase && !revealedRef.current) lastScrollReveal.current = performance.now();
         if (!phase && detailsRef.current?.contains(document.activeElement)) {
           chapter.querySelector<HTMLButtonElement>('.room-journey-scroll')?.focus({ preventScroll: true });
@@ -78,23 +91,26 @@ function RoomChapter({ room, nextRoom, onChoose }: {
         setRevealed(phase);
       }
       if (reducedMotion) return;
-      const progress = Math.min(1, Math.max(0, (viewport.top - cover.top) / Math.max(cover.height, 1)));
       const entry = Math.min(1, Math.max(0, (cover.top - viewport.top - viewport.height * 0.35) / (viewport.height * 0.65)));
-      chapter.style.setProperty('--phase-exit', String(progress));
       chapter.style.setProperty('--phase-entry', String(entry));
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     update();
+    // Details animate their height without scrolling; keep the sticky offset in sync.
+    const resize = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(schedule);
+    resize?.observe(chapter);
     scroller.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
     return () => {
       cancelAnimationFrame(frame);
+      resize?.disconnect();
+      chapter.style.removeProperty('top');
+      chapter.style.removeProperty('--stack-progress');
       scroller.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
-      chapter.style.removeProperty('--phase-exit');
       chapter.style.removeProperty('--phase-entry');
     };
-  }, [reducedMotion]);
+  }, [index, reducedMotion]);
 
   useEffect(() => {
     const details = detailsRef.current;
@@ -175,7 +191,7 @@ export default function MobileRoomJourney({ rooms, onChoose }: Props) {
   return (
     <section className="room-journey" aria-labelledby="booking-title">
       {rooms.map((room, index) => (
-        <RoomChapter key={room.id} room={room} nextRoom={rooms[index + 1]} onChoose={onChoose} />
+        <RoomChapter key={room.id} room={room} index={index} nextRoom={rooms[index + 1]} onChoose={onChoose} />
       ))}
     </section>
   );
