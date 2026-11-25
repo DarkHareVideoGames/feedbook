@@ -64,13 +64,13 @@ function calculateRoomPrice(hours, basePrice) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed.' });
   const supabaseService = getSupabaseService();
-  if (!supabaseService) return res.status(503).json({ message: 'Marcacoes indisponiveis: falta SUPABASE_SERVICE_ROLE_KEY.' });
+  if (!supabaseService) return res.status(503).json({ message: 'Marcações indisponíveis: falta SUPABASE_SERVICE_ROLE_KEY.' });
   if (isRateLimited(clientIp(req))) return res.status(429).json({ message: 'Demasiados pedidos. Tenta novamente dentro de alguns minutos.' });
 
   try {
     const body = req.body || {};
     // Campo invisível opcional para bloquear submissões automatizadas simples.
-    if (text(body.website, 200)) return res.status(400).json({ message: 'Pedido invalido.' });
+    if (text(body.website, 200)) return res.status(400).json({ message: 'Pedido inválido.' });
 
     const roomId = text(body.roomId, 100);
     const date = text(body.date, 10);
@@ -90,13 +90,13 @@ export default async function handler(req, res) {
 
     if (!roomId || !contactName || !contactPhone || !email || !validDate(date) || date < todayIso || !validTime(time)
       || !Number.isInteger(duration) || duration < 1 || duration > MAX_REHEARSAL_HOURS) {
-      return res.status(400).json({ message: 'Dados de marcacao invalidos.' });
+      return res.status(400).json({ message: 'Dados de marcação inválidos.' });
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ message: 'Indica um email valido.' });
+      return res.status(400).json({ message: 'Indica um email válido.' });
     }
     if (!['on-site', 'mbway'].includes(paymentMethod)) {
-      return res.status(400).json({ message: 'Metodo de pagamento invalido.' });
+      return res.status(400).json({ message: 'Método de pagamento inválido.' });
     }
 
     const [{ data: room, error: roomError }, { data: serviceRows, error: servicesError }] = await Promise.all([
@@ -104,16 +104,16 @@ export default async function handler(req, res) {
       supabaseService.from('services').select('id, price').eq('active', true),
     ]);
     if (roomError || !room || room.active === false || room.bookingMode !== 'booking') {
-      return res.status(400).json({ message: 'Esta sala nao esta disponivel para marcacao direta.' });
+      return res.status(400).json({ message: 'Esta sala não está disponível para marcação direta.' });
     }
     if (servicesError) {
       console.error('Erro ao carregar servicos ativos:', servicesError);
-      return res.status(503).json({ message: 'Nao foi possivel validar os servicos selecionados.' });
+      return res.status(503).json({ message: 'Não foi possível validar os serviços selecionados.' });
     }
 
     const servicesById = new Map((serviceRows || []).map((service) => [String(service.id), Number(service.price || 0)]));
     if (requestedExtras.some((extra) => !servicesById.has(extra))) {
-      return res.status(400).json({ message: 'Um ou mais servicos selecionados ja nao estao disponiveis.' });
+      return res.status(400).json({ message: 'Um ou mais serviços selecionados já não estão disponíveis.' });
     }
 
     const roomPricePerHour = Number(room.pricePerMemberHour);
@@ -131,10 +131,10 @@ export default async function handler(req, res) {
     if (error) {
       const message = String(error.message || '');
       if (/hor.rio indispon.vel|intervalo|conflict/i.test(message)) {
-        return res.status(409).json({ message: 'Horario indisponivel para esta sala.' });
+        return res.status(409).json({ message: 'Horário indisponível para esta sala.' });
       }
       console.error('Erro ao criar marcacao publica:', error);
-      return res.status(500).json({ message: 'Nao foi possivel concluir a marcacao.' });
+      return res.status(500).json({ message: 'Não foi possível concluir a marcação.' });
     }
 
     const audit = await supabaseService.from('audit_logs').insert({
@@ -147,6 +147,6 @@ export default async function handler(req, res) {
     return res.status(201).json({ booking: data });
   } catch (error) {
     console.error('Erro inesperado em /api/create-booking:', error);
-    return res.status(500).json({ message: 'Nao foi possivel concluir a marcacao.' });
+    return res.status(500).json({ message: 'Não foi possível concluir a marcação.' });
   }
 }

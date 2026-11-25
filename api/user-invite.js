@@ -124,7 +124,7 @@ export default async function handler(req, res) {
   }
 
   if (!supabaseAuth || !supabaseService) {
-    return res.status(503).json({ message: 'Convite indisponivel: falta SUPABASE_SERVICE_ROLE_KEY (ou SUPABASE_URL/anon key).' });
+    return res.status(503).json({ message: 'Convite indisponível: falta SUPABASE_SERVICE_ROLE_KEY (ou SUPABASE_URL/anon key).' });
   }
 
   const authHeader = String(req.headers.authorization || '');
