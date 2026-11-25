@@ -1,7 +1,7 @@
 /* Mobile rooms: one whole card at a time, each sliding over the previous one. */
 
-/* The gap is scroll distance during which the stuck card stays fully visible. */
-.room-journey { overflow-anchor: none; display: grid; gap: min(35vh, 280px); min-width: 0; padding-bottom: 24px; }
+/* Small gap: the next card starts coming in as soon as the page scrolls. */
+.room-journey { overflow-anchor: none; display: grid; gap: 12px; min-width: 0; padding-bottom: 24px; }
 /* Each chapter sticks (top set from JS) and the next one slides over it. */
 .room-journey-chapter { min-width: 0; position: sticky; top: 12px; }
 .room-journey-cover {
@@ -16,7 +16,9 @@
   min-height: 0;
   overflow: hidden;
   cursor: default;
-  box-shadow: 0 -14px 32px -8px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  /* No outline: cards are separated by the shadow and the dimming of the covered card. */
+  border: 0;
+  box-shadow: 0 -14px 32px -8px rgba(0, 0, 0, 0.85);
 }
 .room-journey .room-journey-original:hover { transform: none; }
 /* The photo takes the spare space and shrinks first; then long text scrolls inside the card. */
@@ -65,10 +67,5 @@
     transform: translateY(calc(var(--phase-entry, 0) * 28px));
     opacity: calc(1 - var(--phase-entry, 0) * 0.35);
     will-change: transform, filter;
-  }
-  .room-journey .room-journey-original {
-    box-shadow:
-      0 -14px 32px -8px rgba(0, 0, 0, 0.85),
-      0 0 calc(var(--phase-entry, 0) * 26px) color-mix(in srgb, var(--journey-accent) 28%, transparent);
   }
 }

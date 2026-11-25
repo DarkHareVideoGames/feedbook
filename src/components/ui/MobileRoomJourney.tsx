@@ -102,7 +102,7 @@ function RoomChapter({ room, onChoose }: {
   return (
     <article ref={chapterRef} className="room-journey-chapter" style={{ '--journey-accent': room.accent } as CSSProperties} aria-labelledby={`${coverId}-title`}>
       <section id={coverId} className="room-journey-cover" tabIndex={-1} aria-labelledby={`${coverId}-title`}>
-        <div className="room-card card room-journey-original" style={{ borderColor: room.accent }}>
+        <div className="room-card card room-journey-original">
           <div className="room-journey-summary" role="button" tabIndex={0}
             aria-label={`${room.name} — ${translations.rooms.choose}`}
             onClick={() => onChoose(room.id)}
