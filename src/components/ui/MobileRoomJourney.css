@@ -53,7 +53,8 @@
 .room-journey .room-journey-description.is-summary { line-height: 1.6; }
 .room-journey-equipment h3 { margin: 0 0 8px; font-size: 1rem; font-weight: 400; color: var(--journey-text); }
 .room-journey-equipment .gear-list { padding-left: 18px; margin: 0; }
-.room-journey-equipment .gear-list li { color: var(--text-muted); font-size: 1rem; }
+/* Halfway between the heading colour and the published muted list colour. */
+.room-journey-equipment .gear-list li { color: color-mix(in srgb, var(--journey-text) 50%, var(--text-muted)); font-size: 1rem; }
 .room-journey .room-details-actions { flex: none; margin: 0; padding-top: 10px; }
 .room-journey :is(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 .room-journey section[tabindex='-1']:focus { outline: none; }
