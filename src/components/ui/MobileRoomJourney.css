@@ -25,6 +25,17 @@
 .room-journey-summary { position: relative; cursor: pointer; display: flex; flex-direction: column; flex: 1 1 0; }
 .room-journey .room-journey-original .room-card-image { flex: 1 1 0; height: auto; min-height: clamp(72px, 14vh, 120px); margin-bottom: 14px; }
 .room-journey .room-card-header h2 { margin-bottom: 2px; }
+/* Soft vignette so the photo blends into the black card, strongest at the bottom edge. */
+.room-journey .room-photo-slideshow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, transparent 62%, rgba(0, 0, 0, 0.75)),
+    radial-gradient(ellipse 85% 90% at 50% 45%, transparent 58%, rgba(0, 0, 0, 0.55));
+}
 .room-journey-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .room-journey-original .room-card-description { margin: 6px 0 0; }
 
