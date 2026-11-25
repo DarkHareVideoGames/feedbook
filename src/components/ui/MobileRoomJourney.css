@@ -68,8 +68,8 @@
 }
 .room-journey-details:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Editorial details: a calm description paragraph, then a small spaced label in
-   the logo red over the equipment as running text separated by logo-red
-   dots, so it fills the card's width. */
+   the logo red over the equipment as running text, each item led by a
+   logo-red dot, so it fills the card's width. */
 /* Same red as the Feedback logo (#fe0000). */
 .room-journey { --logo-red: #fe0000; }
 .room-journey-details { --journey-text: var(--room-card-description-color); gap: 18px; }
@@ -95,15 +95,18 @@
   display: inline;
   color: color-mix(in srgb, var(--journey-text) 70%, var(--text-muted));
 }
-/* Logo-red dot between items: the list reads as one line of text that wraps
-   word by word, so every line reaches the right edge of the card. */
-.room-journey-equipment .gear-list li:not(:last-child)::after {
-  /* The space after the dot is where lines break, never between dot and item. */
-  content: '· ';
-  margin: 0 0.25em 0 0.5em;
-  white-space: pre-wrap;
+/* A logo-red dot leads each item, glued to it (non-breaking space). Items run
+   on as text that wraps between items, so every line reaches the card's edge. */
+.room-journey-equipment .gear-list li::before {
+  content: '•\00a0';
   color: var(--logo-red);
-  font-weight: 700;
+  font-size: 0.85em;
+}
+/* The space after each item is where lines break, never between dot and item. */
+.room-journey-equipment .gear-list li:not(:last-child)::after {
+  content: ' ';
+  margin-right: 0.6em;
+  white-space: pre-wrap;
 }
 .room-journey .room-details-actions { flex: none; margin: 0; padding-top: 10px; }
 .room-journey :is(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
