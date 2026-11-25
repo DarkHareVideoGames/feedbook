@@ -17,6 +17,7 @@ import { useImagesReady } from './hooks/useImageReady';
 import { getScrollBehavior } from './helpers/motion';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import MobileRoomJourney from './components/ui/MobileRoomJourney';
+import './components/ui/MobileBookingSteps.css';
 
 type RoomDefinition = api.ApiRoom;
 
@@ -927,9 +928,12 @@ const [minDelayDone, setMinDelayDone] = useState(false);
                         return (
                           <span
                             key={isoDate}
-                            className="calendar-day calendar-day-empty"
+                            className={`calendar-day calendar-day-empty${inCurrentMonth ? ' calendar-day-past' : ''}`}
                             aria-hidden="true"
-                          />
+                          >
+                            {/* Past days of this month: hidden on desktop, shown dimmed on phones. */}
+                            {inCurrentMonth ? <span>{date.getDate()}</span> : null}
+                          </span>
                         );
                       }
 

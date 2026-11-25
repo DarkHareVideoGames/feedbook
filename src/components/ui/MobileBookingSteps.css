@@ -1,0 +1,207 @@
+/* Booking steps after the room (date, details, confirmation) on phones: the same
+   minimal look as the room stage — content straight on black, no boxes or
+   outlines, thin dividers, small logo-red section labels. Desktop unchanged. */
+/* Past days keep their number in the markup; only phones show it (dimmed). */
+.calendar-day-past > span { visibility: hidden; }
+
+@media (max-width: 720px) {
+  .public-booking-frame {
+    --logo-red: #fe0000;
+    --step-line: rgba(255, 255, 255, 0.1);
+    --step-muted: #8a8f99;
+  }
+
+  /* No outer card around each step. */
+  .public-booking-frame .booking-grid > .card {
+    padding: 4px 0 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* «Voltar»: a plain link with a red arrow. */
+  .public-booking-frame .booking-top-back {
+    padding: 4px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--step-muted);
+    font-weight: 500;
+  }
+  .public-booking-frame .booking-top-back svg { color: var(--logo-red); }
+  .public-booking-frame .booking-top-back:hover { background: transparent; color: var(--text-main); }
+
+  /* Section labels: small, spaced capitals in logo red (as «Equipamento incluído»). */
+  .public-booking-frame .booking-extras-block > .field-label,
+  .public-booking-frame .booking-summary > .field-label,
+  .public-booking-frame .confirmation-detail-section h3,
+  .public-booking-frame .confirmation-details-grid dt,
+  .public-booking-frame .confirmation-reference > span {
+    color: var(--logo-red);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  /* Calendar: plain numbers; the chosen day in a logo-red circle. */
+  .public-booking-frame .calendar-day {
+    min-height: 0;
+    aspect-ratio: 1;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    font-variant-numeric: tabular-nums;
+  }
+  .public-booking-frame .calendar-day-selected {
+    background: var(--logo-red);
+    color: #fff;
+    font-weight: 600;
+  }
+  .public-booking-frame .calendar-day:disabled {
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.22);
+  }
+  .public-booking-frame .calendar-day.calendar-day-occupied,
+  .public-booking-frame .calendar-day.calendar-day-occupied:disabled {
+    border: 0;
+    background: transparent;
+    color: #f4b344;
+  }
+  /* Past days: dimmed numbers so the month reads as a whole, not as a gap. */
+  .public-booking-frame .calendar-day-past > span { visibility: visible; color: rgba(255, 255, 255, 0.18); }
+  .public-booking-frame .calendar-nav {
+    border: 0;
+    background: transparent;
+    color: var(--logo-red);
+  }
+
+  /* Fields: just a bottom line; red line while focused. */
+  .public-booking-frame .booking-form :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+    padding-inline: 0;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .public-booking-frame .booking-form :is(input, select, textarea):focus {
+    border-bottom-color: var(--logo-red);
+    background: transparent;
+    box-shadow: none;
+  }
+  .public-booking-frame .booking-form select option { background: #000; }
+  .public-booking-frame .booking-form label { color: var(--step-muted); font-size: 0.85rem; }
+  .public-booking-frame .booking-form :is(input, select, textarea) { color: var(--text-main); font-size: 1rem; }
+  /* Keep the required asterisk next to its label instead of on its own line. */
+  .public-booking-frame .booking-form label:has(> .required-star) {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 4px;
+  }
+  .public-booking-frame .booking-form label:has(> .required-star) > :is(input, select, textarea) { flex-basis: 100%; }
+  .public-booking-frame .required-star { color: var(--logo-red); }
+
+  /* Extras: rows separated by thin lines; the name as plain text. */
+  .public-booking-frame .extras-list { gap: 0; }
+  .public-booking-frame .extra-toggle {
+    padding: 14px 0;
+    border: 0;
+    border-bottom: 1px solid var(--step-line);
+    border-radius: 0;
+    background: transparent;
+  }
+  .public-booking-frame .extra-toggle .admin-service-name-badge {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-main);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .public-booking-frame .booking-form input[type='checkbox'] { accent-color: var(--logo-red); }
+
+  /* Notices: no coloured box, just a thin amber line. */
+  .public-booking-frame .offline-banner {
+    padding: 2px 0 2px 12px;
+    border: 0;
+    border-left: 2px solid #f4b344;
+    border-radius: 0;
+    background: transparent;
+    color: #f4d48a;
+  }
+
+  .public-booking-frame .offline-banner .secondary-button {
+    padding: 6px 0 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-main);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  /* Booking summary: a plain list with dividers instead of the gold box. */
+  .public-booking-frame .booking-summary {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .public-booking-frame .booking-summary-list > div { padding-block: 8px; border-bottom: 1px solid var(--step-line); }
+  .public-booking-frame .booking-summary-list dt { color: var(--step-muted); }
+  .public-booking-frame .booking-summary-list dd { color: var(--text-main); }
+  .public-booking-frame .booking-summary .summary-copy { color: var(--room-card-description-color); }
+
+  /* Terms: a line-separated disclosure, no box. */
+  .public-booking-frame .booking-terms-details {
+    padding: 0;
+    border: 0;
+    border-block: 1px solid var(--step-line);
+    border-radius: 0;
+    background: transparent;
+  }
+  .public-booking-frame .booking-terms-details summary { padding-block: 14px; }
+
+  /* Main action: solid logo red, no outline. */
+  .public-booking-frame .primary-button {
+    border: 0;
+    border-radius: 4px;
+    background: var(--logo-red);
+    color: #fff;
+  }
+  .public-booking-frame .primary-button:hover { background: #e00000; }
+  .public-booking-frame .primary-button:disabled {
+    border: 0;
+    background: rgba(255, 255, 255, 0.06);
+    color: #626975;
+  }
+
+  /* Confirmation: same plain style, sections divided by thin lines. */
+  .public-booking-frame .confirmation-banner {
+    padding: 0 0 16px;
+    border: 0;
+    border-bottom: 1px solid var(--step-line);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .public-booking-frame :is(.confirmation-details-grid div, .confirmation-detail-section, .confirmation-reference, .confirmation-total) {
+    padding: 10px 0;
+    border: 0;
+    border-bottom: 1px solid var(--step-line);
+    border-radius: 0;
+    background: transparent;
+  }
+  .public-booking-frame .confirmation-save-button {
+    border: 0;
+    background: transparent;
+    color: var(--text-main);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
